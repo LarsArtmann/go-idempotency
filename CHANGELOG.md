@@ -29,9 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Refined `property_test.go` test patterns
+- `LICENSE` changed from proprietary to MIT
 - `README.md` rebuilt with real description, verified quick-start example, and accurate development commands
 - `CHANGELOG.md` rebuilt with detailed v0.1.0 feature breakdown
 - `CONTRIBUTING.md` rebuilt with project-specific guidance, testing strategy, and code conventions
+- `doc.go` softened middleware reference to "planned, not yet implemented"
 
 ## [0.1.0] - 2026-08-03
 
