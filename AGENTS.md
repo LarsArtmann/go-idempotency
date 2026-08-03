@@ -9,7 +9,7 @@ go test ./...          # run all tests
 go test ./... -race    # run with race detector (MANDATORY — concurrency is core to this lib)
 go test ./... -v       # verbose, shows property-test shrink traces
 go vet ./...           # static analysis (currently clean)
-golangci-lint run ./... # lint (uses .golangci.yml: exhaustruct, gosec, revive, misspell, gocritic)
+golangci-lint run ./... # lint (uses .golangci.yml: 60+ linters, see file for full list)
 ```
 
 No `flake.nix`, Makefile, or justfile exists. This is a plain Go module — use `go` directly. CI (`.github/workflows/ci.yml`) runs `go test -race`, `go vet`, and `golangci-lint` on every push and PR.
@@ -26,7 +26,7 @@ Single-package library (`package idempotency`), flat file layout — no subdirec
 
 - **`CheckAndRecord` is the atomic primitive.** Never split into `Seen` + `Record` — that creates a TOCTOU race. This is the preferred entry point for callers.
 - **`ErrDuplicate` is a `Conflict`** via `go-error-family`, which maps to HTTP 409 downstream and is non-retryable. Callers check with `errors.Is(err, idempotency.ErrDuplicate)`.
-- **`Record` is a no-op on existing keys** — it does NOT extend the TTL. This is intentional.
+- **`Record` is a no-op on existing non-expired keys** — it does NOT extend the TTL. Expired keys (even if not yet swept) are re-recorded with a fresh TTL.
 - **`Seen` takes a write lock** (`s.mu.Lock()`), not a read lock, because it performs lazy deletion of expired entries.
 - **`Close` is idempotent** via `sync.Once`. Always `defer store.Close()`.
 - **Context is ignored.** `MemoryStore` does not honor context cancellation — all params are `_`. A future Redis/SQL store would need to use it.
