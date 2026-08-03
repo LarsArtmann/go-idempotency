@@ -37,10 +37,10 @@ Single-package library (`package idempotency`), flat file layout — no subdirec
 
 ## Dependencies
 
-| Dependency | Purpose |
-|---|---|
+| Dependency                               | Purpose                                                                                                                                                                             |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `github.com/larsartmann/go-error-family` | Error classification. `ErrDuplicate` uses `errorfamily.NewConflict(code, msg)`. `errorfamily.Classify(err)` returns the family; `errorfamily.IsRetryable(err)` checks retryability. |
-| `pgregory.net/rapid` | Property-based testing framework (test-only). |
+| `pgregory.net/rapid`                     | Property-based testing framework (test-only).                                                                                                                                       |
 
 ## Testing Conventions
 
@@ -56,5 +56,5 @@ Single-package library (`package idempotency`), flat file layout — no subdirec
 
 - `//nolint:exhaustruct` is used when zero-valued struct fields are intentional (e.g., `sync.RWMutex`, `sync.Once`). This implies `exhaustruct` linter is expected if running golangci-lint.
 - Go 1.22+ range syntax: `for range n` (integer) and `for i := range n`.
-- Doc comments explain the *why* (TOCTOU prevention, atomicity guarantees), not the *what`.
+- Doc comments explain the _why_ (TOCTOU prevention, atomicity guarantees), not the *what`.
 - Error sentinels carry a stable string code (`"idempotency.duplicate"`) as first arg to `NewConflict`.
