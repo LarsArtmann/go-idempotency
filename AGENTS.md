@@ -12,7 +12,7 @@ go vet ./...           # static analysis (currently clean)
 golangci-lint run ./... # lint (no .golangci config file committed yet)
 ```
 
-No `flake.nix`, Makefile, or justfile exists. This is a plain Go module — use `go` directly. The README and CONTRIBUTING.md reference `just` and `golangci-lint`, but those are stale templates; `just` is not configured here.
+No `flake.nix`, Makefile, or justfile exists. This is a plain Go module — use `go` directly. `CONTRIBUTING.md` references `golangci-lint run ./...`, which is valid but there is no `.golangci.yml` committed yet (see TODO_LIST.md).
 
 ## Architecture
 
