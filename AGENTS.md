@@ -6,13 +6,13 @@ Go library providing an idempotency/deduplication store for CQRS command keys. M
 
 ```bash
 go test ./...          # run all tests
-go test ./... -race    # run with race detector (recommended — concurrency is core to this lib)
+go test ./... -race    # run with race detector (MANDATORY — concurrency is core to this lib)
 go test ./... -v       # verbose, shows property-test shrink traces
 go vet ./...           # static analysis (currently clean)
-golangci-lint run ./... # lint (no .golangci config file committed yet)
+golangci-lint run ./... # lint (uses .golangci.yml: exhaustruct, gosec, revive, misspell, gocritic)
 ```
 
-No `flake.nix`, Makefile, or justfile exists. This is a plain Go module — use `go` directly. `CONTRIBUTING.md` references `golangci-lint run ./...`, which is valid but there is no `.golangci.yml` committed yet (see TODO_LIST.md).
+No `flake.nix`, Makefile, or justfile exists. This is a plain Go module — use `go` directly. CI (`.github/workflows/ci.yml`) runs `go test -race`, `go vet`, and `golangci-lint` on every push and PR.
 
 ## Architecture
 

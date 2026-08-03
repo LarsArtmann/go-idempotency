@@ -53,6 +53,10 @@ type Store interface {
 //
 // Expired entries are also deleted lazily on read, so the map cannot grow
 // unboundedly even when the sweep goroutine is disabled (sweepInterval == 0).
+//
+// MemoryStore ignores the context.Context parameter on all methods. The
+// parameter exists on the [Store] interface for future network backends
+// (Redis, SQL) that need cancellation and timeouts.
 type MemoryStore struct {
 	mu       sync.RWMutex
 	entries  map[string]time.Time // key → expiresAt

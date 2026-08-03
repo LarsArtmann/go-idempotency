@@ -67,7 +67,7 @@ Requires Go 1.26+.
 
 ```bash
 go test ./...          # run all tests
-go test ./... -race    # run with race detector (recommended)
+go test ./... -race    # run with race detector (mandatory)
 go vet ./...           # static analysis
 ```
 
