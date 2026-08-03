@@ -53,7 +53,7 @@ func TestProperty_CheckAndRecordExactlyOnce(t *testing.T) {
 		ttl := time.Minute
 
 		results := make(chan error, n)
-		for i := 0; i < n; i++ {
+		for range n {
 			go func() {
 				results <- store.CheckAndRecord(context.Background(), key, ttl)
 			}()
@@ -61,7 +61,7 @@ func TestProperty_CheckAndRecordExactlyOnce(t *testing.T) {
 
 		successes := 0
 		duplicates := 0
-		for i := 0; i < n; i++ {
+		for range n {
 			err := <-results
 			switch {
 			case err == nil:
