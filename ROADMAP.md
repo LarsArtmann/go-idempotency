@@ -17,7 +17,7 @@ The `Store` interface (`store.go:30-48`) is designed for multiple backends. `Mem
 ## Observability
 
 - **Metrics hooks** — instrument hit/miss/expiry/contention rates so operators can tune TTL and sweep intervals based on real traffic patterns.
-- **Benchmark-driven optimization** — after baseline benchmarks exist (see [TODO_LIST.md](TODO_LIST.md)), evaluate lock strategies: sharded mutexes, `sync.Map`, lock-free approaches. The current single-`sync.RWMutex` design is correct but may bottleneck under high contention.
+- **Lock strategy optimization** — baseline benchmarks exist (`bench_test.go`); next step is evaluating sharded mutexes, `sync.Map`, and lock-free approaches against the current single-`sync.RWMutex` design under high contention.
 
 ## Versioning Strategy
 

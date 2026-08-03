@@ -66,6 +66,7 @@ func BenchmarkCheckAndRecord_Parallel_UniqueKeys(b *testing.B) {
 	defer store.Close()
 
 	ctx := context.Background()
+
 	var counter atomic.Int64
 
 	b.ReportAllocs()

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	errorfamily "github.com/larsartmann/go-error-family"
-
 	"github.com/larsartmann/go-idempotency"
 )
 
@@ -53,8 +52,10 @@ func TestMemoryStore_CheckAndRecord_AtomicUnderConcurrency(t *testing.T) {
 	store := idempotency.NewMemoryStore(0)
 	defer store.Close()
 
-	const goroutines = 200
-	const key = "contended-cmd"
+	const (
+		goroutines = 200
+		key        = "contended-cmd"
+	)
 
 	var (
 		wg      sync.WaitGroup
@@ -65,6 +66,7 @@ func TestMemoryStore_CheckAndRecord_AtomicUnderConcurrency(t *testing.T) {
 	)
 
 	wg.Add(goroutines)
+
 	for range goroutines {
 		go func() {
 			defer wg.Done()
@@ -72,6 +74,7 @@ func TestMemoryStore_CheckAndRecord_AtomicUnderConcurrency(t *testing.T) {
 			<-started // release all goroutines at once
 
 			err := store.CheckAndRecord(context.Background(), key, time.Minute)
+
 			mu.Lock()
 			switch {
 			case err == nil:
@@ -91,6 +94,7 @@ func TestMemoryStore_CheckAndRecord_AtomicUnderConcurrency(t *testing.T) {
 	if wins != 1 {
 		t.Fatalf("wins: want exactly 1 winner, got %d", wins)
 	}
+
 	if dups != goroutines-1 {
 		t.Fatalf("dups: want %d, got %d", goroutines-1, dups)
 	}
@@ -179,6 +183,7 @@ func TestMemoryStore_Record_AfterExpiry_ReRecordsWithNewTTL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Seen: %v", err)
 	}
+
 	if !seen {
 		t.Fatal("Record after expiry should have re-recorded with the new TTL, but Seen returned false")
 	}
@@ -321,6 +326,7 @@ func TestErrDuplicate_IsConflict(t *testing.T) {
 	if fam := errorfamily.Classify(idempotency.ErrDuplicate); fam != errorfamily.Conflict {
 		t.Fatalf("family: want Conflict, got %s", fam)
 	}
+
 	if errorfamily.IsRetryable(idempotency.ErrDuplicate) {
 		t.Fatal("Conflict must not be retryable")
 	}
@@ -332,19 +338,25 @@ func TestErrDuplicate_IsConflict(t *testing.T) {
 // no key survives past its expiry under load).
 func TestMemoryStore_Sweep_ReclaimsAllKeysUnderLoad(t *testing.T) {
 	t.Parallel()
+
 	ctx := context.Background()
+
 	store := idempotency.NewMemoryStore(10 * time.Millisecond)
 	defer store.Close()
 
 	const n = 1000
+
 	var wg sync.WaitGroup
 	wg.Add(n)
+
 	for i := range n {
 		go func(i int) {
 			defer wg.Done()
+
 			_ = store.Record(ctx, strconv.Itoa(i), 5*time.Millisecond)
 		}(i)
 	}
+
 	wg.Wait()
 
 	// Wait well beyond the sweep interval so the sweeper runs multiple cycles.

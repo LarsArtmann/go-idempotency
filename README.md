@@ -75,4 +75,4 @@ See [AGENTS.md](AGENTS.md) for architecture, conventions, and non-obvious design
 
 ## License
 
-Proprietary. See [LICENSE](LICENSE) for details.
+[MIT](LICENSE)

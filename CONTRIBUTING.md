@@ -37,7 +37,7 @@ Always `defer store.Close()`, even when sweep is disabled (`sweepInterval == 0`)
 
 - **`//nolint:exhaustruct`** marks structs where zero-valued fields are intentional (e.g., `sync.RWMutex`, `sync.Once`). The `exhaustruct` linter is enabled in `.golangci.yml`.
 - **Go 1.22+ range syntax**: `for range n` (integer) and `for i := range n`.
-- **Doc comments explain the *why*** (TOCTOU prevention, atomicity guarantees), not the *what*.
+- **Doc comments explain the _why_** (TOCTOU prevention, atomicity guarantees), not the _what_.
 - **Error sentinels** carry a stable string code (e.g., `"idempotency.duplicate"`) as the first argument to `errorfamily.NewConflict`. This code is a public API contract.
 
 ## Project Documentation

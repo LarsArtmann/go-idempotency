@@ -6,9 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"pgregory.net/rapid"
-
 	"github.com/larsartmann/go-idempotency"
+	"pgregory.net/rapid"
 )
 
 // TestProperty_RecordIsIdempotent: Recording the same key multiple times
@@ -33,6 +32,7 @@ func TestProperty_RecordIsIdempotent(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Seen: %v", err)
 		}
+
 		if !seen {
 			t.Fatal("key should be seen after repeated Record calls")
 		}
@@ -61,6 +61,7 @@ func TestProperty_CheckAndRecordExactlyOnce(t *testing.T) {
 
 		successes := 0
 		duplicates := 0
+
 		for range n {
 			err := <-results
 			switch {
@@ -76,6 +77,7 @@ func TestProperty_CheckAndRecordExactlyOnce(t *testing.T) {
 		if successes != 1 {
 			t.Fatalf("expected exactly 1 success, got %d (of %d)", successes, n)
 		}
+
 		if duplicates != n-1 {
 			t.Fatalf("expected %d duplicates, got %d", n-1, duplicates)
 		}
@@ -104,6 +106,7 @@ func TestProperty_KeysAreIndependent(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Seen B: %v", err)
 		}
+
 		if seenB {
 			t.Fatal("keyB should not be seen (only keyA was recorded)")
 		}
@@ -116,6 +119,7 @@ func TestProperty_KeysAreIndependent(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Seen A: %v", err)
 		}
+
 		if !seenA {
 			t.Fatal("keyA should still be seen after operating on keyB")
 		}
@@ -144,6 +148,7 @@ func TestProperty_TTLExpiry(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Seen after TTL: %v", err)
 		}
+
 		if seen {
 			t.Fatal("key should not be seen after TTL expiry")
 		}

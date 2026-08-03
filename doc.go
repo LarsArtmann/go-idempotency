@@ -23,9 +23,9 @@
 //	    return err // store failure — do not process
 //	}
 //
-// This module owns the storage primitive only. For middleware that wires the
-// store into command, event, or query dispatch pipelines, import the
-// middleware package and use CommandIdempotency, EventIdempotency, or
-// QueryIdempotency. For custom integrations (transport hooks, manual
-// checks), use the Store interface directly.
+// This module owns the storage primitive only. A future middleware package
+// (planned, not yet implemented) will provide CommandIdempotency,
+// EventIdempotency, and QueryIdempotency helpers that wire the store into CQRS
+// dispatch pipelines. For custom integrations (transport hooks, manual checks),
+// use the Store interface directly.
 package idempotency
