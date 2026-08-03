@@ -178,6 +178,10 @@ linters:
         - a
         - b
         - v
+        - s
+        - wg
+        - mu
+        - n
       ignore-type-assert-ok: true
     wrapcheck:
       ignore-sigs:

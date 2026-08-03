@@ -7,33 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-08-03
+
 ### Fixed
 
 - **`Record` now checks TTL expiry** — `MemoryStore.Record` previously checked map presence only, not expiry. An expired-but-not-yet-swept key was treated as "already recorded" and `Record` was a no-op. Now expired keys are re-recorded with the fresh TTL, matching `CheckAndRecord`'s behavior (`store.go:103-114`).
+- Lint compliance: `intrange` fix in `property_test.go`, `makezero` nolint in `bench_test.go`, idiomatic Go names added to `varnamelen` ignore list.
 
 ### Added
 
-- Project scaffolding: `.editorconfig`, `.gitattributes`, `.gitignore`
-- `LICENSE` — proprietary license
-- `CONTRIBUTING.md` — development setup and contribution workflow
-- `README.md` — project overview and quick start
-- `AGENTS.md` — non-obvious context for AI coding sessions
-- `FEATURES.md` — honest feature inventory with `file:line` evidence
-- `TODO_LIST.md` — short-term actionable work
-- `ROADMAP.md` — long-term direction and raw ideas
-- `.golangci.yml` — lint configuration enabling `exhaustruct`, `gosec`, `revive`, `misspell`, `gocritic`
+- `.golangci.yml` — lint configuration enabling 60+ linters including `exhaustruct`, `gosec`, `revive`, `misspell`, `gocritic`
 - `.github/workflows/ci.yml` — CI pipeline: `go test -race`, `go vet`, `golangci-lint` on push and PR
 - `bench_test.go` — benchmarks for `CheckAndRecord` (serial, contended, parallel-unique), `Seen` (hit, miss), `Record`
+- `docs/DOMAIN_LANGUAGE.md` — domain glossary for CQRS idempotency terms
 - Test: `Record` after expiry re-records with new TTL (`store_test.go`)
+- Test: post-`Close` operations still function (`store_test.go`)
+- Test: empty key and zero TTL edge cases (`store_test.go`)
 
 ### Changed
 
-- Refined `property_test.go` test patterns
-- `LICENSE` changed from proprietary to MIT
-- `README.md` rebuilt with real description, verified quick-start example, and accurate development commands
-- `CHANGELOG.md` rebuilt with detailed v0.1.0 feature breakdown
-- `CONTRIBUTING.md` rebuilt with project-specific guidance, testing strategy, and code conventions
-- `doc.go` softened middleware reference to "planned, not yet implemented"
+- **License switched from proprietary to MIT.**
+- `doc.go` middleware reference softened to "planned, not yet implemented".
+- `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `AGENTS.md` rebuilt with accurate project-specific content.
+- `FEATURES.md`, `TODO_LIST.md`, `ROADMAP.md` added with honest status tracking.
 
 ## [0.1.0] - 2026-08-03
 
@@ -53,5 +49,6 @@ Tagged `v0.1.0`: initial release — idempotency store with TTL-based dedup.
 - **Sweep soak test** — 1000-key concurrent load test verifying sweep reclaims all expired entries
 - **Package documentation** (`doc.go`) with quick-start example and design rationale
 
-[Unreleased]: https://github.com/larsartmann/go-idempotency/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/larsartmann/go-idempotency/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/larsartmann/go-idempotency/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/larsartmann/go-idempotency/releases/tag/v0.1.0

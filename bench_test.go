@@ -13,7 +13,7 @@ import (
 // generateKeys pre-creates b.N unique string keys so that benchmarks measure
 // store performance, not strconv formatting.
 func generateKeys(n int) []string {
-	keys := make([]string, n)
+	keys := make([]string, n) //nolint:makezero // pre-allocated and filled by index
 	for i := range n {
 		keys[i] = strconv.Itoa(i)
 	}

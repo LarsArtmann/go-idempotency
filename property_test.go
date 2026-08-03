@@ -22,7 +22,7 @@ func TestProperty_RecordIsIdempotent(t *testing.T) {
 		key := rapid.String().Draw(t, "key")
 		ttl := time.Duration(rapid.IntRange(1, 60).Draw(t, "ttl_seconds")) * time.Second
 
-		for i := 0; i < rapid.IntRange(2, 10).Draw(t, "repeats"); i++ {
+		for i := range rapid.IntRange(2, 10).Draw(t, "repeats") {
 			if err := store.Record(context.Background(), key, ttl); err != nil {
 				t.Fatalf("Record attempt %d: %v", i, err)
 			}
