@@ -159,6 +159,31 @@ func TestMemoryStore_Record_NoopOnExistingKey(t *testing.T) {
 	}
 }
 
+func TestMemoryStore_Record_AfterExpiry_ReRecordsWithNewTTL(t *testing.T) {
+	t.Parallel()
+
+	store := idempotency.NewMemoryStore(0) // no sweep: expired key stays in map
+	defer store.Close()
+
+	ctx := context.Background()
+
+	_ = store.Record(ctx, "cmd-record-expiry", 20*time.Millisecond)
+
+	time.Sleep(40 * time.Millisecond)
+
+	// The key is expired but still in the map (no sweep, no intervening Seen to
+	// lazily delete it). Record must treat it as expired and set a fresh TTL.
+	_ = store.Record(ctx, "cmd-record-expiry", time.Minute)
+
+	seen, err := store.Seen(ctx, "cmd-record-expiry")
+	if err != nil {
+		t.Fatalf("Seen: %v", err)
+	}
+	if !seen {
+		t.Fatal("Record after expiry should have re-recorded with the new TTL, but Seen returned false")
+	}
+}
+
 func TestMemoryStore_Sweep_RemovesExpiredEntries(t *testing.T) {
 	t.Parallel()
 

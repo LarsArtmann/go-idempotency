@@ -99,12 +99,14 @@ func (s *MemoryStore) Seen(_ context.Context, key string) (bool, error) {
 }
 
 // Record marks the key as seen with the given TTL. If the key is already
-// recorded, it is a no-op (the existing expiry is not extended).
+// recorded and not expired, it is a no-op (the existing expiry is not extended).
+// If the key is expired (even if still in the map before sweep), Record sets a
+// fresh TTL.
 func (s *MemoryStore) Record(_ context.Context, key string, ttl time.Duration) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, ok := s.entries[key]; !ok {
+	if exp, ok := s.entries[key]; !ok || !time.Now().Before(exp) {
 		s.entries[key] = time.Now().Add(ttl)
 	}
 
