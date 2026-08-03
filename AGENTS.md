@@ -46,15 +46,16 @@ Single-package library (`package idempotency`), flat file layout — no subdirec
 
 - **External test package** (`idempotency_test`) — imports the package as a consumer.
 - **`t.Parallel()` on every test.**
-- **Two test files, split by strategy:**
-  - `store_test.go` — example/unit tests, one function per scenario. Concurrency tests use a `started chan struct{}` barrier to release all goroutines simultaneously.
+- **Three test files, split by strategy:**
+  - `store_test.go` — unit and concurrency tests, one function per scenario. Concurrency tests use a `started chan struct{}` barrier to release all goroutines simultaneously. Includes edge cases (empty key, zero TTL, post-Close behavior).
   - `property_test.go` — property-based tests via `rapid.Check(t, func(t *rapid.T) {...})`. Generators: `rapid.String()`, `rapid.IntRange()`, `rapid.StringMatching()`.
+  - `bench_test.go` — benchmarks for `CheckAndRecord`, `Seen`, `Record` under serial, contended, and parallel workloads.
 - **Always `defer store.Close()`**, even when sweep is disabled (`sweepInterval == 0`).
 - Concurrency correctness (exactly-one-winner) is tested with 200 goroutines in unit tests and randomized 2–20 goroutines in property tests.
 
 ## Code Conventions
 
-- `//nolint:exhaustruct` is used when zero-valued struct fields are intentional (e.g., `sync.RWMutex`, `sync.Once`). This implies `exhaustruct` linter is expected if running golangci-lint.
+- `//nolint:exhaustruct` is used when zero-valued struct fields are intentional (e.g., `sync.RWMutex`, `sync.Once`). The `exhaustruct` linter is enabled in `.golangci.yml`.
 - Go 1.22+ range syntax: `for range n` (integer) and `for i := range n`.
 - Doc comments explain the _why_ (TOCTOU prevention, atomicity guarantees), not the *what`.
 - Error sentinels carry a stable string code (`"idempotency.duplicate"`) as first arg to `NewConflict`.

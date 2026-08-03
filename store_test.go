@@ -210,6 +210,82 @@ func TestMemoryStore_Close_Idempotent(t *testing.T) {
 	store.Close() // must not panic
 }
 
+// TestMemoryStore_OperationsAfterClose verifies that Seen, Record, and
+// CheckAndRecord all still function after Close. Close only stops the sweep
+// goroutine; the map and mutex remain usable.
+func TestMemoryStore_OperationsAfterClose(t *testing.T) {
+	t.Parallel()
+
+	store := idempotency.NewMemoryStore(time.Hour)
+	defer store.Close()
+
+	ctx := context.Background()
+	_ = store.Record(ctx, "pre-close-key", time.Minute)
+
+	store.Close()
+
+	// Seen still works after Close.
+	seen, err := store.Seen(ctx, "pre-close-key")
+	if err != nil || !seen {
+		t.Fatalf("Seen after Close: want true, nil; got %v, %v", seen, err)
+	}
+
+	// Record still works after Close.
+	if err := store.Record(ctx, "post-close-key", time.Minute); err != nil {
+		t.Fatalf("Record after Close: %v", err)
+	}
+
+	// CheckAndRecord still works after Close.
+	if err := store.CheckAndRecord(ctx, "post-close-check", time.Minute); err != nil {
+		t.Fatalf("CheckAndRecord after Close: %v", err)
+	}
+}
+
+// TestMemoryStore_EmptyKey verifies that the empty string is a valid key.
+func TestMemoryStore_EmptyKey(t *testing.T) {
+	t.Parallel()
+
+	store := idempotency.NewMemoryStore(0)
+	defer store.Close()
+
+	ctx := context.Background()
+
+	if err := store.Record(ctx, "", time.Minute); err != nil {
+		t.Fatalf("Record empty key: %v", err)
+	}
+
+	seen, _ := store.Seen(ctx, "")
+	if !seen {
+		t.Fatal("empty key should be seen after Record")
+	}
+
+	if err := store.CheckAndRecord(ctx, "", time.Minute); !errors.Is(err, idempotency.ErrDuplicate) {
+		t.Fatalf("CheckAndRecord on existing empty key: want ErrDuplicate, got %v", err)
+	}
+}
+
+// TestMemoryStore_ZeroTTL verifies behavior with a zero TTL: the key expires
+// immediately, so Seen returns false and a fresh CheckAndRecord succeeds.
+func TestMemoryStore_ZeroTTL(t *testing.T) {
+	t.Parallel()
+
+	store := idempotency.NewMemoryStore(0)
+	defer store.Close()
+
+	ctx := context.Background()
+	_ = store.Record(ctx, "zero-ttl-key", 0)
+
+	seen, _ := store.Seen(ctx, "zero-ttl-key")
+	if seen {
+		t.Fatal("zero-TTL key should be immediately expired")
+	}
+
+	// CheckAndRecord should succeed because the key is already expired.
+	if err := store.CheckAndRecord(ctx, "zero-ttl-key", 0); err != nil {
+		t.Fatalf("CheckAndRecord on expired zero-TTL key: want nil, got %v", err)
+	}
+}
+
 func TestMemoryStore_CheckAndRecord_AllowsAfterExpiry(t *testing.T) {
 	t.Parallel()
 
