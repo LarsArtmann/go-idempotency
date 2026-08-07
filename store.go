@@ -17,6 +17,20 @@ var ErrDuplicate = errorfamily.NewConflict(
 	"key has already been recorded",
 )
 
+// ErrInvalidTTL is returned by [Store.Record] and [Store.CheckAndRecord] when
+// the TTL is not positive. A non-positive TTL records an expiry that is
+// already in the past, so the key protects nothing: the very next caller would
+// also succeed, silently breaking the exactly-once guarantee that is this
+// library's purpose. Rejecting the value up front makes the misuse a loud,
+// fixable error instead of a silent correctness hole.
+//
+// It is classified as a Rejection (HTTP 400, non-retryable): the caller passed
+// bad input. Check with errors.Is(err, idempotency.ErrInvalidTTL).
+var ErrInvalidTTL = errorfamily.NewRejection(
+	"idempotency.invalid-ttl",
+	"ttl must be positive",
+)
+
 // Store tracks opaque keys (typically command idempotency keys) to prevent
 // duplicate processing. When a key is seen for the first time, the store
 // records it with a TTL. Subsequent lookups for the same key report it as seen
@@ -32,12 +46,13 @@ type Store interface {
 	Seen(ctx context.Context, key string) (bool, error)
 
 	// Record marks the key as seen with the given TTL. If the key is already
-	// recorded, it is a no-op (the TTL is not extended).
+	// recorded, it is a no-op (the TTL is not extended). Returns [ErrInvalidTTL]
+	// if ttl is not positive.
 	Record(ctx context.Context, key string, ttl time.Duration) error
 
 	// CheckAndRecord atomically reports whether the key was already seen and,
 	// if not, records it. Returns [ErrDuplicate] if the key was already
-	// recorded and not expired.
+	// recorded and not expired. Returns [ErrInvalidTTL] if ttl is not positive.
 	//
 	// Implementations MUST make this atomic (single lock or single round-trip)
 	// to prevent the TOCTOU race that a separate Seen + Record pair would
@@ -105,31 +120,41 @@ func (s *MemoryStore) Seen(_ context.Context, key string) (bool, error) {
 // Record marks the key as seen with the given TTL. If the key is already
 // recorded and not expired, it is a no-op (the existing expiry is not extended).
 // If the key is expired (even if still in the map before sweep), Record sets a
-// fresh TTL.
+// fresh TTL. Returns [ErrInvalidTTL] if ttl is not positive.
 func (s *MemoryStore) Record(_ context.Context, key string, ttl time.Duration) error {
+	if ttl <= 0 {
+		return ErrInvalidTTL
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if exp, ok := s.entries[key]; !ok || !time.Now().Before(exp) {
-		s.entries[key] = time.Now().Add(ttl)
+	now := time.Now()
+	if exp, ok := s.entries[key]; !ok || !now.Before(exp) {
+		s.entries[key] = now.Add(ttl)
 	}
 
 	return nil
 }
 
 // CheckAndRecord atomically claims a key. Returns [ErrDuplicate] if the key was
-// already recorded and not expired. The check and the record happen under a
-// single write lock, so concurrent callers with the same key are serialized:
-// exactly one wins.
+// already recorded and not expired, or [ErrInvalidTTL] if ttl is not positive.
+// The check and the record happen under a single write lock, so concurrent
+// callers with the same key are serialized: exactly one wins.
 func (s *MemoryStore) CheckAndRecord(_ context.Context, key string, ttl time.Duration) error {
+	if ttl <= 0 {
+		return ErrInvalidTTL
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if exp, ok := s.entries[key]; ok && time.Now().Before(exp) {
+	now := time.Now()
+	if exp, ok := s.entries[key]; ok && now.Before(exp) {
 		return ErrDuplicate
 	}
 
-	s.entries[key] = time.Now().Add(ttl)
+	s.entries[key] = now.Add(ttl)
 
 	return nil
 }

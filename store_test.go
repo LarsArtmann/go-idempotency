@@ -269,25 +269,50 @@ func TestMemoryStore_EmptyKey(t *testing.T) {
 	}
 }
 
-// TestMemoryStore_ZeroTTL verifies behavior with a zero TTL: the key expires
-// immediately, so Seen returns false and a fresh CheckAndRecord succeeds.
-func TestMemoryStore_ZeroTTL(t *testing.T) {
+// TestMemoryStore_NonPositiveTTLRejected verifies that Record and
+// CheckAndRecord reject a non-positive TTL with ErrInvalidTTL. A zero or
+// negative TTL would record an expiry already in the past, so the key would
+// protect nothing and the exactly-once guarantee would silently break; the
+// store rejects the bad input instead of accepting a useless recording.
+func TestMemoryStore_NonPositiveTTLRejected(t *testing.T) {
 	t.Parallel()
 
 	store := idempotency.NewMemoryStore(0)
 	defer store.Close()
 
 	ctx := context.Background()
-	_ = store.Record(ctx, "zero-ttl-key", 0)
 
-	seen, _ := store.Seen(ctx, "zero-ttl-key")
-	if seen {
-		t.Fatal("zero-TTL key should be immediately expired")
+	for _, tc := range []struct {
+		name string
+		ttl  time.Duration
+	}{
+		{"zero", 0},
+		{"negative", -time.Second},
+	} {
+		if err := store.Record(ctx, "rec-"+tc.name, tc.ttl); !errors.Is(err, idempotency.ErrInvalidTTL) {
+			t.Fatalf("Record(%s): want ErrInvalidTTL, got %v", tc.name, err)
+		}
+
+		if err := store.CheckAndRecord(ctx, "car-"+tc.name, tc.ttl); !errors.Is(err, idempotency.ErrInvalidTTL) {
+			t.Fatalf("CheckAndRecord(%s): want ErrInvalidTTL, got %v", tc.name, err)
+		}
 	}
 
-	// CheckAndRecord should succeed because the key is already expired.
-	if err := store.CheckAndRecord(ctx, "zero-ttl-key", 0); err != nil {
-		t.Fatalf("CheckAndRecord on expired zero-TTL key: want nil, got %v", err)
+	// ErrInvalidTTL must be a Rejection so it maps to HTTP 400 downstream and is
+	// not retried.
+	if fam := errorfamily.Classify(idempotency.ErrInvalidTTL); fam != errorfamily.Rejection {
+		t.Fatalf("family: want Rejection, got %s", fam)
+	}
+
+	if errorfamily.IsRetryable(idempotency.ErrInvalidTTL) {
+		t.Fatal("Rejection must not be retryable")
+	}
+
+	// No key must have been recorded for any rejected input.
+	for _, key := range []string{"rec-zero", "rec-negative", "car-zero", "car-negative"} {
+		if seen, _ := store.Seen(ctx, key); seen {
+			t.Fatalf("key %q must not be recorded after a rejected TTL", key)
+		}
 	}
 }
 

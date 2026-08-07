@@ -89,9 +89,8 @@ func BenchmarkSeen_Hit(b *testing.B) {
 	_ = store.Record(ctx, "seen-key", time.Hour)
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for range b.N {
+	for b.Loop() {
 		_, _ = store.Seen(ctx, "seen-key")
 	}
 }
@@ -104,9 +103,8 @@ func BenchmarkSeen_Miss(b *testing.B) {
 	ctx := context.Background()
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for range b.N {
+	for b.Loop() {
 		_, _ = store.Seen(ctx, "nonexistent")
 	}
 }
