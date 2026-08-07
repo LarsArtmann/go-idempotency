@@ -124,20 +124,46 @@ Errors are classified by [go-error-family](https://github.com/larsartmann/go-err
 
 ## Features
 
-- **Atomic `CheckAndRecord`** — single-lock check-and-set preventing the TOCTOU race
-- **TTL-based expiration** — background sweep goroutine + lazy deletion on read
+- **`Store` interface** — three-method contract (`Seen`, `Record`, `CheckAndRecord`) with well-defined error semantics and atomicity requirements
+- **Contract test suite** — `contract.RunTests` verifies any `Store` implementation against the full invariant set (atomicity, TTL expiry, concurrency safety, error handling)
+- **`MemoryStore`** — reference implementation for development and single-process use, with TTL-based expiration (background sweep + lazy deletion), configurable sweep interval, and graceful shutdown
 - **Conflict-classified errors** — `ErrDuplicate` is HTTP 409, non-retryable; `ErrInvalidTTL` is HTTP 400
-- **Concurrency-safe** — verified with 200 goroutines and property-based tests
-- **Configurable sweep** — disable the background goroutine (`sweepInterval == 0`); lazy deletion still bounds memory growth
-- **Graceful shutdown** — `Close()` is idempotent and stops the sweeper
+- **Concurrency-safe** — exactly-one-winner verified with 200 goroutines, property-based tests, and fuzz tests
 
 See [FEATURES.md](FEATURES.md) for the full, code-evidenced inventory.
+
+## Implementing your own backend
+
+The `Store` interface is three methods. Each maps to a single round-trip on a typical backend. The critical requirement is that `CheckAndRecord` is **atomic** — use your backend's native check-and-set primitive.
+
+| Method | What it does | Typical backend primitive |
+|--------|-------------|--------------------------|
+| `Seen` | Check if key exists and is not expired | `EXISTS` (Redis), `SELECT COUNT(*)` (SQL) |
+| `Record` | Store key with TTL (no-op if exists) | `SET NX` (Redis), `INSERT ... ON CONFLICT DO NOTHING` (SQL) |
+| `CheckAndRecord` | Atomic check-and-set | `SET NX EX` (Redis), `INSERT ... ON CONFLICT DO NOTHING` (SQL) |
+
+**Error mapping:** when the key already exists, return `idempotency.ErrDuplicate`. When `ttl <= 0`, return `idempotency.ErrInvalidTTL`. These are sentinel errors from `go-error-family` with stable HTTP status mappings.
+
+**Verify your implementation:** import the contract package and run the test suite:
+
+```go
+func TestContract(t *testing.T) {
+    t.Parallel()
+    contract.RunTests(t, func(t *testing.T) idempotency.Store {
+        store := mybackend.NewStore(conn)
+        t.Cleanup(func() { store.Close() })
+        return store
+    })
+}
+```
+
+See the [package docs](https://pkg.go.dev/github.com/larsartmann/go-idempotency) for a full Redis adapter example (all three methods).
 
 ## Status & roadmap
 
 `MemoryStore` (single-process, in-memory) is stable, concurrency-tested, and suitable for development and single-process services. It is a reference implementation of the `Store` interface — not a production backend.
 
-This library will **not** add production backends (Redis, SQL, etc.). That is by design. The `Store` interface is stable for implementers; the [middleware package](TODO_LIST.md) (CommandIdempotency, EventIdempotency, QueryIdempotency) is the next planned addition to this module.
+This library will **not** add production backends (Redis, SQL, etc.). That is by design. The `Store` interface and the `contract` test suite let you implement and verify your own backend. The [middleware package](TODO_LIST.md) (CommandIdempotency, EventIdempotency, QueryIdempotency) is the next planned addition to this module.
 
 Versioning: **v0.x** — `MemoryStore` and the error sentinels are stable, but the `Store` interface may gain methods (`Delete`, `Stats`) before **v1.0**. See [ROADMAP.md](ROADMAP.md).
 

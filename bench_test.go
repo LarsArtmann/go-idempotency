@@ -184,6 +184,9 @@ func BenchmarkMemoryUsage_AfterSweep(b *testing.B) {
 		// Wait for the sweeper to run multiple cycles past the TTL.
 		time.Sleep(30 * time.Millisecond)
 
+		// Force GC so ReadMemStats reflects the swept entries.
+		runtime.GC()
+
 		var after runtime.MemStats
 		runtime.ReadMemStats(&after)
 
