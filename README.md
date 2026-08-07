@@ -87,10 +87,10 @@ func main() {
 
 Errors are classified by [go-error-family](https://github.com/larsartmann/go-error-family), so they map cleanly onto HTTP statuses and retry decisions downstream. Always check with `errors.Is`.
 
-| Error           | Returned by                 | Family     | HTTP | Retryable |
-| --------------- | --------------------------- | ---------- | ---- | --------- |
-| `ErrDuplicate`  | `CheckAndRecord`            | Conflict   | 409  | No        |
-| `ErrInvalidTTL` | `Record`, `CheckAndRecord`  | Rejection  | 400  | No        |
+| Error           | Returned by                | Family    | HTTP | Retryable |
+| --------------- | -------------------------- | --------- | ---- | --------- |
+| `ErrDuplicate`  | `CheckAndRecord`           | Conflict  | 409  | No        |
+| `ErrInvalidTTL` | `Record`, `CheckAndRecord` | Rejection | 400  | No        |
 
 `ErrDuplicate` means a prior, still-valid recording exists — return it to the client, do not retry. `ErrInvalidTTL` means the caller passed `ttl <= 0`; a non-positive TTL records an already-past expiry that protects nothing, so the store rejects it loudly instead of silently breaking exactly-once.
 

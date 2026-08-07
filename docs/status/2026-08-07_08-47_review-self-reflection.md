@@ -8,7 +8,7 @@
 
 ### Bug found and fixed: non-positive TTL silently broke exactly-once guarantee
 
-`Record` and `CheckAndRecord` accepted any `time.Duration` including zero and negative. A zero TTL records an expiry equal to *now* — born expired — so the next caller also succeeds. **Two winners. The library's entire purpose defeated.** The existing test `TestMemoryStore_ZeroTTL` codified the bug as correct behavior.
+`Record` and `CheckAndRecord` accepted any `time.Duration` including zero and negative. A zero TTL records an expiry equal to _now_ — born expired — so the next caller also succeeds. **Two winners. The library's entire purpose defeated.** The existing test `TestMemoryStore_ZeroTTL` codified the bug as correct behavior.
 
 - `store.go` — added `ErrInvalidTTL` sentinel (Rejection, HTTP 400, non-retryable); both methods now reject `ttl <= 0` before acquiring the lock; consolidated duplicate `time.Now()` calls into a single `now` variable per locked section.
 - `store_test.go` — replaced `TestMemoryStore_ZeroTTL` with `TestMemoryStore_NonPositiveTTLRejected` (covers zero + negative, error family, retryability, no-state-written).
@@ -40,12 +40,12 @@ Nothing. Everything touched in this session was completed to a green test suite.
 
 ## c) NOT STARTED (pre-existing TODO_LIST items, not touched this session)
 
-| Item | Notes |
-|------|-------|
-| Middleware package (`CommandIdempotency`, etc.) | Primary advertised integration point; still storage-only |
-| Fuzz tests (`FuzzCheckAndRecord`, `FuzzRecord`) | Go native fuzzing; natural fit for this library |
-| `Delete` method on `Store` interface | Manual key invalidation; no way to force-expire a single key |
-| `Store` interface contract test | Table-driven suite reusable for future Redis/SQL backends |
+| Item                                            | Notes                                                        |
+| ----------------------------------------------- | ------------------------------------------------------------ |
+| Middleware package (`CommandIdempotency`, etc.) | Primary advertised integration point; still storage-only     |
+| Fuzz tests (`FuzzCheckAndRecord`, `FuzzRecord`) | Go native fuzzing; natural fit for this library              |
+| `Delete` method on `Store` interface            | Manual key invalidation; no way to force-expire a single key |
+| `Store` interface contract test                 | Table-driven suite reusable for future Redis/SQL backends    |
 
 ---
 
