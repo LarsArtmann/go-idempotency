@@ -26,9 +26,27 @@
 //	    return err // store failure — do not process
 //	}
 //
-// This module owns the storage primitive only. A future middleware package
+// # Design Philosophy: Interface-First, You Implement the Backend
+//
+// This library is an SDK, not a batteries-included framework. It deliberately
+// ships only the [Store] interface, its error semantics, and [MemoryStore] as a
+// reference implementation for development and single-process use cases.
+//
+// It intentionally does NOT provide production backends. There will be no
+// Redis store, SQL store, or any other concrete backend added to this module.
+// Each backend has its own driver, connection-pool semantics, deployment
+// constraints, and operational tradeoffs — encoding those decisions here would
+// bloat the dependency tree and force choices on consumers that they should
+// make themselves.
+//
+// Instead, you implement the [Store] interface against whatever backend fits
+// your system. The interface is small (three methods) and the comments on
+// [Store.CheckAndRecord] name the atomic primitive each backend should use
+// (Redis SET NX, SQL INSERT ... ON CONFLICT DO NOTHING).
+//
+// This module owns the storage contract only. A future middleware package
 // (planned, not yet implemented) will provide CommandIdempotency,
-// EventIdempotency, and QueryIdempotency helpers that wire the store into CQRS
+// EventIdempotency, and QueryIdempotency helpers that wire a Store into CQRS
 // dispatch pipelines. For custom integrations (transport hooks, manual checks),
-// use the Store interface directly.
+// use the [Store] interface directly.
 package idempotency

@@ -40,7 +40,10 @@ var ErrInvalidTTL = errorfamily.NewRejection(
 // loses the acknowledgement, and retries, the store prevents the command from
 // executing twice.
 //
-// Implementations must be safe for concurrent use.
+// Implementations must be safe for concurrent use. [MemoryStore] is provided as
+// a reference implementation for development and single-process use cases;
+// implement this interface against your own backend (Redis, SQL, etc.) for
+// production.
 type Store interface {
 	// Seen reports whether the key is currently recorded and not expired.
 	Seen(ctx context.Context, key string) (bool, error)
@@ -56,9 +59,9 @@ type Store interface {
 	//
 	// Implementations MUST make this atomic (single lock or single round-trip)
 	// to prevent the TOCTOU race that a separate Seen + Record pair would
-	// create. For [MemoryStore] this is a single mutex; for a future Redis
-	// store it would be a SET NX command; for SQL an INSERT ... ON CONFLICT
-	// DO NOTHING.
+	// create. For [MemoryStore] this is a single mutex. When implementing the
+	// interface against your own backend, use its native atomic primitive:
+	// Redis SET NX, SQL INSERT ... ON CONFLICT DO NOTHING, etc.
 	CheckAndRecord(ctx context.Context, key string, ttl time.Duration) error
 }
 
@@ -70,8 +73,8 @@ type Store interface {
 // unboundedly even when the sweep goroutine is disabled (sweepInterval == 0).
 //
 // MemoryStore ignores the context.Context parameter on all methods. The
-// parameter exists on the [Store] interface for future network backends
-// (Redis, SQL) that need cancellation and timeouts.
+// parameter exists on the [Store] interface so that custom backend
+// implementations (Redis, SQL, etc.) can honor cancellation and timeouts.
 type MemoryStore struct {
 	mu       sync.RWMutex
 	entries  map[string]time.Time // key → expiresAt

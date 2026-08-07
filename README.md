@@ -38,6 +38,17 @@ if !seen {
 
 Prefer `CheckAndRecord`. Only reach for `Seen` / `Record` separately when you understand the race you are accepting.
 
+## Design philosophy
+
+This is an **SDK, not a batteries-included framework**. The library ships:
+
+- The **`Store` interface** (three methods, well-defined error semantics, atomicity contracts)
+- **`MemoryStore`** — a reference implementation for development, testing, and single-process use cases
+
+It deliberately does **not** ship production backends. There will never be a Redis store, SQL store, or any other concrete backend in this module. Each backend has its own driver, connection-pool semantics, deployment constraints, and operational tradeoffs. Encoding those decisions here would bloat the dependency tree and force choices on you that you should make yourself.
+
+**You implement the `Store` interface** against whatever backend fits your system. The interface is small and the [API docs](https://pkg.go.dev/github.com/larsartmann/go-idempotency) name the atomic primitive each backend should use (Redis `SET NX`, SQL `INSERT ... ON CONFLICT DO NOTHING`, etc.).
+
 ## Quick start
 
 ```bash
@@ -107,9 +118,11 @@ See [FEATURES.md](FEATURES.md) for the full, code-evidenced inventory.
 
 ## Status & roadmap
 
-`MemoryStore` (single-process, in-memory) is stable and concurrency-tested today. The `Store` interface is designed for distributed backends — **Redis** (`SET NX`) and **SQL** (`INSERT ... ON CONFLICT DO NOTHING`) are planned but not yet implemented.
+`MemoryStore` (single-process, in-memory) is stable, concurrency-tested, and suitable for development and single-process services. It is a reference implementation of the `Store` interface — not a production backend.
 
-Versioning: **v0.x** — `MemoryStore` is stable, but the `Store` interface may gain methods (`Delete`, `Stats`) as backends land. **v1.0** ships when a persistent backend exists. See [ROADMAP.md](ROADMAP.md).
+This library will **not** add production backends (Redis, SQL, etc.). That is by design. The `Store` interface is stable for implementers; the [middleware package](TODO_LIST.md) (CommandIdempotency, EventIdempotency, QueryIdempotency) is the next planned addition to this module.
+
+Versioning: **v0.x** — `MemoryStore` and the error sentinels are stable, but the `Store` interface may gain methods (`Delete`, `Stats`) before **v1.0**. See [ROADMAP.md](ROADMAP.md).
 
 ## Documentation
 
