@@ -19,6 +19,9 @@
 //	if errors.Is(err, idempotency.ErrDuplicate) {
 //	    return err // already processed — drop the retry
 //	}
+//	if errors.Is(err, idempotency.ErrInvalidTTL) {
+//	    return err // programmer error: ttl must be positive
+//	}
 //	if err != nil {
 //	    return err // store failure — do not process
 //	}

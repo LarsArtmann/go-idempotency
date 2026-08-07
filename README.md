@@ -35,6 +35,10 @@ func main() {
 		fmt.Println("already processed — dropping retry")
 		return
 	}
+	if errors.Is(err, idempotency.ErrInvalidTTL) {
+		fmt.Printf("programmer error: %v\n", err)
+		return
+	}
 	if err != nil {
 		fmt.Printf("store failure: %v\n", err)
 		return
@@ -50,6 +54,7 @@ func main() {
 - **Atomic `CheckAndRecord`** — single-lock check-and-set preventing the TOCTOU race
 - **TTL-based expiration** — dual mechanism: background sweep goroutine + lazy deletion on read
 - **Conflict-classified errors** — `ErrDuplicate` is an HTTP 409 Conflict via [go-error-family](https://github.com/larsartmann/go-error-family), non-retryable
+- **Input validation** — non-positive TTL is rejected with `ErrInvalidTTL` (HTTP 400 Rejection), preventing silent exactly-once breakage
 - **Concurrency-safe** — tested with 200 goroutines and property-based tests
 - **Configurable sweep** — disable the background goroutine (`sweepInterval == 0`); lazy deletion still bounds memory growth
 

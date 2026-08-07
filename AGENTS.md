@@ -25,6 +25,7 @@ Single-package library (`package idempotency`), flat file layout — no subdirec
 ### Key Design Decisions (non-obvious)
 
 - **`CheckAndRecord` is the atomic primitive.** Never split into `Seen` + `Record` — that creates a TOCTOU race. This is the preferred entry point for callers.
+- **Non-positive TTL is rejected.** `Record` and `CheckAndRecord` return `ErrInvalidTTL` (a `Rejection`, HTTP 400, non-retryable) for `ttl <= 0`. A zero/negative TTL records an already-past expiry, which silently breaks the exactly-once guarantee — the store rejects the bad input instead.
 - **`ErrDuplicate` is a `Conflict`** via `go-error-family`, which maps to HTTP 409 downstream and is non-retryable. Callers check with `errors.Is(err, idempotency.ErrDuplicate)`.
 - **`Record` is a no-op on existing non-expired keys** — it does NOT extend the TTL. Expired keys (even if not yet swept) are re-recorded with a fresh TTL.
 - **`Seen` takes a write lock** (`s.mu.Lock()`), not a read lock, because it performs lazy deletion of expired entries.
@@ -58,4 +59,4 @@ Single-package library (`package idempotency`), flat file layout — no subdirec
 - `//nolint:exhaustruct` is used when zero-valued struct fields are intentional (e.g., `sync.RWMutex`, `sync.Once`). The `exhaustruct` linter is enabled in `.golangci.yml`.
 - Go 1.22+ range syntax: `for range n` (integer) and `for i := range n`.
 - Doc comments explain the _why_ (TOCTOU prevention, atomicity guarantees), not the *what`.
-- Error sentinels carry a stable string code (`"idempotency.duplicate"`) as first arg to `NewConflict`.
+- Error sentinels carry a stable string code (`"idempotency.duplicate"`, `"idempotency.invalid-ttl"`) as first arg to the `NewConflict`/`NewRejection` constructors.
