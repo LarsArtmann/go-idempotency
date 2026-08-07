@@ -9,5 +9,6 @@ Short-term actionable work. Open items only — completed work lives in [CHANGEL
 
 ## Done (this session)
 
+- [x] ~~**Deprecate `MemoryStore`**~~ — Done. `// Deprecated:` doc comments added to `MemoryStore` and `NewMemoryStore` in `store.go`. All docs (README, FEATURES, ROADMAP, doc.go, AGENTS) updated. Removal targeted for v1.0 (see ROADMAP.md).
 - [x] ~~**Add `Store` interface contract test**~~ — Done. `contract/contract.go` with `RunTests(t, factory)`, run against `MemoryStore` in `contract_test.go`.
 - [x] ~~**Add fuzz tests**~~ — Done. `FuzzCheckAndRecord`, `FuzzRecord` in `fuzz_test.go`. Also added `TestMemoryStore_CloseDuringConcurrentOps` and memory benchmarks.

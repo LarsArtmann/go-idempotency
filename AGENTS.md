@@ -32,7 +32,7 @@ Single-package library (`package idempotency`) with a `contract/` subpackage for
 - **`Seen` takes a write lock** (`s.mu.Lock()`), not a read lock, because it performs lazy deletion of expired entries.
 - **`Close` is idempotent** via `sync.Once`. Always `defer store.Close()`.
 - **Context is ignored.** `MemoryStore` does not honor context cancellation — all params are `_`. The parameter exists on the interface so that custom backend implementations (Redis, SQL, etc.) can honor cancellation and timeouts.
-- **No production backends — by design.** This library is an interface-first SDK. It provides the `Store` interface and `MemoryStore` (reference implementation only). It will NOT ship Redis, SQL, or any other concrete backend. Consumers implement the interface against their own backend. Never add backend code or driver dependencies to this module.
+- **`MemoryStore` is deprecated.** It carries `// Deprecated:` doc comments and is intended for development and testing only. Removal targeted for v1.0. The library is interface-first: consumers implement the `Store` interface against their own backend (validated by `contract.RunTests`). Never add backend code or driver dependencies to this module.
 
 ### Future Surface (does not exist yet)
 
@@ -40,7 +40,7 @@ Single-package library (`package idempotency`) with a `contract/` subpackage for
 
 ### Backend Implementations (Out of Scope)
 
-This library will NOT ship production backends (Redis, SQL, etc.). `MemoryStore` is a reference implementation for development and single-process use. Consumers implement the `Store` interface against their own backend. The atomic primitives for common backends are documented in the `CheckAndRecord` comment: Redis `SET NX`, SQL `INSERT ... ON CONFLICT DO NOTHING`.
+This library will NOT ship production backends (Redis, SQL, etc.). `MemoryStore` is **deprecated** (dev/test only, removal targeted for v1.0). Consumers implement the `Store` interface against their own backend. The atomic primitives for common backends are documented in the `CheckAndRecord` comment: Redis `SET NX`, SQL `INSERT ... ON CONFLICT DO NOTHING`.
 
 ## Dependencies
 

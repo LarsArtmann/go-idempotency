@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Redis adapter example** — full three-method Redis `SET NX` adapter in `doc.go` package docs showing how to implement the `Store` interface.
 - **ADR-001: No Production Backends** — architecture decision record documenting the interface-first choice, alternatives, and consequences (`docs/adr/001-no-backends.md`).
 
+### Deprecated
+
+- **`MemoryStore` and `NewMemoryStore`** — `// Deprecated:` doc comments added in `store.go`. MemoryStore is intended for development and testing only; it does not survive restarts and cannot be shared across instances. For production, implement the `Store` interface against your persistence backend and validate with `contract.RunTests`. Removal targeted for v1.0. All docs (`doc.go`, `README.md`, `FEATURES.md`, `ROADMAP.md`) updated to reflect the deprecation.
+
 ### Changed
 
 - **Documentation reframed to interface-first SDK philosophy.** All docs now make clear that go-idempotency provides the `Store` interface and `MemoryStore` (a reference implementation) only — it intentionally does NOT and will NOT ship production backends (Redis, SQL, etc.). Consumers implement the interface against their own backend. Affected files: `doc.go`, `store.go`, `README.md`, `ROADMAP.md`, `FEATURES.md`, `TODO_LIST.md`, `docs/DOMAIN_LANGUAGE.md`, `AGENTS.md`.
