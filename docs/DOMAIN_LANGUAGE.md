@@ -15,7 +15,7 @@ Ubiquitous vocabulary for the go-idempotency library. These terms appear in code
 
 | Term                   | Definition                                                                                                                                                                                                  |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Store**              | The interface (`store.go:30-48`) for tracking idempotency keys. Three methods: `Seen`, `Record`, `CheckAndRecord`. This is the core SDK contract that consumers implement against their own backend. |
+| **Store**              | The interface (`Store` in `store.go`) for tracking idempotency keys. Three methods: `Seen`, `Record`, `CheckAndRecord`. This is the core SDK contract that consumers implement against their own backend. |
 | **Seen**               | Reports whether a key is currently recorded and not expired. Performs lazy deletion of expired entries on read.                                                                                             |
 | **Record**             | Marks a key as seen with a given TTL. No-op if the key is already recorded and not expired.                                                                                                                 |
 | **CheckAndRecord**     | The atomic primitive: checks whether a key is already seen, and if not, records it in a single locked operation. Returns `ErrDuplicate` if the key was already recorded. This is the preferred entry point. |

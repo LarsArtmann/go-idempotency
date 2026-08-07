@@ -2,6 +2,10 @@
 
 Thanks for your interest in contributing to go-idempotency.
 
+## Scope
+
+This library is an interface-first SDK. It provides the `Store` interface and `MemoryStore` (a reference implementation). **Backend implementations (Redis, SQL, DynamoDB, etc.) are out of scope and will not be accepted as PRs.** Implement the `Store` interface in your own project; use the `contract` package test suite to verify correctness.
+
 ## How to Contribute
 
 1. Fork the repository

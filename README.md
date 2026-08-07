@@ -49,6 +49,23 @@ It deliberately does **not** ship production backends. There will never be a Red
 
 **You implement the `Store` interface** against whatever backend fits your system. The interface is small and the [API docs](https://pkg.go.dev/github.com/larsartmann/go-idempotency) name the atomic primitive each backend should use (Redis `SET NX`, SQL `INSERT ... ON CONFLICT DO NOTHING`, etc.).
 
+For example, a Redis `CheckAndRecord` is a single `SET NX` call:
+
+```go
+func (s *RedisStore) CheckAndRecord(ctx context.Context, key string, ttl time.Duration) error {
+    ok, err := s.client.SetNX(ctx, "idem:"+key, "1", ttl).Result()
+    if err != nil {
+        return err
+    }
+    if !ok {
+        return idempotency.ErrDuplicate
+    }
+    return nil
+}
+```
+
+See the [package docs](https://pkg.go.dev/github.com/larsartmann/go-idempotency) for the full Redis adapter (all three methods) and use the [contract test suite](contract/) to verify your implementation.
+
 ## Quick start
 
 ```bash

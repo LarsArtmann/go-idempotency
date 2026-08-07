@@ -63,5 +63,5 @@ This library will NOT ship production backends (Redis, SQL, etc.). `MemoryStore`
 
 - `//nolint:exhaustruct` is used when zero-valued struct fields are intentional (e.g., `sync.RWMutex`, `sync.Once`). The `exhaustruct` linter is enabled in `.golangci.yml`.
 - Go 1.22+ range syntax: `for range n` (integer) and `for i := range n`.
-- Doc comments explain the _why_ (TOCTOU prevention, atomicity guarantees), not the *what`.
+- Doc comments explain the _why_ (TOCTOU prevention, atomicity guarantees), not the _what_.
 - Error sentinels carry a stable string code (`"idempotency.duplicate"`, `"idempotency.invalid-ttl"`) as first arg to the `NewConflict`/`NewRejection` constructors.

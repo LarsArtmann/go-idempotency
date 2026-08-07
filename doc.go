@@ -49,4 +49,53 @@
 // EventIdempotency, and QueryIdempotency helpers that wire a Store into CQRS
 // dispatch pipelines. For custom integrations (transport hooks, manual checks),
 // use the [Store] interface directly.
+//
+// # Implementing a Custom Backend
+//
+// The interface is three methods. Each maps to a single round-trip on a
+// typical backend. The critical requirement is that [Store.CheckAndRecord] is
+// atomic — use your backend's native check-and-set primitive, not a separate
+// check followed by a record.
+//
+// Example — Redis adapter using github.com/redis/go-redis/v9:
+//
+//	type RedisStore struct {
+//	    client *redis.Client
+//	    prefix string // e.g. "idem:"
+//	}
+//
+//	func (s *RedisStore) Seen(ctx context.Context, key string) (bool, error) {
+//	    n, err := s.client.Exists(ctx, s.prefix+key).Result()
+//	    if err != nil {
+//	        return false, err
+//	    }
+//	    return n > 0, nil
+//	}
+//
+//	func (s *RedisStore) Record(ctx context.Context, key string, ttl time.Duration) error {
+//	    if ttl <= 0 {
+//	        return idempotency.ErrInvalidTTL
+//	    }
+//	    // SET NX: if the key already exists, leave it (no-op, TTL not extended).
+//	    return s.client.SetNX(ctx, s.prefix+key, "1", ttl).Err()
+//	}
+//
+//	func (s *RedisStore) CheckAndRecord(ctx context.Context, key string, ttl time.Duration) error {
+//	    if ttl <= 0 {
+//	        return idempotency.ErrInvalidTTL
+//	    }
+//	    ok, err := s.client.SetNX(ctx, s.prefix+key, "1", ttl).Result()
+//	    if err != nil {
+//	        return err
+//	    }
+//	    if !ok {
+//	        return idempotency.ErrDuplicate
+//	    }
+//	    return nil
+//	}
+//
+// The same pattern works for SQL (INSERT ... ON CONFLICT DO NOTHING), DynamoDB
+// (PutItem with ConditionExpression), or any backend that supports an atomic
+// conditional write. See the contract test suite (package contract) to verify
+// your implementation against the same invariants as MemoryStore.
 package idempotency
