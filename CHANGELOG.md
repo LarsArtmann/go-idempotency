@@ -7,10 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-07
+
 ### Fixed
 
 - **`Record` and `CheckAndRecord` now reject non-positive TTL** — a zero or negative TTL recorded an expiry already in the past, so the key protected nothing: the next caller would also succeed, silently breaking the exactly-once guarantee that is this library's purpose. Both methods now return `ErrInvalidTTL` (a `Rejection`, HTTP 400, non-retryable) for `ttl <= 0` instead of accepting a useless recording (`store.go`).
 - Benchmark loops modernized to `b.Loop()` (Go 1.24+ idiom), removing gopls `bloop` warnings (`bench_test.go`).
+
+### Changed
+
+- README rewritten with badges, an error reference table, a retry-to-dedup flow diagram, and an honest v0.x status section.
 
 ## [0.1.1] - 2026-08-03
 
@@ -54,6 +60,7 @@ Tagged `v0.1.0`: initial release — idempotency store with TTL-based dedup.
 - **Sweep soak test** — 1000-key concurrent load test verifying sweep reclaims all expired entries
 - **Package documentation** (`doc.go`) with quick-start example and design rationale
 
-[Unreleased]: https://github.com/larsartmann/go-idempotency/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/larsartmann/go-idempotency/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/larsartmann/go-idempotency/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/larsartmann/go-idempotency/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/larsartmann/go-idempotency/releases/tag/v0.1.0
