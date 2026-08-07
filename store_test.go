@@ -282,19 +282,19 @@ func TestMemoryStore_NonPositiveTTLRejected(t *testing.T) {
 
 	ctx := context.Background()
 
-	for _, tc := range []struct {
+	for _, testCase := range []struct {
 		name string
 		ttl  time.Duration
 	}{
 		{"zero", 0},
 		{"negative", -time.Second},
 	} {
-		if err := store.Record(ctx, "rec-"+tc.name, tc.ttl); !errors.Is(err, idempotency.ErrInvalidTTL) {
-			t.Fatalf("Record(%s): want ErrInvalidTTL, got %v", tc.name, err)
+		if err := store.Record(ctx, "rec-"+testCase.name, testCase.ttl); !errors.Is(err, idempotency.ErrInvalidTTL) {
+			t.Fatalf("Record(%s): want ErrInvalidTTL, got %v", testCase.name, err)
 		}
 
-		if err := store.CheckAndRecord(ctx, "car-"+tc.name, tc.ttl); !errors.Is(err, idempotency.ErrInvalidTTL) {
-			t.Fatalf("CheckAndRecord(%s): want ErrInvalidTTL, got %v", tc.name, err)
+		if err := store.CheckAndRecord(ctx, "car-"+testCase.name, testCase.ttl); !errors.Is(err, idempotency.ErrInvalidTTL) {
+			t.Fatalf("CheckAndRecord(%s): want ErrInvalidTTL, got %v", testCase.name, err)
 		}
 	}
 
