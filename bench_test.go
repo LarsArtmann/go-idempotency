@@ -2,6 +2,7 @@ package idempotency_test
 
 import (
 	"context"
+	"runtime"
 	"strconv"
 	"sync/atomic"
 	"testing"
@@ -123,5 +124,74 @@ func BenchmarkRecord_NewKey(b *testing.B) {
 
 	for i := range b.N {
 		_ = store.Record(ctx, keys[i], time.Minute)
+	}
+}
+
+// BenchmarkMemoryUsage_10KKeys measures the heap growth after recording 10,000
+// unique keys. Reports bytes-per-key as a custom metric so the cost of each
+// stored entry is visible for capacity planning.
+func BenchmarkMemoryUsage_10KKeys(b *testing.B) {
+	const keyCount = 10000
+
+	ctx := context.Background()
+	keys := generateKeys(keyCount)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for b.Loop() {
+		store := idempotency.NewMemoryStore(0)
+
+		var before runtime.MemStats
+		runtime.ReadMemStats(&before)
+
+		for i := range keyCount {
+			_ = store.Record(ctx, keys[i], time.Hour)
+		}
+
+		var after runtime.MemStats
+		runtime.ReadMemStats(&after)
+
+		store.Close()
+
+		bytesPerKey := float64(after.HeapInuse-before.HeapInuse) / float64(keyCount)
+		b.ReportMetric(bytesPerKey, "bytes/key")
+	}
+}
+
+// BenchmarkMemoryUsage_AfterSweep measures how much memory the sweeper reclaims
+// after all keys expire. Reports the percentage of heap reclaimed, verifying
+// that the sweep goroutine actually frees memory and does not leak.
+func BenchmarkMemoryUsage_AfterSweep(b *testing.B) {
+	const keyCount = 10000
+
+	ctx := context.Background()
+	keys := generateKeys(keyCount)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for b.Loop() {
+		store := idempotency.NewMemoryStore(5 * time.Millisecond)
+
+		for i := range keyCount {
+			_ = store.Record(ctx, keys[i], 2*time.Millisecond)
+		}
+
+		var peak runtime.MemStats
+		runtime.ReadMemStats(&peak)
+
+		// Wait for the sweeper to run multiple cycles past the TTL.
+		time.Sleep(30 * time.Millisecond)
+
+		var after runtime.MemStats
+		runtime.ReadMemStats(&after)
+
+		store.Close()
+
+		if peak.HeapInuse > 0 {
+			reclaimed := float64(peak.HeapInuse-after.HeapInuse) / float64(peak.HeapInuse) * 100
+			b.ReportMetric(reclaimed, "%-reclaimed")
+		}
 	}
 }

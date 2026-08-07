@@ -21,14 +21,18 @@ func ExampleStore() {
 	err := store.CheckAndRecord(ctx, "order-123", 10*time.Minute)
 	if err != nil {
 		fmt.Println("unexpected error on first call:", err)
+
 		return
 	}
+
 	fmt.Println("first call: processing")
 
 	// Client lost the ack and retries the same command.
 	err = store.CheckAndRecord(ctx, "order-123", 10*time.Minute)
+
 	if errors.Is(err, idempotency.ErrDuplicate) {
 		fmt.Println("retry: dropped (duplicate)")
+
 		return
 	}
 
