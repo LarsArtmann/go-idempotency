@@ -14,49 +14,49 @@ However, several items deserve honest scrutiny before declaring victory.
 
 ## a) FULLY DONE
 
-| # | What | Files | Verified |
-|---|------|-------|----------|
-| 1 | **Stale line-number references eliminated** — All `store.go:NN-MM` references in living docs replaced with durable symbol-name references (`Store` interface, `MemoryStore` struct, etc.). Combines Phase 1 + Phase 5.1. | FEATURES.md, DOMAIN_LANGUAGE.md | grep confirms 0 stale refs in living docs |
-| 2 | **FEATURES.md line 10 fixed** — "implementation" → "reference implementation". Contract test suite also added to FULLY_FUNCTIONAL table. | FEATURES.md | Manual read |
-| 3 | **AGENTS.md typo fixed** — `*what`.` → `*what*` on line 66. | AGENTS.md | grep confirms fix |
-| 4 | **Redis adapter example in godoc** — Full three-method `RedisStore` implementing `Store` with `SET NX`, `EXISTS`, error mapping. Renders on pkg.go.dev. | `doc.go` | `go doc .` confirms rendering |
-| 5 | **README implementation snippet** — Short `CheckAndRecord` Redis example + "Implementing your own backend" guide with backend-primitive mapping table. | README.md | Manual read |
-| 6 | **CONTRIBUTING.md scope note** — "Backend implementations are out of scope. PRs adding backends will not be accepted." | CONTRIBUTING.md | Manual read |
-| 7 | **Godoc Example functions** — `ExampleStore` (CheckAndRecord lifecycle) and `ExampleMemoryStore` (Record/Seen lifecycle). | `example_test.go` | `go test -run Example -v` passes |
-| 8 | **Contract test suite** — `contract/contract.go` with `RunTests(t, factory)` covering 13 invariants: Seen (3 tests), Record (3 tests), CheckAndRecord (5 tests), Concurrency (200 goroutines), Cross-cutting (key independence, empty key). `contract_test.go` runs against MemoryStore. | `contract/contract.go`, `contract_test.go` | All 13 subtests pass with `-race` |
-| 9 | **Fuzz tests** — `FuzzCheckAndRecord` and `FuzzRecord` with arbitrary keys, TTLs. Verified panic-safety and invariant holding over 280K+ executions. | `fuzz_test.go` | `go test -fuzz` passes |
-| 10 | **Close+concurrent race test** — `TestMemoryStore_CloseDuringConcurrentOps`: 50 goroutines hammering the store while Close is called mid-flight. No panic. | `fuzz_test.go` | Passes with `-race` |
-| 11 | **Memory benchmarks** — `BenchmarkMemoryUsage_10KKeys` (reports ~164 bytes/key) and `BenchmarkMemoryUsage_AfterSweep` (reports %-reclaimed after GC). | `bench_test.go` | `go test -bench=Memory` runs |
-| 12 | **ADR-001** — Architecture decision record for "Why no backends": context, decision, rationale, 3 alternatives considered, consequences. | `docs/adr/001-no-backends.md` | Manual read |
-| 13 | **ROADMAP updated** — Contract test reference changed from "planned" to existing. v0.2.0 scope documented in Versioning Strategy. | ROADMAP.md | Manual read |
-| 14 | **TODO_LIST updated** — Contract test and fuzz tests marked done. Middleware and Delete method marked blocked with reasons. | TODO_LIST.md | Manual read |
-| 15 | **CHANGELOG updated** — Comprehensive `[Unreleased]` entry with Added (7 items), Changed (6 items), Fixed (1 item). | CHANGELOG.md | Manual read |
-| 16 | **AGENTS.md updated** — Architecture section now describes contract subpackage. Testing Conventions updated to list 5 test files + contract test. | AGENTS.md | Manual read |
-| 17 | **CI coverage reporting** — `go test -coverprofile` step added, prints summary, uploads coverage artifact. | `.github/workflows/ci.yml` | Local dry run: 100% coverage on main package |
-| 18 | **Dependabot config** — Weekly scanning for gomod + GitHub Actions. | `.github/dependabot.yml` | YAML syntax valid |
-| 19 | **README rewritten Features section** — Now leads with "Store interface" and "Contract test suite" instead of MemoryStore-specific features. | README.md | Manual read |
-| 20 | **Verification gates all pass** — `go test -race` (8s), `go vet`, `golangci-lint` (0 issues), `go build`. | — | All pass |
+| #   | What                                                                                                                                                                                                                                                                                     | Files                                      | Verified                                     |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | -------------------------------------------- |
+| 1   | **Stale line-number references eliminated** — All `store.go:NN-MM` references in living docs replaced with durable symbol-name references (`Store` interface, `MemoryStore` struct, etc.). Combines Phase 1 + Phase 5.1.                                                                 | FEATURES.md, DOMAIN_LANGUAGE.md            | grep confirms 0 stale refs in living docs    |
+| 2   | **FEATURES.md line 10 fixed** — "implementation" → "reference implementation". Contract test suite also added to FULLY_FUNCTIONAL table.                                                                                                                                                 | FEATURES.md                                | Manual read                                  |
+| 3   | **AGENTS.md typo fixed** — `*what`.`→`_what_` on line 66.                                                                                                                                                                                                                                | AGENTS.md                                  | grep confirms fix                            |
+| 4   | **Redis adapter example in godoc** — Full three-method `RedisStore` implementing `Store` with `SET NX`, `EXISTS`, error mapping. Renders on pkg.go.dev.                                                                                                                                  | `doc.go`                                   | `go doc .` confirms rendering                |
+| 5   | **README implementation snippet** — Short `CheckAndRecord` Redis example + "Implementing your own backend" guide with backend-primitive mapping table.                                                                                                                                   | README.md                                  | Manual read                                  |
+| 6   | **CONTRIBUTING.md scope note** — "Backend implementations are out of scope. PRs adding backends will not be accepted."                                                                                                                                                                   | CONTRIBUTING.md                            | Manual read                                  |
+| 7   | **Godoc Example functions** — `ExampleStore` (CheckAndRecord lifecycle) and `ExampleMemoryStore` (Record/Seen lifecycle).                                                                                                                                                                | `example_test.go`                          | `go test -run Example -v` passes             |
+| 8   | **Contract test suite** — `contract/contract.go` with `RunTests(t, factory)` covering 13 invariants: Seen (3 tests), Record (3 tests), CheckAndRecord (5 tests), Concurrency (200 goroutines), Cross-cutting (key independence, empty key). `contract_test.go` runs against MemoryStore. | `contract/contract.go`, `contract_test.go` | All 13 subtests pass with `-race`            |
+| 9   | **Fuzz tests** — `FuzzCheckAndRecord` and `FuzzRecord` with arbitrary keys, TTLs. Verified panic-safety and invariant holding over 280K+ executions.                                                                                                                                     | `fuzz_test.go`                             | `go test -fuzz` passes                       |
+| 10  | **Close+concurrent race test** — `TestMemoryStore_CloseDuringConcurrentOps`: 50 goroutines hammering the store while Close is called mid-flight. No panic.                                                                                                                               | `fuzz_test.go`                             | Passes with `-race`                          |
+| 11  | **Memory benchmarks** — `BenchmarkMemoryUsage_10KKeys` (reports ~164 bytes/key) and `BenchmarkMemoryUsage_AfterSweep` (reports %-reclaimed after GC).                                                                                                                                    | `bench_test.go`                            | `go test -bench=Memory` runs                 |
+| 12  | **ADR-001** — Architecture decision record for "Why no backends": context, decision, rationale, 3 alternatives considered, consequences.                                                                                                                                                 | `docs/adr/001-no-backends.md`              | Manual read                                  |
+| 13  | **ROADMAP updated** — Contract test reference changed from "planned" to existing. v0.2.0 scope documented in Versioning Strategy.                                                                                                                                                        | ROADMAP.md                                 | Manual read                                  |
+| 14  | **TODO_LIST updated** — Contract test and fuzz tests marked done. Middleware and Delete method marked blocked with reasons.                                                                                                                                                              | TODO_LIST.md                               | Manual read                                  |
+| 15  | **CHANGELOG updated** — Comprehensive `[Unreleased]` entry with Added (7 items), Changed (6 items), Fixed (1 item).                                                                                                                                                                      | CHANGELOG.md                               | Manual read                                  |
+| 16  | **AGENTS.md updated** — Architecture section now describes contract subpackage. Testing Conventions updated to list 5 test files + contract test.                                                                                                                                        | AGENTS.md                                  | Manual read                                  |
+| 17  | **CI coverage reporting** — `go test -coverprofile` step added, prints summary, uploads coverage artifact.                                                                                                                                                                               | `.github/workflows/ci.yml`                 | Local dry run: 100% coverage on main package |
+| 18  | **Dependabot config** — Weekly scanning for gomod + GitHub Actions.                                                                                                                                                                                                                      | `.github/dependabot.yml`                   | YAML syntax valid                            |
+| 19  | **README rewritten Features section** — Now leads with "Store interface" and "Contract test suite" instead of MemoryStore-specific features.                                                                                                                                             | README.md                                  | Manual read                                  |
+| 20  | **Verification gates all pass** — `go test -race` (8s), `go vet`, `golangci-lint` (0 issues), `go build`.                                                                                                                                                                                | —                                          | All pass                                     |
 
 ---
 
 ## b) PARTIALLY DONE
 
-| # | What | Why partial | Impact |
-|---|------|-------------|--------|
-| 1 | **Coverage badge in README** | The plan (Phase 6.3) called for adding a coverage badge to README. CI now reports coverage and uploads an artifact, but there is no badge rendering service (Codecov, Coveralls) wired up. Adding a badge image that points to a non-existent service would be worse than no badge. The CI step exists; the badge does not. | Low — coverage is 100% locally, just not visible to README readers |
-| 2 | **CONTRIBUTING.md testing section** | Updated to list all 5 test files + contract test, but the "Development Setup" commands section still shows only 3 commands (test, vet, lint). Could add `go test -fuzz=.` and `go test -bench=.` commands. | Low — developers can discover them |
-| 3 | **Contract test for context cancellation** | The contract suite explicitly does NOT test context cancellation because MemoryStore ignores context. The doc comment on `RunTests` says "Backends that honor context cancellation should also be tested separately." But no guidance or pattern is provided for HOW to test that separately. | Medium — consumers implementing context-aware backends have no template |
-| 4 | **doc.go Redis example uses `github.com/redis/go-redis/v9`** | The example references a specific Redis client library that is NOT in go.mod (by design — no backend deps). The example is in a godoc comment block so it won't cause build issues, but a reader might wonder if it's importable. The comment says "Example" but doesn't explicitly say "this is illustrative pseudocode, not compilable without the redis dependency." | Low — intent is clear from context |
+| #   | What                                                         | Why partial                                                                                                                                                                                                                                                                                                                                                             | Impact                                                                  |
+| --- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| 1   | **Coverage badge in README**                                 | The plan (Phase 6.3) called for adding a coverage badge to README. CI now reports coverage and uploads an artifact, but there is no badge rendering service (Codecov, Coveralls) wired up. Adding a badge image that points to a non-existent service would be worse than no badge. The CI step exists; the badge does not.                                             | Low — coverage is 100% locally, just not visible to README readers      |
+| 2   | **CONTRIBUTING.md testing section**                          | Updated to list all 5 test files + contract test, but the "Development Setup" commands section still shows only 3 commands (test, vet, lint). Could add `go test -fuzz=.` and `go test -bench=.` commands.                                                                                                                                                              | Low — developers can discover them                                      |
+| 3   | **Contract test for context cancellation**                   | The contract suite explicitly does NOT test context cancellation because MemoryStore ignores context. The doc comment on `RunTests` says "Backends that honor context cancellation should also be tested separately." But no guidance or pattern is provided for HOW to test that separately.                                                                           | Medium — consumers implementing context-aware backends have no template |
+| 4   | **doc.go Redis example uses `github.com/redis/go-redis/v9`** | The example references a specific Redis client library that is NOT in go.mod (by design — no backend deps). The example is in a godoc comment block so it won't cause build issues, but a reader might wonder if it's importable. The comment says "Example" but doesn't explicitly say "this is illustrative pseudocode, not compilable without the redis dependency." | Low — intent is clear from context                                      |
 
 ---
 
 ## c) NOT STARTED
 
-| # | What | Why it matters |
-|---|------|----------------|
-| 1 | **Phases 7-9 (BLOCKED)** — Interface evolution (Delete, Stats, Closer), middleware layer, key generation utilities | All blocked on 3 open product questions (see section g). Cannot proceed without owner decisions. |
-| 2 | **Coverage badge integration with a service** (Codecov/Coveralls) | Need to choose a service and add the integration. Low priority since coverage is 100% and reported in CI logs. |
-| 3 | **Contract test for `Record` no-op TTL extension** with real timing | The contract test `Record/NoopOnExistingKey` tests this, but it relies on `time.Sleep` timing. A more robust test could use a clock interface, but that would change the Store interface — blocked. |
+| #   | What                                                                                                               | Why it matters                                                                                                                                                                                      |
+| --- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Phases 7-9 (BLOCKED)** — Interface evolution (Delete, Stats, Closer), middleware layer, key generation utilities | All blocked on 3 open product questions (see section g). Cannot proceed without owner decisions.                                                                                                    |
+| 2   | **Coverage badge integration with a service** (Codecov/Coveralls)                                                  | Need to choose a service and add the integration. Low priority since coverage is 100% and reported in CI logs.                                                                                      |
+| 3   | **Contract test for `Record` no-op TTL extension** with real timing                                                | The contract test `Record/NoopOnExistingKey` tests this, but it relies on `time.Sleep` timing. A more robust test could use a clock interface, but that would change the Store interface — blocked. |
 
 ---
 
@@ -188,6 +188,7 @@ The SDK framing positions `MemoryStore` as a "reference implementation for devel
 ### 2. Should the middleware package live in this module or a separate module?
 
 `doc.go` references a "future middleware package" with `CommandIdempotency`, `EventIdempotency`, `QueryIdempotency`. The no-backends philosophy is rooted in avoiding dependency bloat. But middleware might need transport dependencies (HTTP, gRPC). Should middleware be:
+
 - (a) A subpackage in this same module (`github.com/larsartmann/go-idempotency/middleware`)?
 - (b) A separate module (`github.com/larsartmann/go-idempotency-middleware`)?
 - (c) Multiple transport-specific modules?
@@ -204,24 +205,24 @@ Currently, operations on `MemoryStore` after `Close()` silently succeed (they st
 
 ## Files Changed This Session
 
-| File | Type | Change |
-|------|------|--------|
-| `FEATURES.md` | Docs | Evidence column: line numbers → symbol names. MemoryStore: "implementation" → "reference implementation". Contract test suite added. |
-| `docs/DOMAIN_LANGUAGE.md` | Docs | Store reference: line number → symbol name. |
-| `AGENTS.md` | Docs | Typo fixed. Architecture section updated for contract subpackage. Testing conventions updated for 5 test files. |
-| `doc.go` | Go source (comment) | Added "Implementing a Custom Backend" section with full Redis adapter example. |
-| `README.md` | Docs | Redis snippet added to Design philosophy. Features section rewritten. "Implementing your own backend" guide added. ADR link added. Status updated. |
-| `CONTRIBUTING.md` | Docs | Scope section added. Testing strategy updated with all test files. |
-| `example_test.go` | Go source (NEW) | `ExampleStore` and `ExampleMemoryStore` for pkg.go.dev. |
-| `contract/contract.go` | Go source (NEW) | `RunTests(t, factory)` — 13 contract tests across 5 categories. |
-| `contract_test.go` | Go source (NEW) | Runs contract suite against MemoryStore. |
-| `fuzz_test.go` | Go source (NEW) | `FuzzCheckAndRecord`, `FuzzRecord`, `TestMemoryStore_CloseDuringConcurrentOps`. |
-| `bench_test.go` | Go source | Added `BenchmarkMemoryUsage_10KKeys` and `BenchmarkMemoryUsage_AfterSweep`. |
-| `docs/adr/001-no-backends.md` | Docs (NEW) | Architecture decision record. |
-| `ROADMAP.md` | Docs | Contract test reference updated. v0.2.0 scope added to versioning. |
-| `TODO_LIST.md` | Docs | Contract test + fuzz tests marked done. Blocked items noted. |
-| `CHANGELOG.md` | Docs | Comprehensive `[Unreleased]` entry. |
-| `.github/workflows/ci.yml` | CI | Coverage reporting step added. |
-| `.github/dependabot.yml` | CI (NEW) | gomod + GitHub Actions weekly scanning. |
+| File                          | Type                | Change                                                                                                                                             |
+| ----------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FEATURES.md`                 | Docs                | Evidence column: line numbers → symbol names. MemoryStore: "implementation" → "reference implementation". Contract test suite added.               |
+| `docs/DOMAIN_LANGUAGE.md`     | Docs                | Store reference: line number → symbol name.                                                                                                        |
+| `AGENTS.md`                   | Docs                | Typo fixed. Architecture section updated for contract subpackage. Testing conventions updated for 5 test files.                                    |
+| `doc.go`                      | Go source (comment) | Added "Implementing a Custom Backend" section with full Redis adapter example.                                                                     |
+| `README.md`                   | Docs                | Redis snippet added to Design philosophy. Features section rewritten. "Implementing your own backend" guide added. ADR link added. Status updated. |
+| `CONTRIBUTING.md`             | Docs                | Scope section added. Testing strategy updated with all test files.                                                                                 |
+| `example_test.go`             | Go source (NEW)     | `ExampleStore` and `ExampleMemoryStore` for pkg.go.dev.                                                                                            |
+| `contract/contract.go`        | Go source (NEW)     | `RunTests(t, factory)` — 13 contract tests across 5 categories.                                                                                    |
+| `contract_test.go`            | Go source (NEW)     | Runs contract suite against MemoryStore.                                                                                                           |
+| `fuzz_test.go`                | Go source (NEW)     | `FuzzCheckAndRecord`, `FuzzRecord`, `TestMemoryStore_CloseDuringConcurrentOps`.                                                                    |
+| `bench_test.go`               | Go source           | Added `BenchmarkMemoryUsage_10KKeys` and `BenchmarkMemoryUsage_AfterSweep`.                                                                        |
+| `docs/adr/001-no-backends.md` | Docs (NEW)          | Architecture decision record.                                                                                                                      |
+| `ROADMAP.md`                  | Docs                | Contract test reference updated. v0.2.0 scope added to versioning.                                                                                 |
+| `TODO_LIST.md`                | Docs                | Contract test + fuzz tests marked done. Blocked items noted.                                                                                       |
+| `CHANGELOG.md`                | Docs                | Comprehensive `[Unreleased]` entry.                                                                                                                |
+| `.github/workflows/ci.yml`    | CI                  | Coverage reporting step added.                                                                                                                     |
+| `.github/dependabot.yml`      | CI (NEW)            | gomod + GitHub Actions weekly scanning.                                                                                                            |
 
 **`store.go` was NOT modified this session.** All Go source changes are in new files (test, contract) or comment-only (doc.go).

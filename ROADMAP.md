@@ -9,6 +9,7 @@ This library provides the `Store` interface and `MemoryStore` (a **deprecated** 
 **Why:** Each backend carries its own driver dependency, connection-pool semantics, deployment constraints, and operational tradeoffs. Bundling them here would bloat the dependency tree and impose decisions that consumers should own. The interface is intentionally small (three methods) so that implementing your own backend is straightforward.
 
 **Implementation guidance for your own backend:**
+
 - Read the `Store` interface and the atomicity contract on `CheckAndRecord` in `store.go`.
 - Use your backend's native atomic primitive: Redis `SET NX EX`, SQL `INSERT ... ON CONFLICT DO NOTHING`, etc.
 - Use the `contract` package (`contract.RunTests`) to verify your implementation against the same invariants as `MemoryStore`.

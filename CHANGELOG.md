@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `README.md`: added "Design philosophy" section with Redis code snippet; added "Implementing your own backend" guide with backend-primitive mapping table; rewrote "Features" section to lead with Store interface and contract test suite.
   - `CONTRIBUTING.md`: added "Scope" section stating backends are out of scope and PRs adding backends will not be accepted.
   - `docs/DOMAIN_LANGUAGE.md`: `Store` reference updated from line numbers to symbol name.
-  - `AGENTS.md`: typo fixed on line 66 (`*what`.` → `*what*`).
+  - `AGENTS.md`: typo fixed on line 66 (`*what`.`→`_what_`).
 
 ### Fixed
 

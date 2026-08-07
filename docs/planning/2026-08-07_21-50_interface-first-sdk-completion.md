@@ -15,7 +15,7 @@ The previous session reframed all documentation to say "go-idempotency is an int
 3. **No contract test suite exists** — the docs promise consumers can "verify their own backend implementations" but provide no tooling to do so.
 4. **FEATURES.md internal inconsistency** — line 10 still says "implementation" while line 36 says "reference implementation."
 5. **CONTRIBUTING.md** doesn't mention the no-backends policy.
-6. **Minor typo** in AGENTS.md line 66: `*what`.` should be `*what*`.
+6. **Minor typo** in AGENTS.md line 66: `*what`.`should be`_what_`.
 
 Three open product questions (from the status report) block interface evolution and middleware work. These are NOT this plan's responsibility to answer — they are flagged as blockers in the relevant phases.
 
@@ -53,14 +53,14 @@ Everything else: fuzz tests, interface evolution (blocked on questions), middlew
 
 These items from the status report's 50-item list are **explicitly rejected** because they would make the library worse:
 
-| # | Item | Why rejected |
-|---|------|-------------|
-| R1 | OpenTelemetry tracing support | Adds heavy dependency (`go.opentelemetry.io/otel`). Violates the no-dependency-bloat philosophy that the entire reframe is built on. Consumers who want tracing wrap the `Store` interface themselves. |
-| R2 | `sync.Map` evaluation | Premature optimization. Zero evidence of contention bottleneck. `sync.RWMutex` is the right default; benchmarks exist to revisit IF contention is measured in production. Adding complexity without data is Verschlimmbesserung. |
-| R3 | Lock-free / CAS-based approaches | Same as R2. No data supports this complexity. |
-| R4 | Sharded mutex design | Same as R2. Evaluate only IF benchmarks show contention. |
-| R5 | Comparison table with other libraries | Marketing fluff. This library's positioning is clear from its docs. Comparison tables rot and invite bike-shedding. |
-| R6 | GoReleaser setup | Premature for a v0.1.x library with no release automation need. Manual `git tag` + `go list -m` works fine. Add when release frequency justifies it. |
+| #   | Item                                  | Why rejected                                                                                                                                                                                                                     |
+| --- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | OpenTelemetry tracing support         | Adds heavy dependency (`go.opentelemetry.io/otel`). Violates the no-dependency-bloat philosophy that the entire reframe is built on. Consumers who want tracing wrap the `Store` interface themselves.                           |
+| R2  | `sync.Map` evaluation                 | Premature optimization. Zero evidence of contention bottleneck. `sync.RWMutex` is the right default; benchmarks exist to revisit IF contention is measured in production. Adding complexity without data is Verschlimmbesserung. |
+| R3  | Lock-free / CAS-based approaches      | Same as R2. No data supports this complexity.                                                                                                                                                                                    |
+| R4  | Sharded mutex design                  | Same as R2. Evaluate only IF benchmarks show contention.                                                                                                                                                                         |
+| R5  | Comparison table with other libraries | Marketing fluff. This library's positioning is clear from its docs. Comparison tables rot and invite bike-shedding.                                                                                                              |
+| R6  | GoReleaser setup                      | Premature for a v0.1.x library with no release automation need. Manual `git tag` + `go list -m` works fine. Add when release frequency justifies it.                                                                             |
 
 ---
 
@@ -68,34 +68,34 @@ These items from the status report's 50-item list are **explicitly rejected** be
 
 Sorted by importance / impact / effort / customer-value. Phases 7-9 are BLOCKED on open questions and excluded from active execution.
 
-| Phase | Task | Impact | Effort | Customer Value | Status |
-|-------|------|--------|--------|----------------|--------|
-| **1** | **Fix stale line-number references in FEATURES.md** — evidence column cites `store.go:30-48` (actual: `47-66`), `store.go:56-61` (actual: `78-83`), `store.go:118-129` (actual: `147-163`), etc. | High | 30min | Docs credibility | TODO |
-| **1** | **Fix stale line-number reference in DOMAIN_LANGUAGE.md** — `store.go:30-48` → current | Medium | 10min | Docs credibility | TODO |
-| **1** | **Fix FEATURES.md line 10** — "implementation" → "reference implementation" | Medium | 5min | Consistency | TODO |
-| **1** | **Fix AGENTS.md line 66 typo** — `*what`.` → `*what*` | Low | 5min | Polish | TODO |
-| **1** | **Grep-verify no other stale line refs** in living docs (exclude status reports) | Medium | 15min | Docs credibility | TODO |
-| **2** | **Add Redis `SET NX` implementation example to doc.go** — show a minimal adapter implementing all 3 `Store` methods with `SET NX EX`, `DEL`, context handling, and error mapping. This is the 1%→51% item. | Critical | 60min | Makes SDK promise real | TODO |
-| **2** | **Add implementation example to README.md** — shorter snippet version in the Design philosophy section, linking to full example in godoc | Critical | 30min | Makes SDK promise real | TODO |
-| **2** | **Add CONTRIBUTING.md scope note** — "Backend implementations (Redis, SQL, etc.) are out of scope. PRs adding backends will not be accepted. Implement the `Store` interface in your own project." | High | 15min | Prevents wasted PRs | TODO |
-| **2** | **Add godoc `Example()` function** — `func ExampleStore()` showing CheckAndRecord usage that renders on pkg.go.dev | Medium | 30min | Discoverability | TODO |
-| **3** | **Design + implement Store contract test suite** — a `contract` subpackage with `RunTests(t *testing.T, factory func() Store)` covering: basic record/seen, CheckAndRecord atomicity, TTL expiry, duplicate detection, concurrency safety, edge cases. Run against MemoryStore. Document consumer usage. | Critical | 100min | Verifies consumer backends | TODO |
-| **4** | **Add fuzz tests** — `FuzzCheckAndRecord`, `FuzzRecord` with arbitrary keys, TTLs | Medium | 45min | Test quality | TODO |
-| **4** | **Add memory benchmarks** — `testing.B` with `runtime.ReadMemStats` for large key counts | Low | 30min | Data for optimization decisions | TODO |
-| **4** | **Add Close+concurrent race test** — verify no panic on use-after-close during concurrent operations | Medium | 30min | Correctness | TODO |
-| **5** | **Rewrite FEATURES.md evidence column** — switch from brittle line numbers to symbol-name references (e.g., "`Store` interface in `store.go`") | Medium | 30min | Maintainability | TODO |
-| **5** | **Rewrite README Features section** — lead with "Store interface" as the product, not MemoryStore features | Medium | 30min | Positioning | TODO |
-| **5** | **Add "Implementing your own backend" guide** — dedicated section in README or separate doc with patterns, pitfalls, testing approach | High | 45min | Consumer onboarding | TODO |
-| **5** | **Add ADR: Why no backends** — architecture decision record documenting the interface-first choice | Low | 30min | Decision durability | TODO |
-| **6** | **Add contract test to CI** — run `go test ./contract/...` on every push | Medium | 15min | CI automation | TODO |
-| **6** | **Add code coverage reporting** — `go test -cover` + coverage badge in README | Low | 30min | Visibility | TODO |
-| **6** | **Add Dependabot config** — automated `go.mod` dependency scanning | Low | 15min | Maintenance | TODO |
-| **10** | **Plan v0.2.0 release criteria** — document what ships in v0.2.0 (contract test suite, examples, doc fixes) | Low | 15min | Release clarity | TODO |
-| **BLOCKED** | **Evaluate `Delete` method on Store interface** | High | 60min | Ops capability | BLOCKED on Q1/Q3 |
-| **BLOCKED** | **Evaluate `Stats` method on Store interface** | Medium | 60min | Observability | BLOCKED on Q1 |
-| **BLOCKED** | **Evaluate `StoreCloser` / `ErrStoreClosed`** | Medium | 45min | Lifecycle management | BLOCKED on Q3 |
-| **BLOCKED** | **Middleware package design + implementation** | Critical | 200min+ | Ecosystem integration | BLOCKED on Q2 |
-| **BLOCKED** | **Key generation utilities** | Medium | 100min+ | Consumer convenience | BLOCKED on product decision |
+| Phase       | Task                                                                                                                                                                                                                                                                                                     | Impact   | Effort  | Customer Value                  | Status                      |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------- | ------------------------------- | --------------------------- |
+| **1**       | **Fix stale line-number references in FEATURES.md** — evidence column cites `store.go:30-48` (actual: `47-66`), `store.go:56-61` (actual: `78-83`), `store.go:118-129` (actual: `147-163`), etc.                                                                                                         | High     | 30min   | Docs credibility                | TODO                        |
+| **1**       | **Fix stale line-number reference in DOMAIN_LANGUAGE.md** — `store.go:30-48` → current                                                                                                                                                                                                                   | Medium   | 10min   | Docs credibility                | TODO                        |
+| **1**       | **Fix FEATURES.md line 10** — "implementation" → "reference implementation"                                                                                                                                                                                                                              | Medium   | 5min    | Consistency                     | TODO                        |
+| **1**       | **Fix AGENTS.md line 66 typo** — `*what`.`→`_what_`                                                                                                                                                                                                                                                      | Low      | 5min    | Polish                          | TODO                        |
+| **1**       | **Grep-verify no other stale line refs** in living docs (exclude status reports)                                                                                                                                                                                                                         | Medium   | 15min   | Docs credibility                | TODO                        |
+| **2**       | **Add Redis `SET NX` implementation example to doc.go** — show a minimal adapter implementing all 3 `Store` methods with `SET NX EX`, `DEL`, context handling, and error mapping. This is the 1%→51% item.                                                                                               | Critical | 60min   | Makes SDK promise real          | TODO                        |
+| **2**       | **Add implementation example to README.md** — shorter snippet version in the Design philosophy section, linking to full example in godoc                                                                                                                                                                 | Critical | 30min   | Makes SDK promise real          | TODO                        |
+| **2**       | **Add CONTRIBUTING.md scope note** — "Backend implementations (Redis, SQL, etc.) are out of scope. PRs adding backends will not be accepted. Implement the `Store` interface in your own project."                                                                                                       | High     | 15min   | Prevents wasted PRs             | TODO                        |
+| **2**       | **Add godoc `Example()` function** — `func ExampleStore()` showing CheckAndRecord usage that renders on pkg.go.dev                                                                                                                                                                                       | Medium   | 30min   | Discoverability                 | TODO                        |
+| **3**       | **Design + implement Store contract test suite** — a `contract` subpackage with `RunTests(t *testing.T, factory func() Store)` covering: basic record/seen, CheckAndRecord atomicity, TTL expiry, duplicate detection, concurrency safety, edge cases. Run against MemoryStore. Document consumer usage. | Critical | 100min  | Verifies consumer backends      | TODO                        |
+| **4**       | **Add fuzz tests** — `FuzzCheckAndRecord`, `FuzzRecord` with arbitrary keys, TTLs                                                                                                                                                                                                                        | Medium   | 45min   | Test quality                    | TODO                        |
+| **4**       | **Add memory benchmarks** — `testing.B` with `runtime.ReadMemStats` for large key counts                                                                                                                                                                                                                 | Low      | 30min   | Data for optimization decisions | TODO                        |
+| **4**       | **Add Close+concurrent race test** — verify no panic on use-after-close during concurrent operations                                                                                                                                                                                                     | Medium   | 30min   | Correctness                     | TODO                        |
+| **5**       | **Rewrite FEATURES.md evidence column** — switch from brittle line numbers to symbol-name references (e.g., "`Store` interface in `store.go`")                                                                                                                                                           | Medium   | 30min   | Maintainability                 | TODO                        |
+| **5**       | **Rewrite README Features section** — lead with "Store interface" as the product, not MemoryStore features                                                                                                                                                                                               | Medium   | 30min   | Positioning                     | TODO                        |
+| **5**       | **Add "Implementing your own backend" guide** — dedicated section in README or separate doc with patterns, pitfalls, testing approach                                                                                                                                                                    | High     | 45min   | Consumer onboarding             | TODO                        |
+| **5**       | **Add ADR: Why no backends** — architecture decision record documenting the interface-first choice                                                                                                                                                                                                       | Low      | 30min   | Decision durability             | TODO                        |
+| **6**       | **Add contract test to CI** — run `go test ./contract/...` on every push                                                                                                                                                                                                                                 | Medium   | 15min   | CI automation                   | TODO                        |
+| **6**       | **Add code coverage reporting** — `go test -cover` + coverage badge in README                                                                                                                                                                                                                            | Low      | 30min   | Visibility                      | TODO                        |
+| **6**       | **Add Dependabot config** — automated `go.mod` dependency scanning                                                                                                                                                                                                                                       | Low      | 15min   | Maintenance                     | TODO                        |
+| **10**      | **Plan v0.2.0 release criteria** — document what ships in v0.2.0 (contract test suite, examples, doc fixes)                                                                                                                                                                                              | Low      | 15min   | Release clarity                 | TODO                        |
+| **BLOCKED** | **Evaluate `Delete` method on Store interface**                                                                                                                                                                                                                                                          | High     | 60min   | Ops capability                  | BLOCKED on Q1/Q3            |
+| **BLOCKED** | **Evaluate `Stats` method on Store interface**                                                                                                                                                                                                                                                           | Medium   | 60min   | Observability                   | BLOCKED on Q1               |
+| **BLOCKED** | **Evaluate `StoreCloser` / `ErrStoreClosed`**                                                                                                                                                                                                                                                            | Medium   | 45min   | Lifecycle management            | BLOCKED on Q3               |
+| **BLOCKED** | **Middleware package design + implementation**                                                                                                                                                                                                                                                           | Critical | 200min+ | Ecosystem integration           | BLOCKED on Q2               |
+| **BLOCKED** | **Key generation utilities**                                                                                                                                                                                                                                                                             | Medium   | 100min+ | Consumer convenience            | BLOCKED on product decision |
 
 ---
 
@@ -105,101 +105,101 @@ Every task above decomposed into atomic, verifiable steps.
 
 ### Phase 1: Immediate Debt Repair
 
-| # | Sub-task | Est | Verifies |
-|---|----------|-----|----------|
-| 1.1 | Read current `store.go` line numbers via `lsp_symbols` for all symbols | 2min | Symbol → line mapping captured |
-| 1.2 | Update FEATURES.md `Store interface` evidence: `store.go:30-48` → current lines | 3min | Line numbers match |
-| 1.3 | Update FEATURES.md `MemoryStore` evidence: `store.go:56-61` → current | 2min | Line numbers match |
-| 1.4 | Update FEATURES.md `Atomic CheckAndRecord` evidence: `store.go:118-129` → current | 3min | Line numbers match |
-| 1.5 | Update FEATURES.md `TTL-based expiration` evidence: all 3 refs → current | 3min | Line numbers match |
-| 1.6 | Update FEATURES.md `Configurable sweep interval` evidence: `store.go:63-79` → current | 2min | Line numbers match |
-| 1.7 | Update FEATURES.md `Idempotent Record` evidence: `store.go:103-114` → current | 2min | Line numbers match |
-| 1.8 | Update FEATURES.md `ErrDuplicate` evidence: `store.go:15-18` → current | 2min | Line numbers match |
-| 1.9 | Update FEATURES.md `Graceful shutdown` evidence: `store.go:132-134` → current | 2min | Line numbers match |
-| 1.10 | Update DOMAIN_LANGUAGE.md `Store` evidence: `store.go:30-48` → current | 3min | Line numbers match |
-| 1.11 | Fix FEATURES.md line 10: "implementation" → "reference implementation" | 2min | grep "implementation" in FEATURES.md |
-| 1.12 | Fix AGENTS.md line 66: `*what`.` → `*what*` | 2min | grep confirms fix |
-| 1.13 | Grep all `.md` files for `store.go:\d+` references; verify each against actual | 10min | All living docs accurate |
-| 1.14 | Decide on CHANGELOG.md historical refs (leave as historical record, don't rewrite history) | 2min | Documented decision |
-| 1.15 | Run `go build`, `go vet`, `golangci-lint` to confirm no breakage | 3min | All pass |
+| #    | Sub-task                                                                                   | Est   | Verifies                             |
+| ---- | ------------------------------------------------------------------------------------------ | ----- | ------------------------------------ |
+| 1.1  | Read current `store.go` line numbers via `lsp_symbols` for all symbols                     | 2min  | Symbol → line mapping captured       |
+| 1.2  | Update FEATURES.md `Store interface` evidence: `store.go:30-48` → current lines            | 3min  | Line numbers match                   |
+| 1.3  | Update FEATURES.md `MemoryStore` evidence: `store.go:56-61` → current                      | 2min  | Line numbers match                   |
+| 1.4  | Update FEATURES.md `Atomic CheckAndRecord` evidence: `store.go:118-129` → current          | 3min  | Line numbers match                   |
+| 1.5  | Update FEATURES.md `TTL-based expiration` evidence: all 3 refs → current                   | 3min  | Line numbers match                   |
+| 1.6  | Update FEATURES.md `Configurable sweep interval` evidence: `store.go:63-79` → current      | 2min  | Line numbers match                   |
+| 1.7  | Update FEATURES.md `Idempotent Record` evidence: `store.go:103-114` → current              | 2min  | Line numbers match                   |
+| 1.8  | Update FEATURES.md `ErrDuplicate` evidence: `store.go:15-18` → current                     | 2min  | Line numbers match                   |
+| 1.9  | Update FEATURES.md `Graceful shutdown` evidence: `store.go:132-134` → current              | 2min  | Line numbers match                   |
+| 1.10 | Update DOMAIN_LANGUAGE.md `Store` evidence: `store.go:30-48` → current                     | 3min  | Line numbers match                   |
+| 1.11 | Fix FEATURES.md line 10: "implementation" → "reference implementation"                     | 2min  | grep "implementation" in FEATURES.md |
+| 1.12 | Fix AGENTS.md line 66: `*what`.`→`_what_`                                                  | 2min  | grep confirms fix                    |
+| 1.13 | Grep all `.md` files for `store.go:\d+` references; verify each against actual             | 10min | All living docs accurate             |
+| 1.14 | Decide on CHANGELOG.md historical refs (leave as historical record, don't rewrite history) | 2min  | Documented decision                  |
+| 1.15 | Run `go build`, `go vet`, `golangci-lint` to confirm no breakage                           | 3min  | All pass                             |
 
 ### Phase 2: Make the SDK Promise Actionable
 
-| # | Sub-task | Est | Verifies |
-|---|----------|-----|----------|
-| 2.1 | Design the Redis adapter example: struct fields (client, key prefix), constructor | 10min | Design documented |
-| 2.2 | Write `Seen` method for Redis adapter: `GET` + TTL handling (or `EXISTS`) | 8min | Method correct |
-| 2.3 | Write `Record` method for Redis adapter: `SET NX` (no-op on existing) | 8min | Method correct |
-| 2.4 | Write `CheckAndRecord` method for Redis adapter: `SET NX EX` → map to ErrDuplicate | 10min | Atomicity correct |
-| 2.5 | Write error mapping: Redis nil → not-found, Redis reply → ErrDuplicate/ErrInvalidTTL | 8min | Error semantics match |
-| 2.6 | Add the complete example to `doc.go` as a godoc code block | 8min | Renders in godoc |
-| 2.7 | Add a shorter snippet version to README.md Design philosophy section | 8min | Renders in README |
-| 2.8 | Verify example is syntactically correct Go (parse mentally or with `gofmt`) | 5min | No syntax errors |
-| 2.9 | Add CONTRIBUTING.md scope note under "How to Contribute" | 5min | Note present |
-| 2.10 | Write `func ExampleStore()` in `example_test.go` showing CheckAndRecord usage | 10min | Renders on pkg.go.dev |
-| 2.11 | Write `func ExampleMemoryStore()` showing basic lifecycle | 8min | Renders on pkg.go.dev |
-| 2.12 | Run `go test ./...` to verify example test compiles and runs | 3min | Tests pass |
+| #    | Sub-task                                                                             | Est   | Verifies              |
+| ---- | ------------------------------------------------------------------------------------ | ----- | --------------------- |
+| 2.1  | Design the Redis adapter example: struct fields (client, key prefix), constructor    | 10min | Design documented     |
+| 2.2  | Write `Seen` method for Redis adapter: `GET` + TTL handling (or `EXISTS`)            | 8min  | Method correct        |
+| 2.3  | Write `Record` method for Redis adapter: `SET NX` (no-op on existing)                | 8min  | Method correct        |
+| 2.4  | Write `CheckAndRecord` method for Redis adapter: `SET NX EX` → map to ErrDuplicate   | 10min | Atomicity correct     |
+| 2.5  | Write error mapping: Redis nil → not-found, Redis reply → ErrDuplicate/ErrInvalidTTL | 8min  | Error semantics match |
+| 2.6  | Add the complete example to `doc.go` as a godoc code block                           | 8min  | Renders in godoc      |
+| 2.7  | Add a shorter snippet version to README.md Design philosophy section                 | 8min  | Renders in README     |
+| 2.8  | Verify example is syntactically correct Go (parse mentally or with `gofmt`)          | 5min  | No syntax errors      |
+| 2.9  | Add CONTRIBUTING.md scope note under "How to Contribute"                             | 5min  | Note present          |
+| 2.10 | Write `func ExampleStore()` in `example_test.go` showing CheckAndRecord usage        | 10min | Renders on pkg.go.dev |
+| 2.11 | Write `func ExampleMemoryStore()` showing basic lifecycle                            | 8min  | Renders on pkg.go.dev |
+| 2.12 | Run `go test ./...` to verify example test compiles and runs                         | 3min  | Tests pass            |
 
 ### Phase 3: Store Contract Test Suite
 
-| # | Sub-task | Est | Verifies |
-|---|----------|-----|----------|
-| 3.1 | Decide on contract test structure: `contract` subpackage vs. exported test helper | 10min | Design decision documented |
-| 3.2 | Create `contract/` directory + `contract.go` with `RunTests(t *testing.T, factory StoreFactory)` signature | 8min | Package compiles |
-| 3.3 | Define `StoreFactory` type: `type StoreFactory func(t *testing.T) idempotency.Store` | 3min | Type defined |
-| 3.4 | Write contract test: `Seen` returns false for unseen key | 5min | Test passes against MemoryStore |
-| 3.5 | Write contract test: `Record` then `Seen` returns true | 5min | Test passes |
-| 3.6 | Write contract test: `CheckAndRecord` returns nil on first call, ErrDuplicate on second | 5min | Test passes |
-| 3.7 | Write contract test: `Record` rejects non-positive TTL with ErrInvalidTTL | 5min | Test passes |
-| 3.8 | Write contract test: `CheckAndRecord` rejects non-positive TTL with ErrInvalidTTL | 5min | Test passes |
-| 3.9 | Write contract test: expired key is re-recordable after TTL passes | 8min | Test passes |
-| 3.10 | Write contract test: `Record` on existing key is no-op (TTL not extended) | 8min | Test passes |
-| 3.11 | Write contract test: 200 concurrent `CheckAndRecord` with same key → exactly one winner | 10min | Test passes with -race |
-| 3.12 | Write contract test: empty key handling | 5min | Test passes |
-| 3.13 | Write `contract_test.go` in root package that runs contract tests against MemoryStore | 8min | All tests pass |
-| 3.14 | Document consumer usage: "create a `_test.go` file, import the contract package, call RunTests" | 8min | Documentation present |
-| 3.15 | Run `go test ./... -race` to verify all contract tests pass | 5min | All pass |
+| #    | Sub-task                                                                                                   | Est   | Verifies                        |
+| ---- | ---------------------------------------------------------------------------------------------------------- | ----- | ------------------------------- |
+| 3.1  | Decide on contract test structure: `contract` subpackage vs. exported test helper                          | 10min | Design decision documented      |
+| 3.2  | Create `contract/` directory + `contract.go` with `RunTests(t *testing.T, factory StoreFactory)` signature | 8min  | Package compiles                |
+| 3.3  | Define `StoreFactory` type: `type StoreFactory func(t *testing.T) idempotency.Store`                       | 3min  | Type defined                    |
+| 3.4  | Write contract test: `Seen` returns false for unseen key                                                   | 5min  | Test passes against MemoryStore |
+| 3.5  | Write contract test: `Record` then `Seen` returns true                                                     | 5min  | Test passes                     |
+| 3.6  | Write contract test: `CheckAndRecord` returns nil on first call, ErrDuplicate on second                    | 5min  | Test passes                     |
+| 3.7  | Write contract test: `Record` rejects non-positive TTL with ErrInvalidTTL                                  | 5min  | Test passes                     |
+| 3.8  | Write contract test: `CheckAndRecord` rejects non-positive TTL with ErrInvalidTTL                          | 5min  | Test passes                     |
+| 3.9  | Write contract test: expired key is re-recordable after TTL passes                                         | 8min  | Test passes                     |
+| 3.10 | Write contract test: `Record` on existing key is no-op (TTL not extended)                                  | 8min  | Test passes                     |
+| 3.11 | Write contract test: 200 concurrent `CheckAndRecord` with same key → exactly one winner                    | 10min | Test passes with -race          |
+| 3.12 | Write contract test: empty key handling                                                                    | 5min  | Test passes                     |
+| 3.13 | Write `contract_test.go` in root package that runs contract tests against MemoryStore                      | 8min  | All tests pass                  |
+| 3.14 | Document consumer usage: "create a `_test.go` file, import the contract package, call RunTests"            | 8min  | Documentation present           |
+| 3.15 | Run `go test ./... -race` to verify all contract tests pass                                                | 5min  | All pass                        |
 
 ### Phase 4: Testing Quality
 
-| # | Sub-task | Est | Verifies |
-|---|----------|-----|----------|
-| 4.1 | Write `FuzzCheckAndRecord` — arbitrary key, TTL, concurrent calls | 10min | Fuzz runs |
-| 4.2 | Write `FuzzRecord` — arbitrary key, TTL | 8min | Fuzz runs |
-| 4.3 | Run fuzz tests for 30 seconds to verify no crashes | 2min | No panic |
+| #   | Sub-task                                                                                | Est   | Verifies            |
+| --- | --------------------------------------------------------------------------------------- | ----- | ------------------- |
+| 4.1 | Write `FuzzCheckAndRecord` — arbitrary key, TTL, concurrent calls                       | 10min | Fuzz runs           |
+| 4.2 | Write `FuzzRecord` — arbitrary key, TTL                                                 | 8min  | Fuzz runs           |
+| 4.3 | Run fuzz tests for 30 seconds to verify no crashes                                      | 2min  | No panic            |
 | 4.4 | Write Close+concurrent test: start 50 goroutines doing CheckAndRecord, Close mid-flight | 10min | No panic with -race |
-| 4.5 | Write memory benchmark: Record 10K keys, measure allocs via ReadMemStats | 10min | Benchmark runs |
-| 4.6 | Write memory benchmark: Record 10K keys + sweep, measure reclaim | 10min | Benchmark runs |
-| 4.7 | Run full test suite with `-race` to verify | 3min | All pass |
+| 4.5 | Write memory benchmark: Record 10K keys, measure allocs via ReadMemStats                | 10min | Benchmark runs      |
+| 4.6 | Write memory benchmark: Record 10K keys + sweep, measure reclaim                        | 10min | Benchmark runs      |
+| 4.7 | Run full test suite with `-race` to verify                                              | 3min  | All pass            |
 
 ### Phase 5: Documentation Polish
 
-| # | Sub-task | Est | Verifies |
-|---|----------|-----|----------|
+| #   | Sub-task                                                                                      | Est   | Verifies                    |
+| --- | --------------------------------------------------------------------------------------------- | ----- | --------------------------- |
 | 5.1 | Rewrite FEATURES.md evidence column: replace all `store.go:NN-MM` with symbol-name references | 10min | No line numbers in evidence |
-| 5.2 | Rewrite README Features section: lead with "Store interface" as the product | 10min | Interface is the headline |
-| 5.3 | Add "Implementing your own backend" section to README with patterns + pitfalls | 10min | Section present |
-| 5.4 | Write ADR: "Why no backends" — document the decision, alternatives, tradeoffs | 10min | ADR present |
-| 5.5 | Update ROADMAP.md to reference the contract test package (no longer "planned") | 5min | ROADMAP accurate |
-| 5.6 | Update TODO_LIST.md: mark contract test suite as done, update remaining items | 5min | TODO accurate |
-| 5.7 | Update CHANGELOG.md with all new changes | 8min | Changelog current |
-| 5.8 | Cross-check all docs for consistency (grep for "planned backend", "future Redis", etc.) | 10min | No contradictions |
+| 5.2 | Rewrite README Features section: lead with "Store interface" as the product                   | 10min | Interface is the headline   |
+| 5.3 | Add "Implementing your own backend" section to README with patterns + pitfalls                | 10min | Section present             |
+| 5.4 | Write ADR: "Why no backends" — document the decision, alternatives, tradeoffs                 | 10min | ADR present                 |
+| 5.5 | Update ROADMAP.md to reference the contract test package (no longer "planned")                | 5min  | ROADMAP accurate            |
+| 5.6 | Update TODO_LIST.md: mark contract test suite as done, update remaining items                 | 5min  | TODO accurate               |
+| 5.7 | Update CHANGELOG.md with all new changes                                                      | 8min  | Changelog current           |
+| 5.8 | Cross-check all docs for consistency (grep for "planned backend", "future Redis", etc.)       | 10min | No contradictions           |
 
 ### Phase 6: CI/CD and Infrastructure
 
-| # | Sub-task | Est | Verifies |
-|---|----------|-----|----------|
-| 6.1 | Add `go test ./contract/...` to CI workflow | 5min | CI runs contract tests |
-| 6.2 | Add `go test -cover` step to CI, output coverage | 5min | Coverage reported |
-| 6.3 | Add coverage badge to README (once CI reports coverage) | 5min | Badge renders |
-| 6.4 | Create `.github/dependabot.yml` for go.mod scanning | 5min | Dependabot active |
+| #   | Sub-task                                                | Est  | Verifies               |
+| --- | ------------------------------------------------------- | ---- | ---------------------- |
+| 6.1 | Add `go test ./contract/...` to CI workflow             | 5min | CI runs contract tests |
+| 6.2 | Add `go test -cover` step to CI, output coverage        | 5min | Coverage reported      |
+| 6.3 | Add coverage badge to README (once CI reports coverage) | 5min | Badge renders          |
+| 6.4 | Create `.github/dependabot.yml` for go.mod scanning     | 5min | Dependabot active      |
 
 ### Phase 10: Release Preparation
 
-| # | Sub-task | Est | Verifies |
-|---|----------|-----|----------|
+| #    | Sub-task                                                                                   | Est   | Verifies         |
+| ---- | ------------------------------------------------------------------------------------------ | ----- | ---------------- |
 | 10.1 | Document v0.2.0 scope: contract test suite, implementation examples, doc fixes, fuzz tests | 10min | Scope documented |
-| 10.2 | Update ROADMAP.md versioning section with v0.2.0 target | 5min | ROADMAP accurate |
+| 10.2 | Update ROADMAP.md versioning section with v0.2.0 target                                    | 5min  | ROADMAP accurate |
 
 ---
 
@@ -209,31 +209,31 @@ Every task above decomposed into atomic, verifiable steps.
 graph TD
     %% Phase 1: Debt Repair (no dependencies)
     P1[Phase 1: Fix Session Debt<br/>stale line refs, typo, consistency]
-    
+
     %% Phase 2: SDK Promise (no dependency on P1, but should fix debt first)
     P2[Phase 2: Implementation Example<br/>Redis SET NX adapter + CONTRIBUTING + godoc]
-    
+
     %% Phase 3: Contract Tests (depends on P2 for design alignment)
     P3[Phase 3: Store Contract Test Suite<br/>consumer-verifiable test harness]
-    
+
     %% Phase 4: Testing (depends on P3 for contract test patterns)
     P4[Phase 4: Fuzz + Memory + Race Tests]
-    
+
     %% Phase 5: Docs Polish (depends on P1-P3 being done)
     P5[Phase 5: Documentation Polish<br/>rewrite evidence, ADR, backend guide]
-    
+
     %% Phase 6: CI/CD (depends on P3 for contract test integration)
     P6[Phase 6: CI/CD Improvements<br/>contract test CI, coverage, dependabot]
-    
+
     %% Phase 10: Release (depends on everything)
     P10[Phase 10: Release Prep<br/>v0.2.0 scope]
-    
+
     %% Blocked phases
     QBLOCK{{BLOCKED: Open Questions<br/>Q1: MemoryStore future?<br/>Q2: Middleware module?<br/>Q3: ErrStoreClosed?}}
     P7[Phase 7: Interface Evolution<br/>Delete, Stats, Closer]
     P8[Phase 8: Middleware Layer]
     P9[Phase 9: Key Generation]
-    
+
     %% Execution order
     P1 --> P2
     P2 --> P3
@@ -244,13 +244,13 @@ graph TD
     P3 --> P6
     P6 --> P10
     P5 --> P10
-    
+
     %% Blocked flows
     QBLOCK --> P7
     QBLOCK --> P8
     QBLOCK --> P9
     P7 --> P10
-    
+
     %% Styling
     style P1 fill:#f9f,stroke:#333,stroke-width:2px
     style P2 fill:#ff9,stroke:#333,stroke-width:3px
@@ -266,6 +266,7 @@ graph TD
 ```
 
 **Legend:**
+
 - Pink = Phase 1 (debt repair)
 - Yellow with thick border = Phase 2 (the 1%→51% item)
 - Blue = Phases 3, 5 (high-value engineering + docs)

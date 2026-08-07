@@ -43,7 +43,7 @@ Prefer `CheckAndRecord`. Only reach for `Seen` / `Record` separately when you un
 This is an **SDK, not a batteries-included framework**. The library ships:
 
 - The **`Store` interface** (three methods, well-defined error semantics, atomicity contracts)
-- **`MemoryStore`** *(deprecated)* — in-memory reference implementation for development and testing only; it will be removed in a future major version
+- **`MemoryStore`** _(deprecated)_ — in-memory reference implementation for development and testing only; it will be removed in a future major version
 
 It deliberately does **not** ship production backends. There will never be a Redis store, SQL store, or any other concrete backend in this module. Each backend has its own driver, connection-pool semantics, deployment constraints, and operational tradeoffs. Encoding those decisions here would bloat the dependency tree and force choices on you that you should make yourself.
 
@@ -128,7 +128,7 @@ Errors are classified by [go-error-family](https://github.com/larsartmann/go-err
 
 - **`Store` interface** — three-method contract (`Seen`, `Record`, `CheckAndRecord`) with well-defined error semantics and atomicity requirements
 - **Contract test suite** — `contract.RunTests` verifies any `Store` implementation against the full invariant set (atomicity, TTL expiry, concurrency safety, error handling)
-- **`MemoryStore`** *(deprecated)* — in-memory reference implementation for development and testing, with TTL-based expiration (background sweep + lazy deletion), configurable sweep interval, and graceful shutdown; will be removed in a future major version
+- **`MemoryStore`** _(deprecated)_ — in-memory reference implementation for development and testing, with TTL-based expiration (background sweep + lazy deletion), configurable sweep interval, and graceful shutdown; will be removed in a future major version
 - **Conflict-classified errors** — `ErrDuplicate` is HTTP 409, non-retryable; `ErrInvalidTTL` is HTTP 400
 - **Concurrency-safe** — exactly-one-winner verified with 200 goroutines, property-based tests, and fuzz tests
 
@@ -138,11 +138,11 @@ See [FEATURES.md](FEATURES.md) for the full, code-evidenced inventory.
 
 The `Store` interface is three methods. Each maps to a single round-trip on a typical backend. The critical requirement is that `CheckAndRecord` is **atomic** — use your backend's native check-and-set primitive.
 
-| Method | What it does | Typical backend primitive |
-|--------|-------------|--------------------------|
-| `Seen` | Check if key exists and is not expired | `EXISTS` (Redis), `SELECT COUNT(*)` (SQL) |
-| `Record` | Store key with TTL (no-op if exists) | `SET NX` (Redis), `INSERT ... ON CONFLICT DO NOTHING` (SQL) |
-| `CheckAndRecord` | Atomic check-and-set | `SET NX EX` (Redis), `INSERT ... ON CONFLICT DO NOTHING` (SQL) |
+| Method           | What it does                           | Typical backend primitive                                      |
+| ---------------- | -------------------------------------- | -------------------------------------------------------------- |
+| `Seen`           | Check if key exists and is not expired | `EXISTS` (Redis), `SELECT COUNT(*)` (SQL)                      |
+| `Record`         | Store key with TTL (no-op if exists)   | `SET NX` (Redis), `INSERT ... ON CONFLICT DO NOTHING` (SQL)    |
+| `CheckAndRecord` | Atomic check-and-set                   | `SET NX EX` (Redis), `INSERT ... ON CONFLICT DO NOTHING` (SQL) |
 
 **Error mapping:** when the key already exists, return `idempotency.ErrDuplicate`. When `ttl <= 0`, return `idempotency.ErrInvalidTTL`. These are sentinel errors from `go-error-family` with stable HTTP status mappings.
 
