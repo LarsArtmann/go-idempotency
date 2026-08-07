@@ -33,7 +33,11 @@ Tests live in `idempotency_test` (external test package) and are split by strate
 
 - **`store_test.go`** — unit and concurrency tests, one function per scenario. Concurrency tests use a `started chan struct{}` barrier to release all goroutines simultaneously. Every test calls `t.Parallel()`.
 - **`property_test.go`** — property-based tests via `pgregory.net/rapid`. Invariants tested: idempotent Record, exact-once CheckAndRecord, key independence, TTL expiry.
-- **`bench_test.go`** — benchmarks for `CheckAndRecord`, `Seen`, and `Record` under serial, contended, and parallel workloads.
+- **`fuzz_test.go`** — `FuzzCheckAndRecord`, `FuzzRecord`, and `TestMemoryStore_CloseDuringConcurrentOps`.
+- **`bench_test.go`** — benchmarks for `CheckAndRecord`, `Seen`, and `Record` under serial, contended, and parallel workloads, plus memory usage benchmarks.
+- **`example_test.go`** — godoc `Example()` functions rendered on pkg.go.dev.
+- **`contract_test.go`** — runs the `contract.RunTests` suite against `MemoryStore`.
+- **`contract/contract.go`** — the reusable contract test suite itself (importable by consumers).
 
 Always `defer store.Close()`, even when sweep is disabled (`sweepInterval == 0`).
 

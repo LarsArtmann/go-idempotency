@@ -7,12 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Contract test suite** — `contract/contract.go` with `RunTests(t *testing.T, factory StoreFactory)` covering all `Store` invariants: Seen, Record, CheckAndRecord, TTL expiry, duplicate detection, concurrency safety (200 goroutines), error semantics, empty key handling. Run against `MemoryStore` in `contract_test.go`. Consumers import `github.com/larsartmann/go-idempotency/contract` to verify their own backend.
+- **Fuzz tests** — `FuzzCheckAndRecord` and `FuzzRecord` in `fuzz_test.go` verifying no panics on arbitrary keys and TTLs, and that exactly-once and TTL-validation invariants hold.
+- **Close+concurrent race test** — `TestMemoryStore_CloseDuringConcurrentOps` verifying no panic when `Close()` is called mid-flight during concurrent operations.
+- **Memory benchmarks** — `BenchmarkMemoryUsage_10KKeys` (reports bytes/key) and `BenchmarkMemoryUsage_AfterSweep` (reports %-reclaimed) in `bench_test.go`.
+- **Godoc examples** — `ExampleStore` and `ExampleMemoryStore` in `example_test.go`, rendered on pkg.go.dev.
+- **Redis adapter example** — full three-method Redis `SET NX` adapter in `doc.go` package docs showing how to implement the `Store` interface.
+- **ADR-001: No Production Backends** — architecture decision record documenting the interface-first choice, alternatives, and consequences (`docs/adr/001-no-backends.md`).
+
 ### Changed
 
 - **Documentation reframed to interface-first SDK philosophy.** All docs now make clear that go-idempotency provides the `Store` interface and `MemoryStore` (a reference implementation) only — it intentionally does NOT and will NOT ship production backends (Redis, SQL, etc.). Consumers implement the interface against their own backend. Affected files: `doc.go`, `store.go`, `README.md`, `ROADMAP.md`, `FEATURES.md`, `TODO_LIST.md`, `docs/DOMAIN_LANGUAGE.md`, `AGENTS.md`.
   - `ROADMAP.md`: "Distributed Backends" section replaced with "Backend Implementations (Out of Scope by Design)".
-  - `FEATURES.md`: Redis/SQL moved from PLANNED to a new "NOT PLANNED" section.
-  - `README.md`: added "Design philosophy" section; reframed "Status & roadmap" (removed "v1.0 ships when a persistent backend exists").
+  - `FEATURES.md`: Redis/SQL moved from PLANNED to a new "NOT PLANNED" section; evidence column switched from brittle line numbers to durable symbol-name references.
+  - `README.md`: added "Design philosophy" section with Redis code snippet; added "Implementing your own backend" guide with backend-primitive mapping table; rewrote "Features" section to lead with Store interface and contract test suite.
+  - `CONTRIBUTING.md`: added "Scope" section stating backends are out of scope and PRs adding backends will not be accepted.
+  - `docs/DOMAIN_LANGUAGE.md`: `Store` reference updated from line numbers to symbol name.
+  - `AGENTS.md`: typo fixed on line 66 (`*what`.` → `*what*`).
+
+### Fixed
+
+- **Stale line-number references in FEATURES.md and DOMAIN_LANGUAGE.md** — replaced all `store.go:NN-MM` references with durable symbol-name references that don't break when code shifts.
 
 ## [0.1.2] - 2026-08-07
 

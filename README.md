@@ -172,6 +172,7 @@ Versioning: **v0.x** — `MemoryStore` and the error sentinels are stable, but t
 - [API reference (pkg.go.dev)](https://pkg.go.dev/github.com/larsartmann/go-idempotency)
 - [Features](FEATURES.md) — honest feature inventory with code evidence
 - [Domain language](docs/DOMAIN_LANGUAGE.md) — glossary of idempotency terms
+- [ADR-001: Why no backends](docs/adr/001-no-backends.md) — architecture decision record
 - [Changelog](CHANGELOG.md)
 - [Contributing](CONTRIBUTING.md)
 

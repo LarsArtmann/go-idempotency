@@ -16,11 +16,12 @@ No `flake.nix`, Makefile, or justfile exists. This is a plain Go module — use 
 
 ## Architecture
 
-Single-package library (`package idempotency`), flat file layout — no subdirectories.
+Single-package library (`package idempotency`) with a `contract/` subpackage for reusable test infrastructure. Root package is flat — no subdirectories except `contract/`.
 
 - **`Store` interface** (`store.go`) — three methods: `Seen`, `Record`, `CheckAndRecord`. All take `context.Context` but `MemoryStore` ignores it (params named `_`).
 - **`MemoryStore`** (`store.go`) — the reference implementation. In-memory `map[string]time.Time` guarded by `sync.RWMutex`, with TTL-based expiration via two mechanisms: a background sweep goroutine AND lazy deletion on read.
-- **`doc.go`** — package documentation with quick-start example.
+- **`doc.go`** — package documentation with quick-start example and Redis adapter implementation example.
+- **`contract/`** — reusable contract test suite (`RunTests`) that verifies any `Store` implementation against the full invariant set. Consumers import it to verify their own backend.
 
 ### Key Design Decisions (non-obvious)
 
@@ -52,12 +53,15 @@ This library will NOT ship production backends (Redis, SQL, etc.). `MemoryStore`
 
 - **External test package** (`idempotency_test`) — imports the package as a consumer.
 - **`t.Parallel()` on every test.**
-- **Three test files, split by strategy:**
+- **Five test files in root, split by strategy:**
   - `store_test.go` — unit and concurrency tests, one function per scenario. Concurrency tests use a `started chan struct{}` barrier to release all goroutines simultaneously. Includes edge cases (empty key, zero TTL, post-Close behavior).
   - `property_test.go` — property-based tests via `rapid.Check(t, func(t *rapid.T) {...})`. Generators: `rapid.String()`, `rapid.IntRange()`, `rapid.StringMatching()`.
-  - `bench_test.go` — benchmarks for `CheckAndRecord`, `Seen`, `Record` under serial, contended, and parallel workloads.
+  - `fuzz_test.go` — `FuzzCheckAndRecord`, `FuzzRecord` for panic-safety and invariant checking on arbitrary inputs. Also `TestMemoryStore_CloseDuringConcurrentOps` for use-after-close race safety.
+  - `bench_test.go` — benchmarks for `CheckAndRecord`, `Seen`, `Record` under serial, contended, and parallel workloads. Memory benchmarks (`BenchmarkMemoryUsage_*`) report bytes/key and %-reclaimed.
+  - `example_test.go` — godoc `ExampleStore` and `ExampleMemoryStore` functions that render on pkg.go.dev.
+  - `contract_test.go` — runs `contract.RunTests` against `MemoryStore`.
 - **Always `defer store.Close()`**, even when sweep is disabled (`sweepInterval == 0`).
-- Concurrency correctness (exactly-one-winner) is tested with 200 goroutines in unit tests and randomized 2–20 goroutines in property tests.
+- Concurrency correctness (exactly-one-winner) is tested with 200 goroutines in unit tests, randomized 2–20 goroutines in property tests, and in the contract test suite.
 
 ## Code Conventions
 

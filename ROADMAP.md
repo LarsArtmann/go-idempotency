@@ -11,7 +11,7 @@ This library provides the `Store` interface and `MemoryStore` (a reference imple
 **Implementation guidance for your own backend:**
 - Read the `Store` interface and the atomicity contract on `CheckAndRecord` in `store.go`.
 - Use your backend's native atomic primitive: Redis `SET NX EX`, SQL `INSERT ... ON CONFLICT DO NOTHING`, etc.
-- A `Store` interface contract test suite (planned, see [TODO_LIST.md](TODO_LIST.md)) will let you verify your implementation against the same invariants as `MemoryStore`.
+- Use the `contract` package (`contract.RunTests`) to verify your implementation against the same invariants as `MemoryStore`.
 
 ## Ecosystem Integration
 
@@ -25,5 +25,6 @@ This library provides the `Store` interface and `MemoryStore` (a reference imple
 
 ## Versioning Strategy
 
+- **v0.2.0** — contract test suite, implementation examples (Redis adapter), fuzz tests, memory benchmarks, godoc examples, ADR-001. All docs updated to interface-first SDK framing.
 - **v0.x** — API may change between minor versions. `MemoryStore` is stable but the `Store` interface may evolve as real-world use reveals missing methods (e.g., `Delete`, `Stats`, `Reset`).
 - **v1.0** — when the interface stabilizes (proven by multiple independent backend implementations in the wild) and the middleware layer ships.
