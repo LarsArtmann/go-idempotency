@@ -2,12 +2,16 @@
 
 Long-term direction and raw ideas not yet refined into actionable tasks. When an item becomes bounded and estimable, it graduates to [TODO_LIST.md](TODO_LIST.md).
 
-## Distributed Backends
+## Backend Implementations (Out of Scope by Design)
 
-The `Store` interface (`store.go:30-48`) is designed for multiple backends. `MemoryStore` is the first; the interface comments name the intended atomic primitives for future implementations.
+This library provides the `Store` interface and `MemoryStore` (a reference implementation for development and single-process use). It **will not** ship production backends — Redis, SQL, or otherwise.
 
-- **Redis store** — distributed idempotency using `SET NX EX` for atomic check-and-record across multiple service instances. Open questions: key namespacing/prefix strategy, cluster-mode behavior, connection pooling, TTL precision vs Redis eviction policy.
-- **SQL store** — persistent idempotency using `INSERT ... ON CONFLICT DO NOTHING`. Open questions: which database drivers to support, schema/migration strategy, cleanup of expired rows (scheduled job vs lazy delete vs both).
+**Why:** Each backend carries its own driver dependency, connection-pool semantics, deployment constraints, and operational tradeoffs. Bundling them here would bloat the dependency tree and impose decisions that consumers should own. The interface is intentionally small (three methods) so that implementing your own backend is straightforward.
+
+**Implementation guidance for your own backend:**
+- Read the `Store` interface and the atomicity contract on `CheckAndRecord` in `store.go`.
+- Use your backend's native atomic primitive: Redis `SET NX EX`, SQL `INSERT ... ON CONFLICT DO NOTHING`, etc.
+- A `Store` interface contract test suite (planned, see [TODO_LIST.md](TODO_LIST.md)) will let you verify your implementation against the same invariants as `MemoryStore`.
 
 ## Ecosystem Integration
 
@@ -21,5 +25,5 @@ The `Store` interface (`store.go:30-48`) is designed for multiple backends. `Mem
 
 ## Versioning Strategy
 
-- **v0.x** — API may change between minor versions. `MemoryStore` is stable but the `Store` interface may evolve as backend implementations reveal missing methods (e.g., `Delete`, `Stats`, `Reset`).
-- **v1.0** — when the interface stabilizes and at least one persistent backend (Redis or SQL) ships.
+- **v0.x** — API may change between minor versions. `MemoryStore` is stable but the `Store` interface may evolve as real-world use reveals missing methods (e.g., `Delete`, `Stats`, `Reset`).
+- **v1.0** — when the interface stabilizes (proven by multiple independent backend implementations in the wild) and the middleware layer ships.

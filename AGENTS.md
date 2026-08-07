@@ -19,7 +19,7 @@ No `flake.nix`, Makefile, or justfile exists. This is a plain Go module — use 
 Single-package library (`package idempotency`), flat file layout — no subdirectories.
 
 - **`Store` interface** (`store.go`) — three methods: `Seen`, `Record`, `CheckAndRecord`. All take `context.Context` but `MemoryStore` ignores it (params named `_`).
-- **`MemoryStore`** (`store.go`) — the only implementation. In-memory `map[string]time.Time` guarded by `sync.RWMutex`, with TTL-based expiration via two mechanisms: a background sweep goroutine AND lazy deletion on read.
+- **`MemoryStore`** (`store.go`) — the reference implementation. In-memory `map[string]time.Time` guarded by `sync.RWMutex`, with TTL-based expiration via two mechanisms: a background sweep goroutine AND lazy deletion on read.
 - **`doc.go`** — package documentation with quick-start example.
 
 ### Key Design Decisions (non-obvious)
@@ -30,11 +30,16 @@ Single-package library (`package idempotency`), flat file layout — no subdirec
 - **`Record` is a no-op on existing non-expired keys** — it does NOT extend the TTL. Expired keys (even if not yet swept) are re-recorded with a fresh TTL.
 - **`Seen` takes a write lock** (`s.mu.Lock()`), not a read lock, because it performs lazy deletion of expired entries.
 - **`Close` is idempotent** via `sync.Once`. Always `defer store.Close()`.
-- **Context is ignored.** `MemoryStore` does not honor context cancellation — all params are `_`. A future Redis/SQL store would need to use it.
+- **Context is ignored.** `MemoryStore` does not honor context cancellation — all params are `_`. The parameter exists on the interface so that custom backend implementations (Redis, SQL, etc.) can honor cancellation and timeouts.
+- **No production backends — by design.** This library is an interface-first SDK. It provides the `Store` interface and `MemoryStore` (reference implementation only). It will NOT ship Redis, SQL, or any other concrete backend. Consumers implement the interface against their own backend. Never add backend code or driver dependencies to this module.
 
 ### Future Surface (does not exist yet)
 
 `doc.go` references a "middleware package" with `CommandIdempotency`, `EventIdempotency`, and `QueryIdempotency`. This is planned but not implemented — do not assume it exists.
+
+### Backend Implementations (Out of Scope)
+
+This library will NOT ship production backends (Redis, SQL, etc.). `MemoryStore` is a reference implementation for development and single-process use. Consumers implement the `Store` interface against their own backend. The atomic primitives for common backends are documented in the `CheckAndRecord` comment: Redis `SET NX`, SQL `INSERT ... ON CONFLICT DO NOTHING`.
 
 ## Dependencies
 

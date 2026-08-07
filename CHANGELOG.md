@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Documentation reframed to interface-first SDK philosophy.** All docs now make clear that go-idempotency provides the `Store` interface and `MemoryStore` (a reference implementation) only — it intentionally does NOT and will NOT ship production backends (Redis, SQL, etc.). Consumers implement the interface against their own backend. Affected files: `doc.go`, `store.go`, `README.md`, `ROADMAP.md`, `FEATURES.md`, `TODO_LIST.md`, `docs/DOMAIN_LANGUAGE.md`, `AGENTS.md`.
+  - `ROADMAP.md`: "Distributed Backends" section replaced with "Backend Implementations (Out of Scope by Design)".
+  - `FEATURES.md`: Redis/SQL moved from PLANNED to a new "NOT PLANNED" section.
+  - `README.md`: added "Design philosophy" section; reframed "Status & roadmap" (removed "v1.0 ships when a persistent backend exists").
+
 ## [0.1.2] - 2026-08-07
 
 ### Fixed

@@ -30,5 +30,12 @@ No code exists for any of these. They are referenced in documentation as future 
 | Feature                                                                                                                              | Evidence of intent |
 | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------ |
 | **Middleware package** — `CommandIdempotency`, `EventIdempotency`, `QueryIdempotency` to wire the store into CQRS dispatch pipelines | `doc.go:26-31`     |
-| **Redis store** — distributed idempotency using `SET NX` for atomic check-and-record                                                 | `store.go:42-43`   |
-| **SQL store** — persistent idempotency using `INSERT ... ON CONFLICT DO NOTHING`                                                     | `store.go:44-46`   |
+
+## NOT PLANNED (Out of Scope by Design)
+
+This library is an interface-first SDK. It does not and will not ship production backends. `MemoryStore` is a reference implementation for development and single-process use; for any distributed or persistent backend, implement the `Store` interface yourself.
+
+| Feature                                                                                              | Reason                                                                                                                                                   |
+| ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Redis store**                                                                                      | Driver dependency, connection-pool semantics, cluster behavior, and eviction tradeoffs are the consumer's decision, not the library's.                   |
+| **SQL store**                                                                                        | Driver selection, schema/migration strategy, and cleanup policies are the consumer's decision, not the library's.                                        |
