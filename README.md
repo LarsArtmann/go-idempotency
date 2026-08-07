@@ -43,7 +43,7 @@ Prefer `CheckAndRecord`. Only reach for `Seen` / `Record` separately when you un
 This is an **SDK, not a batteries-included framework**. The library ships:
 
 - The **`Store` interface** (three methods, well-defined error semantics, atomicity contracts)
-- **`MemoryStore`** — a reference implementation for development, testing, and single-process use cases
+- **`MemoryStore`** *(deprecated)* — in-memory reference implementation for development and testing only; it will be removed in a future major version
 
 It deliberately does **not** ship production backends. There will never be a Redis store, SQL store, or any other concrete backend in this module. Each backend has its own driver, connection-pool semantics, deployment constraints, and operational tradeoffs. Encoding those decisions here would bloat the dependency tree and force choices on you that you should make yourself.
 
@@ -67,6 +67,8 @@ func (s *RedisStore) CheckAndRecord(ctx context.Context, key string, ttl time.Du
 See the [package docs](https://pkg.go.dev/github.com/larsartmann/go-idempotency) for the full Redis adapter (all three methods) and use the [contract test suite](contract/) to verify your implementation.
 
 ## Quick start
+
+> **Note:** `MemoryStore` is deprecated and intended for development/testing only. The example illustrates the API — in production, substitute your own `Store` implementation.
 
 ```bash
 go get github.com/larsartmann/go-idempotency
@@ -126,7 +128,7 @@ Errors are classified by [go-error-family](https://github.com/larsartmann/go-err
 
 - **`Store` interface** — three-method contract (`Seen`, `Record`, `CheckAndRecord`) with well-defined error semantics and atomicity requirements
 - **Contract test suite** — `contract.RunTests` verifies any `Store` implementation against the full invariant set (atomicity, TTL expiry, concurrency safety, error handling)
-- **`MemoryStore`** — reference implementation for development and single-process use, with TTL-based expiration (background sweep + lazy deletion), configurable sweep interval, and graceful shutdown
+- **`MemoryStore`** *(deprecated)* — in-memory reference implementation for development and testing, with TTL-based expiration (background sweep + lazy deletion), configurable sweep interval, and graceful shutdown; will be removed in a future major version
 - **Conflict-classified errors** — `ErrDuplicate` is HTTP 409, non-retryable; `ErrInvalidTTL` is HTTP 400
 - **Concurrency-safe** — exactly-one-winner verified with 200 goroutines, property-based tests, and fuzz tests
 
@@ -161,11 +163,11 @@ See the [package docs](https://pkg.go.dev/github.com/larsartmann/go-idempotency)
 
 ## Status & roadmap
 
-`MemoryStore` (single-process, in-memory) is stable, concurrency-tested, and suitable for development and single-process services. It is a reference implementation of the `Store` interface — not a production backend.
+`MemoryStore` (single-process, in-memory) is **deprecated**. It remains functional and concurrency-tested but is intended for development and testing only. For production, implement the `Store` interface against your persistence backend and validate with `contract.RunTests`. `MemoryStore` will be removed in a future major version.
 
 This library will **not** add production backends (Redis, SQL, etc.). That is by design. The `Store` interface and the `contract` test suite let you implement and verify your own backend. The [middleware package](TODO_LIST.md) (CommandIdempotency, EventIdempotency, QueryIdempotency) is the next planned addition to this module.
 
-Versioning: **v0.x** — `MemoryStore` and the error sentinels are stable, but the `Store` interface may gain methods (`Delete`, `Stats`) before **v1.0**. See [ROADMAP.md](ROADMAP.md).
+Versioning: **v0.x** — the error sentinels are stable, but `MemoryStore` is deprecated and the `Store` interface may gain methods (`Delete`, `Stats`) before **v1.0**. See [ROADMAP.md](ROADMAP.md).
 
 ## Documentation
 

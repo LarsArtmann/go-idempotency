@@ -75,6 +75,12 @@ type Store interface {
 // MemoryStore ignores the context.Context parameter on all methods. The
 // parameter exists on the [Store] interface so that custom backend
 // implementations (Redis, SQL, etc.) can honor cancellation and timeouts.
+//
+// Deprecated: MemoryStore is intended for development, testing, and
+// single-process use only. It does not survive restarts and cannot be shared
+// across instances. For production, implement the [Store] interface against
+// your persistence backend and validate it with the contract test suite (see
+// package contract). MemoryStore will be removed in a future major version.
 type MemoryStore struct {
 	mu       sync.RWMutex
 	entries  map[string]time.Time // key → expiresAt
@@ -88,6 +94,9 @@ type MemoryStore struct {
 //
 // Pass sweepInterval == 0 to disable the background sweep; lazy deletion on
 // read still bounds growth.
+//
+// Deprecated: Use only for development and testing. See [MemoryStore] for the
+// rationale and the production alternative.
 func NewMemoryStore(sweepInterval time.Duration) *MemoryStore {
 	s := &MemoryStore{ //nolint:exhaustruct // mu, stopOnce are zero-valued
 		entries: make(map[string]time.Time),

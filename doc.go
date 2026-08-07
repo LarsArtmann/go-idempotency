@@ -11,6 +11,10 @@
 //
 // # Quick Start
 //
+// The example below uses the deprecated [MemoryStore] to illustrate the API.
+// In production, substitute your own [Store] implementation (see the
+// "Implementing a Custom Backend" section below).
+//
 //	store := idempotency.NewMemoryStore(5 * time.Minute)
 //	defer store.Close()
 //
@@ -29,8 +33,9 @@
 // # Design Philosophy: Interface-First, You Implement the Backend
 //
 // This library is an SDK, not a batteries-included framework. It deliberately
-// ships only the [Store] interface, its error semantics, and [MemoryStore] as a
-// reference implementation for development and single-process use cases.
+// ships only the [Store] interface, its error semantics, and a deprecated
+// [MemoryStore] intended for development and testing only. There is no
+// production backend by design.
 //
 // It intentionally does NOT provide production backends. There will be no
 // Redis store, SQL store, or any other concrete backend added to this module.

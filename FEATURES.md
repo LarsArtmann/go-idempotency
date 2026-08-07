@@ -7,7 +7,7 @@ Honest inventory of what exists, what ships with gaps, and what is planned. Ever
 | Feature                                                                                                                                                                         | Evidence                                                                  |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | **Store interface** — 3-method abstraction (`Seen`, `Record`, `CheckAndRecord`) for idempotency key tracking                                                                    | `Store` interface, `store.go`                                             |
-| **MemoryStore** — in-memory `Store` reference implementation backed by `map[string]time.Time`                                                                                   | `MemoryStore` struct, `store.go`                                          |
+| **MemoryStore** — in-memory `Store` reference implementation backed by `map[string]time.Time` *(deprecated — see DEPRECATED below)*                                | `MemoryStore` struct, `store.go`                                          |
 | **Atomic CheckAndRecord** — single-lock check-and-set that prevents the TOCTOU race a separate Seen+Record pair would create                                                    | `MemoryStore.CheckAndRecord`, tested `TestMemoryStore_CheckAndRecord_*` |
 | **TTL-based expiration (dual mechanism)** — background sweep goroutine + lazy deletion on read; map cannot grow unboundedly even with sweep disabled                            | `MemoryStore.sweep`, `MemoryStore.Seen`, `MemoryStore.Record`           |
 | **Configurable sweep interval** — `sweepInterval == 0` disables background goroutine; lazy deletion still bounds growth                                                         | `NewMemoryStore` constructor                                             |
@@ -24,6 +24,14 @@ Honest inventory of what exists, what ships with gaps, and what is planned. Ever
 | **Lint configuration** — `.golangci.yml` enables `exhaustruct`, `gosec`, `revive`, `misspell`, `gocritic`                                                                       | `.golangci.yml`                                                           |
 | **CI pipeline** — GitHub Actions runs `go test -race`, `go vet`, `golangci-lint` on every push and PR                                                                           | `.github/workflows/ci.yml`                                               |
 
+## DEPRECATED
+
+These remain functional and tested, but are scheduled for removal in a future major version. Do not build new production code on them.
+
+| Feature | Status | Replacement | Evidence |
+| ------- | ------ | ----------- | -------- |
+| **MemoryStore** — in-memory `Store` with TTL expiration, background sweep, lazy deletion, graceful shutdown | Deprecated (v0.2.0); removal targeted for v1.0 | Implement the `Store` interface against your persistence backend; validate with `contract.RunTests` | `MemoryStore` struct, `NewMemoryStore`, `store.go` |
+
 ## PLANNED
 
 No code exists for any of these. They are referenced in documentation as future work.
@@ -34,7 +42,7 @@ No code exists for any of these. They are referenced in documentation as future 
 
 ## NOT PLANNED (Out of Scope by Design)
 
-This library is an interface-first SDK. It does not and will not ship production backends. `MemoryStore` is a reference implementation for development and single-process use; for any distributed or persistent backend, implement the `Store` interface yourself.
+This library is an interface-first SDK. It does not and will not ship production backends. `MemoryStore` is **deprecated** and intended for development and testing only; for any distributed or persistent backend, implement the `Store` interface yourself.
 
 | Feature          | Reason                                                                                                                                 |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
