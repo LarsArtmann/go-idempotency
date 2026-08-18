@@ -3,7 +3,7 @@
 **Date:** 2026-08-18 13:07
 **Submitter:** Lars (via agent session, on behalf of the PapDashboard codebase)
 **Consumer:** [PapDashboard](https://github.com/larsartmann/papdashboard) — event-sourced notification hub (Go, CQRS + Event Sourcing, SQLite, single-process)
-**Adoption status:** ⚠️ **Evaluated, not adopted directly.** Present in our `go.mod` only as an *indirect* dependency (`papdashboard → cqrs-htmx/v4 → go-cqrs-lite/idempotency/v4 → go-idempotency v0.1.2`). We shipped a homegrown ~60-line store instead (`internal/api/idempotency.go`). Details below — this document explains exactly why, and what would change the calculus.
+**Adoption status:** ⚠️ **Evaluated, not adopted directly.** Present in our `go.mod` only as an _indirect_ dependency (`papdashboard → cqrs-htmx/v4 → go-cqrs-lite/idempotency/v4 → go-idempotency v0.1.2`). We shipped a homegrown ~60-line store instead (`internal/api/idempotency.go`). Details below — this document explains exactly why, and what would change the calculus.
 
 ---
 
@@ -20,7 +20,7 @@ PapDashboard exposes `POST /api/ingest` for external applications to push notifi
 
 ## 3. Why we did not adopt it — the three blockers
 
-### B1. The store records opaque keys; our use case requires replaying the original *response*
+### B1. The store records opaque keys; our use case requires replaying the original _response_
 
 This is the decisive one. HTTP idempotency-key semantics (Stripe-style) demand that a retried request **returns the original response**, not a 409:
 
@@ -30,7 +30,7 @@ This is the decisive one. HTTP idempotency-key semantics (Stripe-style) demand t
 3. GET-equivalent: server must answer 201 {id: "ntf_123", version: 1}  ← replay, not reject
 ```
 
-`Store` can only answer "seen" or "duplicate" — there is nowhere to put the payload. Our ingest handler caches `(status, id, version)` per key and replays them (`internal/api/handler_impl.go:231-249`). With go-idempotency as-is, a retried ingest would surface `ErrDuplicate`/409, and the client would be left with **no way to learn which entity its key created** — it would have to list-and-guess. For a *creation* endpoint that is a broken UX: the retry is not a conflict, it is the same request.
+`Store` can only answer "seen" or "duplicate" — there is nowhere to put the payload. Our ingest handler caches `(status, id, version)` per key and replays them (`internal/api/handler_impl.go:231-249`). With go-idempotency as-is, a retried ingest would surface `ErrDuplicate`/409, and the client would be left with **no way to learn which entity its key created** — it would have to list-and-guess. For a _creation_ endpoint that is a broken UX: the retry is not a conflict, it is the same request.
 
 We could not fix this by composition either: `CheckAndRecord` gives no hook to attach "the key won → record this response alongside it", and `Seen`+`Record` split re-introduces exactly the TOCTOU race the library (rightly) forbids.
 
@@ -39,7 +39,7 @@ We could not fix this by composition either: `CheckAndRecord` gives no hook to a
 Our production topology is one process + SQLite. That rules out the intended path ("implement `Store` against Redis/SQL") — there is no Redis, and a SQL-backed store buys nothing over our event store. Which leaves `MemoryStore`, which is:
 
 - **Deprecated** for production use — correctly, since it loses keys on restart. After a crash, every in-flight client retry re-executes. We'd inherit that hole silently.
-- **Unbounded** (TTL-only, no size cap). An attacker or a chatty integrator can grow the map until OOM. Our replacement is LRU-capped at 1,000 entries *plus* TTL (`hashicorp/golang-lru/v2/expirable`).
+- **Unbounded** (TTL-only, no size cap). An attacker or a chatty integrator can grow the map until OOM. Our replacement is LRU-capped at 1,000 entries _plus_ TTL (`hashicorp/golang-lru/v2/expirable`).
 
 So the honest comparison was "deprecated, unbounded" vs "60 lines with the two knobs we need." The 60 lines won. Not because the library is worse — because the segment "single-process app wants bounded, in-process dedup" has no product here anymore now that `MemoryStore` is deprecated.
 
@@ -51,7 +51,7 @@ So the honest comparison was "deprecated, unbounded" vs "60 lines with the two k
 
 Prioritized, with the reasoning:
 
-1. **Decide and document where response-replay lives.** Our strong suggestion: *not* in `Store` — keep it key-only and let a thin `ResponseCache[K, V]` wrap it (the atomicity of `CheckAndRecord` is the hard part; caching the payload next to the key is trivial). Even a doc-level composition recipe ("dedup + replay" pattern, 20 lines in `doc.go`) would have let us adopt the library and build only the replay layer. Right now the docs leave a reader in our position assuming the library "doesn't do idempotency keys properly" — it does dedup properly and is silent on replay.
+1. **Decide and document where response-replay lives.** Our strong suggestion: _not_ in `Store` — keep it key-only and let a thin `ResponseCache[K, V]` wrap it (the atomicity of `CheckAndRecord` is the hard part; caching the payload next to the key is trivial). Even a doc-level composition recipe ("dedup + replay" pattern, 20 lines in `doc.go`) would have let us adopt the library and build only the replay layer. Right now the docs leave a reader in our position assuming the library "doesn't do idempotency keys properly" — it does dedup properly and is silent on replay.
 2. **An LRU-bounded in-process store as a supported (non-deprecated) option.** Deprecating `MemoryStore` for restart-durability reasons is right, but it also removed the only bounded option. A `BoundedStore(maxEntries, ttl)` — swap the map for an LRU, keep the same contract tests — serves single-process production apps honestly, with the restart caveat documented rather than deprecated. Alternative we'd accept equally: a documented position that restart-durability is table stakes for idempotency (defensible!) and a pointer to what such apps should do instead.
 3. **Ship the middleware package.** Once command-boundary middleware exists, PapDashboard would consume it directly at the dispatcher layer and the homegrown HTTP store likely shrinks or disappears.
 
@@ -61,11 +61,11 @@ The library still influences us transitively: `go-cqrs-lite/idempotency/v4` (whi
 
 ## 6. Facts for triage
 
-| Question                      | Answer                                                                        |
-| ----------------------------- | ----------------------------------------------------------------------------- |
-| Evaluated version             | v0.1.2 (in module graph) against `main` docs as of 2026-08-18                 |
-| Direct imports in our code    | 0                                                                             |
-| Replacement                   | `internal/api/idempotency.go` (~60 lines, LRU 1000 + TTL, response replay)    |
-| Blocking gap                  | Response replay (B1), then no shippable in-process backend (B2)               |
-| Would re-evaluate on          | Replay-pattern docs or `ResponseCache`; bounded store; middleware package     |
-| Consumed via                  | `cqrs-htmx/v4 → go-cqrs-lite/idempotency/v4 → go-idempotency` (indirect only) |
+| Question                   | Answer                                                                        |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| Evaluated version          | v0.1.2 (in module graph) against `main` docs as of 2026-08-18                 |
+| Direct imports in our code | 0                                                                             |
+| Replacement                | `internal/api/idempotency.go` (~60 lines, LRU 1000 + TTL, response replay)    |
+| Blocking gap               | Response replay (B1), then no shippable in-process backend (B2)               |
+| Would re-evaluate on       | Replay-pattern docs or `ResponseCache`; bounded store; middleware package     |
+| Consumed via               | `cqrs-htmx/v4 → go-cqrs-lite/idempotency/v4 → go-idempotency` (indirect only) |

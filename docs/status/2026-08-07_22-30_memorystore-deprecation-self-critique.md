@@ -10,20 +10,20 @@
 
 ## a) FULLY DONE
 
-| #   | Item                                                                                  | Evidence                                                                     |
-| --- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| 1   | `// Deprecated:` doc comment on `MemoryStore` struct                                  | `store.go:78-84` — renders in `go doc`, IDEs, pkg.go.dev, staticcheck SA1019 |
-| 2   | `// Deprecated:` doc comment on `NewMemoryStore` constructor                          | `store.go:90-99`                                                             |
-| 3   | `doc.go` Design Philosophy reworded + Quick Start note                                | `doc.go:31-35`, `doc.go:12-16`                                               |
-| 4   | `README.md` updated in 5 sections (design, quick start, features, status, versioning) | `README.md:46,71,131,166,168`                                                |
-| 5   | `FEATURES.md` — new `## DEPRECATED` section + NOT PLANNED text                        | `FEATURES.md`                                                                |
-| 6   | `ROADMAP.md` — versioning: v0.2.0 deprecates, v1.0 removes                            | `ROADMAP.md:28-30`                                                           |
-| 7   | `CHANGELOG.md` — `### Deprecated` entry under `[Unreleased]`                          | `CHANGELOG.md`                                                               |
-| 8   | `docs/adr/001-no-backends.md` — corrected "not deprecated" → "deprecated v0.2.0"      | `docs/adr/001-no-backends.md:16,52`                                          |
-| 9   | `docs/DOMAIN_LANGUAGE.md` — MemoryStore entry marked deprecated                       | `docs/DOMAIN_LANGUAGE.md:38`                                                 |
-| 10  | `TODO_LIST.md` — deprecation logged as done                                           | `TODO_LIST.md`                                                               |
-| 11  | Build, vet, lint (0 issues), `-race` tests all pass                                   | verified via CLI                                                             |
-| 12  | godoc renders the Deprecated notice correctly                                         | `go doc . MemoryStore` confirmed                                             |
+| #  | Item                                                                                  | Evidence                                                                     |
+| -- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 1  | `// Deprecated:` doc comment on `MemoryStore` struct                                  | `store.go:78-84` — renders in `go doc`, IDEs, pkg.go.dev, staticcheck SA1019 |
+| 2  | `// Deprecated:` doc comment on `NewMemoryStore` constructor                          | `store.go:90-99`                                                             |
+| 3  | `doc.go` Design Philosophy reworded + Quick Start note                                | `doc.go:31-35`, `doc.go:12-16`                                               |
+| 4  | `README.md` updated in 5 sections (design, quick start, features, status, versioning) | `README.md:46,71,131,166,168`                                                |
+| 5  | `FEATURES.md` — new `## DEPRECATED` section + NOT PLANNED text                        | `FEATURES.md`                                                                |
+| 6  | `ROADMAP.md` — versioning: v0.2.0 deprecates, v1.0 removes                            | `ROADMAP.md:28-30`                                                           |
+| 7  | `CHANGELOG.md` — `### Deprecated` entry under `[Unreleased]`                          | `CHANGELOG.md`                                                               |
+| 8  | `docs/adr/001-no-backends.md` — corrected "not deprecated" → "deprecated v0.2.0"      | `docs/adr/001-no-backends.md:16,52`                                          |
+| 9  | `docs/DOMAIN_LANGUAGE.md` — MemoryStore entry marked deprecated                       | `docs/DOMAIN_LANGUAGE.md:38`                                                 |
+| 10 | `TODO_LIST.md` — deprecation logged as done                                           | `TODO_LIST.md`                                                               |
+| 11 | Build, vet, lint (0 issues), `-race` tests all pass                                   | verified via CLI                                                             |
+| 12 | godoc renders the Deprecated notice correctly                                         | `go doc . MemoryStore` confirmed                                             |
 
 ---
 
@@ -60,18 +60,18 @@ ROADMAP says "v1.0 removal" but there is no issue/TODO item with an owner or a g
 
 ## c) NOT STARTED (carried over + new)
 
-| #   | Item                                                                   | Source                        |
-| --- | ---------------------------------------------------------------------- | ----------------------------- |
-| 1   | Fix the 4 stale-file misses above                                      | This session (P1)             |
-| 2   | `contract/contract_test.go` self-test of the suite (fixes 0% coverage) | Prior critique                |
-| 3   | SQL adapter example in `doc.go` (only Redis exists)                    | Prior critique                |
-| 4   | Enrich fuzz seed corpus (empty strings, unicode, `math.MaxInt64`)      | Prior critique                |
-| 5   | Codecov/Coveralls badge in README                                      | Prior critique                |
-| 6   | Comment on `BenchmarkMemoryUsage_AfterSweep` re: low reclaim %         | Prior critique                |
-| 7   | `ErrStoreClosed` sentinel                                              | Open question                 |
-| 8   | Middleware package (`CommandIdempotency` etc.)                         | Blocked — module boundary     |
-| 9   | `Delete` / `Stats` on `Store` interface                                | Blocked — interface evolution |
-| 10  | Standalone migration guide doc                                         | This session                  |
+| #  | Item                                                                   | Source                        |
+| -- | ---------------------------------------------------------------------- | ----------------------------- |
+| 1  | Fix the 4 stale-file misses above                                      | This session (P1)             |
+| 2  | `contract/contract_test.go` self-test of the suite (fixes 0% coverage) | Prior critique                |
+| 3  | SQL adapter example in `doc.go` (only Redis exists)                    | Prior critique                |
+| 4  | Enrich fuzz seed corpus (empty strings, unicode, `math.MaxInt64`)      | Prior critique                |
+| 5  | Codecov/Coveralls badge in README                                      | Prior critique                |
+| 6  | Comment on `BenchmarkMemoryUsage_AfterSweep` re: low reclaim %         | Prior critique                |
+| 7  | `ErrStoreClosed` sentinel                                              | Open question                 |
+| 8  | Middleware package (`CommandIdempotency` etc.)                         | Blocked — module boundary     |
+| 9  | `Delete` / `Stats` on `Store` interface                                | Blocked — interface evolution |
+| 10 | Standalone migration guide doc                                         | This session                  |
 
 ---
 
