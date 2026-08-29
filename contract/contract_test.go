@@ -24,3 +24,19 @@ func TestRunTestsSelfVerification(t *testing.T) {
 		return store
 	})
 }
+
+// TestRunTestsStrict_ScaledTimings proves the options path: the full suite
+// passes with stretched timings (exercise the slow-CI configuration
+// occasionally so it cannot rot).
+func TestRunTestsStrict_ScaledTimings(t *testing.T) {
+	t.Parallel()
+
+	contract.RunTestsStrict(t, func(t *testing.T) idempotency.Store {
+		t.Helper()
+
+		store := teststore.New()
+		t.Cleanup(store.Close)
+
+		return store
+	}, contract.Options{TimingScale: 2})
+}

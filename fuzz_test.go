@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -143,4 +144,49 @@ func TestMemoryStore_CloseDuringConcurrentOps(t *testing.T) {
 	if ops.Load() == 0 {
 		t.Fatal("no operations completed before Close")
 	}
+}
+
+// FuzzConcurrentMixed drives a randomized goroutine count doing mixed
+// CheckAndRecord/Record/Seen operations against one store, hunting for panics
+// and data races under arbitrary interleavings. The exactly-once and
+// TTL-validation invariants are covered by the sequential fuzz targets; this
+// one is about concurrent-state safety, so non-positive TTLs exit early.
+func FuzzConcurrentMixed(f *testing.F) {
+	f.Add("seed-key", int64(5), uint8(4))
+	f.Add("", int64(1), uint8(19))
+	f.Add("🔑-mixed", int64(60), uint8(2))
+
+	f.Fuzz(func(t *testing.T, key string, ttlSeconds int64, goroutines uint8) {
+		store := idempotency.NewMemoryStore(0)
+		defer store.Close()
+
+		ttl := time.Duration(ttlSeconds) * time.Second
+		if ttl <= 0 {
+			return
+		}
+
+		workers := int(goroutines)%19 + 2 // 2..20
+		ctx := context.Background()
+
+		var wg sync.WaitGroup
+
+		wg.Add(workers)
+
+		for i := range workers {
+			go func(i int) {
+				defer wg.Done()
+
+				switch i % 3 {
+				case 0:
+					_ = store.CheckAndRecord(ctx, key, ttl)
+				case 1:
+					_ = store.Record(ctx, key, ttl)
+				default:
+					_, _ = store.Seen(ctx, key)
+				}
+			}(i)
+		}
+
+		wg.Wait()
+	})
 }

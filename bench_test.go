@@ -201,3 +201,30 @@ func BenchmarkMemoryUsage_AfterSweep(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkCheckAndRecord_SweepEnabled(b *testing.B) {
+	benchmarkCheckAndRecord(b, time.Second)
+}
+
+func BenchmarkCheckAndRecord_SweepDisabled(b *testing.B) {
+	benchmarkCheckAndRecord(b, 0)
+}
+
+func benchmarkCheckAndRecord(b *testing.B, sweepInterval time.Duration) {
+	b.Helper()
+
+	store := idempotency.NewMemoryStore(sweepInterval)
+	defer store.Close()
+
+	ctx := context.Background()
+
+	b.ResetTimer()
+
+	for i := range b.N {
+		key := "bench-key-" + strconv.Itoa(i%1024)
+
+		if err := store.CheckAndRecord(ctx, key, time.Minute); err != nil {
+			b.Fatalf("CheckAndRecord: %v", err)
+		}
+	}
+}

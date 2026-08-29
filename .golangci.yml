@@ -172,6 +172,7 @@ linters:
             ignore-names:
                 - w
                 - r
+                - tm
                 - err
                 - ok
                 - tt
