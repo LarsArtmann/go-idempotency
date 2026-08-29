@@ -9,6 +9,13 @@
 // each logical command; the server records the key before processing and
 // rejects retries whose key has already been recorded.
 //
+// # Contents
+//
+//   - Quick Start — the three calls and the two error sentinels
+//   - Design Philosophy: Interface-First, You Implement the Backend
+//   - Implementing a Custom Backend — the Redis adapter example
+//   - Recipe: Dedup + Response Replay (HTTP Idempotency)
+//
 // # Quick Start
 //
 // The example below uses the deprecated [MemoryStore] to illustrate the API.

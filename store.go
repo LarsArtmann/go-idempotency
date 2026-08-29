@@ -45,22 +45,43 @@ var ErrInvalidTTL = errorfamily.NewRejection(
 // interface against your own backend (Redis, SQL, etc.) for production.
 type Store interface {
 	// Seen reports whether the key is currently recorded and not expired.
+	// Expired entries are treated as absent: implementations return false
+	// (and may garbage-collect the entry).
+	//
+	// Verified by the contract test suite
+	// (github.com/larsartmann/go-idempotency/contract), subtests
+	// Seen/UnseenKeyReturnsFalse, Seen/AfterRecordReturnsTrue, and
+	// Seen/LazilyDeletesExpired.
 	Seen(ctx context.Context, key string) (bool, error)
 
 	// Record marks the key as seen with the given TTL. If the key is already
-	// recorded, it is a no-op (the TTL is not extended). Returns [ErrInvalidTTL]
-	// if ttl is not positive.
+	// recorded and unexpired, it is a no-op (the TTL is not extended — the
+	// original expiry stands). An expired key is re-recorded with a fresh
+	// TTL. Returns [ErrInvalidTTL] if ttl is not positive.
+	//
+	// Verified by the contract test suite subtests Record/NoopOnExistingKey,
+	// Record/ReRecordsAfterExpiry, and Record/RejectsNonPositiveTTL.
 	Record(ctx context.Context, key string, ttl time.Duration) error
 
 	// CheckAndRecord atomically reports whether the key was already seen and,
 	// if not, records it. Returns [ErrDuplicate] if the key was already
-	// recorded and not expired. Returns [ErrInvalidTTL] if ttl is not positive.
+	// recorded and not expired. Returns [ErrInvalidTTL] if ttl is not
+	// positive.
 	//
 	// Implementations MUST make this atomic (single lock or single round-trip)
 	// to prevent the TOCTOU race that a separate Seen + Record pair would
 	// create. For [MemoryStore] this is a single mutex. When implementing the
 	// interface against your own backend, use its native atomic primitive:
 	// Redis SET NX, SQL INSERT ... ON CONFLICT DO NOTHING, etc.
+	//
+	// Verified by the contract test suite subtests
+	// CheckAndRecord/FirstCallSucceeds,
+	// CheckAndRecord/DuplicateReturnsErrDuplicate,
+	// CheckAndRecord/AllowsAfterExpiry,
+	// CheckAndRecord/RejectsNonPositiveTTL,
+	// Concurrency/AtomicUnderConcurrency (200-goroutine race, exactly one
+	// winner), and Cross-cutting/KeysAreIndependent and
+	// Cross-cutting/EmptyKey.
 	CheckAndRecord(ctx context.Context, key string, ttl time.Duration) error
 }
 

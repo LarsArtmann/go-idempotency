@@ -125,6 +125,17 @@ Errors are classified by [go-error-family](https://github.com/larsartmann/go-err
 
 `ErrDuplicate` means a prior, still-valid recording exists — return it to the client, do not retry. `ErrInvalidTTL` means the caller passed `ttl <= 0`; a non-positive TTL records an already-past expiry that protects nothing, so the store rejects it loudly instead of silently breaking exactly-once.
 
+**Transient store errors.** Any error that is neither sentinel means the store itself failed (network, timeout, backend down). The correct reaction is to **fail the request without processing** — treating a store failure as "probably not a duplicate" is how duplicate payments happen. For transport-style backends, retry policies belong in your client: `go-error-family` classifies the underlying error, so `errorfamily.IsRetryable(err)` tells you whether a retry has a chance (connection reset: yes; auth failure: no). Retry with backoff only for retryable errors; never retry `ErrDuplicate` or `ErrInvalidTTL`.
+
+## Common pitfalls
+
+- **Never implement `CheckAndRecord` as `Seen` + `Record`.** Two round-trips reintroduce the TOCTOU race: two concurrent first-attempts both see "not seen" and both process. The suite's `Concurrency/AtomicUnderConcurrency` subtest (200 goroutines, exactly one winner) exists to catch exactly this.
+- **A store error is not permission to process.** `CheckAndRecord` failing does not mean the command is fresh — it means you don't know. Fail the request (or the delivery); let the redelivery mechanism try again.
+- **Size the TTL to the retry window, not the request timeout.** Retries can arrive from client backoff, message-redelivery, and outbox replay — often hours after the first attempt. If the TTL expires first, the retry executes again. When in doubt, longer.
+- **Namespace your keys when sharing a backend.** Prefix with `idem:` (or a dedicated table/hash) so idempotency keys cannot collide with other data in the same store, and so operational cleanup cannot sweep them by accident.
+- **Watch the clock.** Expiry is judged by whoever owns the clock. Redis evaluates TTL server-side (app clock irrelevant); SQL/DynamoDB columns compare against the backend's clock; in-process maps use the instance's clock. With multiple instances writing absolute timestamps, sync matters; server-side TTLs avoid the whole class.
+- **A claimed key that never finishes stays claimed until TTL.** If your process crashes between `CheckAndRecord` winning and the effect completing, retries get `ErrDuplicate` until expiry. Plan for it: keep TTLs tunable per key, store a failure marker as the response (see the response-replay recipe), or invalidate the claim manually once your backend exposes a way to.
+
 ## Features
 
 - **`Store` interface** — three-method contract (`Seen`, `Record`, `CheckAndRecord`) with well-defined error semantics and atomicity requirements
@@ -138,6 +149,14 @@ See [FEATURES.md](FEATURES.md) for the full, code-evidenced inventory.
 ## Implementing your own backend
 
 The `Store` interface is three methods. Each maps to a single round-trip on a typical backend. The critical requirement is that `CheckAndRecord` is **atomic** — use your backend's native check-and-set primitive.
+
+| Backend | `CheckAndRecord` primitive | TTL semantics | Gotchas |
+| --- | --- | --- | --- |
+| Redis | `SET key 1 NX EX <ttl>` | Server-side expiry — clock-safe | Prefix keys (`idem:`); NX returning "not set" means duplicate |
+| PostgreSQL | `INSERT ... ON CONFLICT DO NOTHING` | `expires_at` column; filter on read, purge with a scheduled `DELETE` | Wrap the business effect in the same transaction when you can |
+| MySQL | `INSERT IGNORE` | `expires_at` column, as above | `INSERT IGNORE` also swallows unrelated errors — prefer `ON DUPLICATE KEY` with error checks |
+| DynamoDB | `PutItem` with `attribute_not_exists(key)` | TTL attribute is best-effort (deletion can lag hours) — always check expiry on read | Conditional writes are extra cost on duplicate retries |
+| SQLite / bbolt | `INSERT OR IGNORE` in a transaction | `expires_at` column | Single-writer; local to one process — dead after a crash by definition |
 
 | Method           | What it does                           | Typical backend primitive                                      |
 | ---------------- | -------------------------------------- | -------------------------------------------------------------- |

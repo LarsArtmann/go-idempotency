@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Runnable example** — `example/` is a `go run ./example` walkthrough: a minimal consumer-owned in-memory `Store`, contract-suite validation of it, and a three-attempt exactly-once demo from the caller's perspective. The deprecated `MemoryStore` is deliberately not used — the example models what production code should look like.
+- **Common pitfalls guide** — README section covering the TOCTOU trap, store-errors-mean-don't-process, TTL sized to the retry window, key namespacing, clock ownership, and the claimed-but-unfinished failure mode.
+- **Backend feature matrix** — README table mapping Redis, PostgreSQL, MySQL, DynamoDB, and SQLite/bbolt to their atomic primitive, TTL semantics, and backend-specific gotchas.
+- **Contract invariant cross-links** — each `Store` method's godoc now names the contract subtests that verify it; `doc.go` gains a contents section for navigation.
+- **Transient-error handling guidance** — README "Errors" section explains the failure-closed reaction to non-sentinel store errors and how to use `errorfamily.IsRetryable` for retry/backoff decisions.
 - **Repository governance files** — SECURITY.md (private vulnerability reporting, supported-version policy, honest scope note given the zero-network design), CODE_OF_CONDUCT.md (Contributor Covenant 2.1), bug-report and feature-request issue templates oriented around doc-set expectations and contract-suite evidence, a PR checklist that includes the format/tidy/stale-refs gates, and CODEOWNERS.
 - **GitHub topics** — `go`, `golang`, `idempotency`, `cqrs`, `deduplication` set on the repository for discoverability. FUNDING.yml deliberately omitted: it encodes owner preference, and no preference was on record (add one only on explicit request).
 - **Contract suite self-test** — `contract/` now ships a test-only internal in-memory `Store` (`contract/internal/`, internal package so consumers cannot import it) and runs `RunTests` against it in `contract/contract_test.go`. The suite is exercised in this repo's own CI (79.6% coverage of `contract/`) instead of shipping with zero coverage.
