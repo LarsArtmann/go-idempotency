@@ -3,6 +3,7 @@
 **Turns at-least-once delivery into at-most-once processing.**
 
 [![CI](https://github.com/larsartmann/go-idempotency/actions/workflows/ci.yml/badge.svg)](https://github.com/larsartmann/go-idempotency/actions/workflows/ci.yml)
+[![Codecov](https://codecov.io/gh/LarsArtmann/go-idempotency/graph/badge.svg)](https://codecov.io/gh/LarsArtmann/go-idempotency)
 [![Go Reference](https://pkg.go.dev/badge/github.com/larsartmann/go-idempotency.svg)](https://pkg.go.dev/github.com/larsartmann/go-idempotency)
 [![Go Report Card](https://goreportcard.com/badge/github.com/larsartmann/go-idempotency)](https://goreportcard.com/report/github.com/larsartmann/go-idempotency)
 [![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://go.dev)
