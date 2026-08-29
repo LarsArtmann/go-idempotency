@@ -14,4 +14,3 @@ Short-term actionable work. Open items only — completed work lives in [CHANGEL
 
 ## Infrastructure
 
-- [ ] **Wire a coverage badge** — CI already reports coverage and uploads the artifact (`.github/workflows/ci.yml`); choose Codecov or Coveralls and add the README badge. Evidence: [docs/status/2026-08-07_22-15_execution-plan-completion.md](docs/status/2026-08-07_22-15_execution-plan-completion.md) b.1. **Impact: Low · Effort: S**

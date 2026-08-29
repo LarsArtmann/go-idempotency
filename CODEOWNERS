@@ -1,0 +1,6 @@
+# Default ownership for everything.
+* @LarsArtmann
+
+# CI and release process changes require the owner.
+/.github/ @LarsArtmann
+/RELEASING.md @LarsArtmann
