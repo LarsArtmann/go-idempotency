@@ -135,6 +135,7 @@ Errors are classified by [go-error-family](https://github.com/larsartmann/go-err
 - **Namespace your keys when sharing a backend.** Prefix with `idem:` (or a dedicated table/hash) so idempotency keys cannot collide with other data in the same store, and so operational cleanup cannot sweep them by accident.
 - **Watch the clock.** Expiry is judged by whoever owns the clock. Redis evaluates TTL server-side (app clock irrelevant); SQL/DynamoDB columns compare against the backend's clock; in-process maps use the instance's clock. With multiple instances writing absolute timestamps, sync matters; server-side TTLs avoid the whole class.
 - **A claimed key that never finishes stays claimed until TTL.** If your process crashes between `CheckAndRecord` winning and the effect completing, retries get `ErrDuplicate` until expiry. Plan for it: keep TTLs tunable per key, store a failure marker as the response (see the response-replay recipe), or invalidate the claim manually once your backend exposes a way to.
+- **"Isn't idempotency supposed to be forever?"** No — claims are TTL-windowed by design. The window must cover the retry horizon (redelivery, outbox replay, client backoff); after expiry, the same logical operation is deliberately treated as a new one. Keeping claims forever would turn any poisoned claim into a permanent lockout for that key; the TTL bounds the damage and keeps recovery operational. See [ADR-004](docs/adr/004-store-interface-evolution.md).
 
 ## Features
 
@@ -218,9 +219,12 @@ Versioning: **v0.x** — the error sentinels are stable, but `MemoryStore` is de
 - [API reference (pkg.go.dev)](https://pkg.go.dev/github.com/larsartmann/go-idempotency)
 - [Recipe: dedup + response replay](https://pkg.go.dev/github.com/larsartmann/go-idempotency#hdr-Recipe-Dedup_Response_Replay_HTTP_Idempotency) — HTTP idempotency: atomic claim + replaying the original response to retriers
 - [Migrating from MemoryStore](docs/migrating-from-memorystore.md) — pick a backend, implement it, validate with the contract suite, swap the type
+- [Runnable example](example/main.go) — end-to-end walkthrough (`go run ./example`)
 - [Features](FEATURES.md) — honest feature inventory with code evidence
 - [Domain language](docs/DOMAIN_LANGUAGE.md) — glossary of idempotency terms
-- [ADR-001: Why no backends](docs/adr/001-no-backends.md) — architecture decision record
+- [ADR index](docs/adr/README.md) — all architecture decision records in one table
+- [Security policy](SECURITY.md) — how to report vulnerabilities
+- [Code of conduct](CODE_OF_CONDUCT.md)
 - [Changelog](CHANGELOG.md)
 - [Contributing](CONTRIBUTING.md)
 
@@ -229,7 +233,7 @@ Versioning: **v0.x** — the error sentinels are stable, but `MemoryStore` is de
 ```bash
 go test ./... -race    # tests with race detector (mandatory)
 go vet ./...           # static analysis
-golangci-lint run ./... # lint (60+ linters, see .golangci.yml)
+golangci-lint run ./... # lint (see .golangci.yml for the enabled linters)
 ./scripts/check-stale-refs.sh # fail on doc phrases known to go stale (also a CI job)
 ```
 

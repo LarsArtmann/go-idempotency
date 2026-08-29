@@ -9,7 +9,7 @@ go test ./...          # run all tests
 go test ./... -race    # run with race detector (MANDATORY — concurrency is core to this lib)
 go test ./... -v       # verbose, shows property-test shrink traces
 go vet ./...           # static analysis
-golangci-lint run ./... # lint (uses .golangci.yml: 60+ linters, see file for full list)
+golangci-lint run ./... # lint (see .golangci.yml for the enabled linters)
 ./scripts/check-stale-refs.sh  # fail on known-stale doc phrases (patterns listed in the script)
 ```
 

@@ -39,3 +39,13 @@ Ubiquitous vocabulary for the go-idempotency library. These terms appear in code
 | **TOCTOU race** | Time-of-check-to-time-of-use race. If `Seen` and `Record` are called separately, two concurrent requests can both pass the `Seen` check before either records. `CheckAndRecord` prevents this by doing both under a single lock.                                                                                                          |
 | **MemoryStore** | The deprecated in-memory `Store` implementation: `map[string]time.Time` guarded by `sync.RWMutex`. **Deprecated** — intended for development and testing only; removal targeted for v1.0. This library intentionally ships no production backends (Redis, SQL, etc.); consumers implement the `Store` interface against their own backend. |
 | **Close**       | Stops the background sweep goroutine. Idempotent via `sync.Once`. Operations still function after Close; only the sweeper is stopped.                                                                                                                                                                                                     |
+
+## Middleware & Claims
+
+| Term                        | Definition                                                                                                                                                                    |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Claim**                   | The atomic reservation a successful `CheckAndRecord` places on a key: from that moment until the TTL expires, other callers with the same key receive `ErrDuplicate`.         |
+| **Poisoned claim**          | A claim whose side effect never completed (e.g. a crash between winning `CheckAndRecord` and finishing the work). Retries get `ErrDuplicate` until the TTL expires; the TTL bounds the damage. See ADR-004. |
+| **TTL window**              | The lifetime of a claim. Sized to cover the retry horizon (client backoff, redelivery, outbox replay) — not the request timeout.                                               |
+| **Command idempotency**     | `middleware.NewCommand`: wraps a command function for at-most-once dispatch — first call claims and executes, duplicates are rejected without executing, store failures fail closed. |
+| **Response replay**         | Storing the original response and returning it to retriers instead of a bare `409`; the recipe lives in the root package documentation.                                        |
