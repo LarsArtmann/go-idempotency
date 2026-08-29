@@ -3,6 +3,8 @@ package idempotency_test
 import (
 	"context"
 	"errors"
+	"fmt"
+	"runtime"
 	"strconv"
 	"sync"
 	"testing"
@@ -402,4 +404,67 @@ func TestMemoryStore_Sweep_ReclaimsAllKeysUnderLoad(t *testing.T) {
 			t.Fatalf("key %d still seen after sweep under load (volume leak)", i)
 		}
 	}
+}
+
+func TestSentinels_SurviveErrorWrapping(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name     string
+		sentinel error
+	}{
+		{name: "ErrDuplicate", sentinel: idempotency.ErrDuplicate},
+		{name: "ErrInvalidTTL", sentinel: idempotency.ErrInvalidTTL},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			wrapped := fmt.Errorf("dispatch: %w", fmt.Errorf("handler: %w", testCase.sentinel))
+
+			if !errors.Is(wrapped, testCase.sentinel) {
+				t.Fatalf(
+					"errors.Is must match through fmt.Errorf wrapping (code=%q)",
+					errorfamily.Code(testCase.sentinel),
+				)
+			}
+		})
+	}
+}
+
+func TestMemoryStore_Close_StopsSweeperGoroutine(t *testing.T) {
+	t.Parallel()
+
+	// Warm up any lazily-initialized runtime goroutines before measuring.
+	before := runtime.NumGoroutine()
+
+	stores := make([]*idempotency.MemoryStore, 0, 10)
+
+	for range 10 {
+		store := idempotency.NewMemoryStore(time.Millisecond)
+		stores = append(stores, store)
+	}
+
+	for _, store := range stores {
+		store.Close()
+	}
+
+	// Sweeper goroutines exit asynchronously; poll instead of sleeping a
+	// fixed, jitter-prone interval. A small tolerance absorbs unrelated
+	// runtime goroutines (GC, test framework) appearing mid-test.
+	deadline := time.Now().Add(2 * time.Second)
+
+	for time.Now().Before(deadline) {
+		if runtime.NumGoroutine() <= before+2 {
+			return
+		}
+
+		time.Sleep(5 * time.Millisecond)
+	}
+
+	t.Fatalf(
+		"goroutine count did not return to baseline: before=%d after=%d (sweeper leak?)",
+		before, runtime.NumGoroutine(),
+	)
 }

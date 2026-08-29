@@ -158,3 +158,34 @@ func TestProperty_TTLExpiry(t *testing.T) {
 		}
 	})
 }
+
+// TestProperty_NonPositiveTTLAlwaysRejected: for arbitrary non-positive TTLs
+// (including values that overflow Duration when scaled), Record and
+// CheckAndRecord always return ErrInvalidTTL and never record the key.
+func TestProperty_NonPositiveTTLAlwaysRejected(t *testing.T) {
+	t.Parallel()
+
+	rapid.Check(t, func(t *rapid.T) {
+		store := idempotency.NewMemoryStore(0)
+		defer store.Close()
+
+		ctx := context.Background()
+		key := rapid.String().Draw(t, "key")
+		// Draw the Duration directly (no second-scaling): scaling by 1e9
+		// overflows for extreme int64 values and could wrap a non-positive
+		// input into a positive duration, which the store would then accept.
+		ttl := time.Duration(rapid.IntMax(0).Draw(t, "ttl"))
+
+		if err := store.Record(ctx, key, ttl); !errors.Is(err, idempotency.ErrInvalidTTL) {
+			t.Fatalf("Record(%v): want ErrInvalidTTL, got %v", ttl, err)
+		}
+
+		if err := store.CheckAndRecord(ctx, key, ttl); !errors.Is(err, idempotency.ErrInvalidTTL) {
+			t.Fatalf("CheckAndRecord(%v): want ErrInvalidTTL, got %v", ttl, err)
+		}
+
+		if seen, err := store.Seen(ctx, key); seen || err != nil {
+			t.Fatalf("key recorded despite rejected TTL: seen=%v err=%v", seen, err)
+		}
+	})
+}
