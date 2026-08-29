@@ -70,6 +70,23 @@ func (s *Store) Record(_ context.Context, key string, ttl time.Duration) error {
 	return nil
 }
 
+// ForceRecord marks the key as seen, overwriting any existing expiry — the
+// opposite of Record's no-op-on-live-entry rule. It exists so the contract
+// negative tests can model a backend that wrongly extends a live entry's TTL;
+// correct implementations have no reason to call it.
+func (s *Store) ForceRecord(_ context.Context, key string, ttl time.Duration) error {
+	if ttl <= 0 {
+		return idempotency.ErrInvalidTTL
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.entries[key] = time.Now().Add(ttl)
+
+	return nil
+}
+
 // CheckAndRecord atomically claims a key. Returns
 // [idempotency.ErrDuplicate] if the key was already recorded and not expired,
 // or [idempotency.ErrInvalidTTL] if ttl is not positive. The check and the

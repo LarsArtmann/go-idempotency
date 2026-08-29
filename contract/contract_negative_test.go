@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -69,6 +70,86 @@ var negativeScenarios = []negativeScenario{
 		},
 		invariant: "RejectsNonPositiveTTL",
 		reason:    "want ErrInvalidTTL",
+	},
+	{
+		name: "SeenReportsUnseenKeysAsSeen",
+		sabotage: func(s *teststore.Store) idempotency.Store {
+			return invertedSeen{Store: s}
+		},
+		invariant: "UnseenKeyReturnsFalse",
+		reason:    "want false, got true",
+	},
+	{
+		name: "SeenHidesRecordedKeys",
+		sabotage: func(s *teststore.Store) idempotency.Store {
+			return invertedSeen{Store: s}
+		},
+		invariant: "AfterRecordReturnsTrue",
+		reason:    "want true, got false",
+	},
+	{
+		name: "IgnoresTTLExpiry",
+		sabotage: func(s *teststore.Store) idempotency.Store {
+			return neverExpires{Store: s}
+		},
+		invariant: "LazilyDeletesExpired",
+		reason:    "Seen should return false",
+	},
+	{
+		name: "RecordExtendsLiveTTL",
+		sabotage: func(s *teststore.Store) idempotency.Store {
+			return ttlExtendingRecord{Store: s}
+		},
+		invariant: "NoopOnExistingKey",
+		reason:    "Record extended the TTL",
+	},
+	{
+		name: "RecordIgnoresRerecordAfterExpiry",
+		sabotage: func(s *teststore.Store) idempotency.Store {
+			return &writeOnceRecord{Store: s}
+		},
+		invariant: "ReRecordsAfterExpiry",
+		reason:    "key should be seen with fresh TTL",
+	},
+	{
+		name: "CheckAndRecordRejectsEveryFreshClaim",
+		sabotage: func(s *teststore.Store) idempotency.Store {
+			return rejectingCheckAndRecord{Store: s}
+		},
+		invariant: "FirstCallSucceeds",
+		reason:    "want nil",
+	},
+	{
+		name: "CheckAndRecordKeepsExpiredClaims",
+		sabotage: func(s *teststore.Store) idempotency.Store {
+			return &immortalClaims{Store: s, claimed: make(map[string]struct{})}
+		},
+		invariant: "AllowsAfterExpiry",
+		reason:    "after expiry: want nil",
+	},
+	{
+		name: "CheckAndRecordAllowsTwoWinners",
+		sabotage: func(s *teststore.Store) idempotency.Store {
+			return &doubleWinner{Store: s}
+		},
+		invariant: "AtomicUnderConcurrency",
+		reason:    "want exactly 1",
+	},
+	{
+		name: "CollapsesDistinctKeys",
+		sabotage: func(s *teststore.Store) idempotency.Store {
+			return keyCollapsing{Store: s}
+		},
+		invariant: "KeysAreIndependent",
+		reason:    "key-B should not be seen",
+	},
+	{
+		name: "DropsEmptyKeys",
+		sabotage: func(s *teststore.Store) idempotency.Store {
+			return emptyKeyDropper{Store: s}
+		},
+		invariant: "EmptyKey",
+		reason:    "empty key should be seen after Record",
 	},
 }
 
@@ -194,4 +275,187 @@ type ttlBlindCheckAndRecord struct {
 
 func (s ttlBlindCheckAndRecord) CheckAndRecord(ctx context.Context, key string, ttl time.Duration) error {
 	return s.Store.CheckAndRecord(ctx, key, max(ttl, time.Nanosecond))
+}
+
+// invertedSeen reports the opposite of the truth: unseen keys look seen and
+// recorded keys look unseen. It models a backend whose existence check is
+// inverted (e.g. a wrong EXISTS / NOT EXISTS query).
+type invertedSeen struct {
+	*teststore.Store
+}
+
+func (s invertedSeen) Seen(ctx context.Context, key string) (bool, error) {
+	seen, err := s.Store.Seen(ctx, key)
+
+	return !seen, err
+}
+
+// neverExpireMultiplier stretches every TTL far beyond any test window, so
+// entries recorded through this wrapper never expire during a suite run.
+const neverExpireMultiplier = 1000
+
+// neverExpires ignores TTL expiry entirely: nothing it records ever expires.
+// It models a backend that stores keys without honoring the requested expiry.
+type neverExpires struct {
+	*teststore.Store
+}
+
+func (s neverExpires) Record(ctx context.Context, key string, ttl time.Duration) error {
+	return s.Store.Record(ctx, key, ttl*neverExpireMultiplier)
+}
+
+func (s neverExpires) CheckAndRecord(ctx context.Context, key string, ttl time.Duration) error {
+	return s.Store.CheckAndRecord(ctx, key, ttl*neverExpireMultiplier)
+}
+
+// ttlExtendingRecord extends a live entry's TTL on every Record, violating the
+// no-extension rule. It models a backend implemented with plain SET (no NX)
+// semantics for Record.
+type ttlExtendingRecord struct {
+	*teststore.Store
+}
+
+func (s ttlExtendingRecord) Record(ctx context.Context, key string, ttl time.Duration) error {
+	return s.ForceRecord(ctx, key, ttl)
+}
+
+// writeOnceRecord ignores re-records of a key it has written before, even
+// after the entry expired. It models a backend whose Record is a SET NX that
+// never refreshes expired claims.
+type writeOnceRecord struct {
+	*teststore.Store
+
+	mu      sync.Mutex
+	written map[string]struct{}
+}
+
+func (s *writeOnceRecord) Record(ctx context.Context, key string, ttl time.Duration) error {
+	if ttl <= 0 {
+		return s.Store.Record(ctx, key, ttl)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, ok := s.written[key]; ok {
+		return nil
+	}
+
+	if err := s.Store.Record(ctx, key, ttl); err != nil {
+		return err
+	}
+
+	if s.written == nil {
+		s.written = make(map[string]struct{})
+	}
+
+	s.written[key] = struct{}{}
+
+	return nil
+}
+
+// rejectingCheckAndRecord rejects every fresh claim with ErrDuplicate while
+// preserving TTL validation. It models a backend whose existence check always
+// reports the key as present.
+type rejectingCheckAndRecord struct {
+	*teststore.Store
+}
+
+func (s rejectingCheckAndRecord) CheckAndRecord(ctx context.Context, key string, ttl time.Duration) error {
+	if ttl <= 0 {
+		return s.Store.CheckAndRecord(ctx, key, ttl)
+	}
+
+	return idempotency.ErrDuplicate
+}
+
+// immortalClaims remembers every key it has ever claimed and reports it as a
+// duplicate forever, even after the TTL expired. It models a backend that
+// checks existence without honoring expiry.
+type immortalClaims struct {
+	*teststore.Store
+
+	mu      sync.Mutex
+	claimed map[string]struct{}
+}
+
+func (s *immortalClaims) CheckAndRecord(ctx context.Context, key string, ttl time.Duration) error {
+	if ttl <= 0 {
+		return s.Store.CheckAndRecord(ctx, key, ttl)
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, ok := s.claimed[key]; ok {
+		return idempotency.ErrDuplicate
+	}
+
+	if err := s.Store.CheckAndRecord(ctx, key, ttl); err != nil {
+		return err
+	}
+
+	s.claimed[key] = struct{}{}
+
+	return nil
+}
+
+// doubleWinner allows the first two CheckAndRecord callers to win, then
+// reports duplicates. It models an off-by-one claim budget: a broken atomic
+// primitive that grants the claim to more than exactly one caller.
+type doubleWinner struct {
+	*teststore.Store
+
+	mu     sync.Mutex
+	winner int
+}
+
+func (s *doubleWinner) CheckAndRecord(_ context.Context, _ string, ttl time.Duration) error {
+	if ttl <= 0 {
+		return idempotency.ErrInvalidTTL
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.winner++
+
+	if s.winner <= 2 {
+		return nil
+	}
+
+	return idempotency.ErrDuplicate
+}
+
+// keyCollapsing maps every key onto one internal entry, so recording any key
+// marks all keys as seen. It models a backend that loses the key dimension
+// (e.g. a fixed or hashed-to-constant storage key).
+type keyCollapsing struct {
+	*teststore.Store
+}
+
+func (s keyCollapsing) Seen(ctx context.Context, _ string) (bool, error) {
+	return s.Store.Seen(ctx, "")
+}
+
+func (s keyCollapsing) Record(ctx context.Context, _ string, ttl time.Duration) error {
+	return s.Store.Record(ctx, "", ttl)
+}
+
+func (s keyCollapsing) CheckAndRecord(ctx context.Context, _ string, ttl time.Duration) error {
+	return s.Store.CheckAndRecord(ctx, "", ttl)
+}
+
+// emptyKeyDropper silently drops empty keys instead of tracking them like any
+// other key. It models a backend whose client skips empty values.
+type emptyKeyDropper struct {
+	*teststore.Store
+}
+
+func (s emptyKeyDropper) Record(ctx context.Context, key string, ttl time.Duration) error {
+	if key == "" {
+		return nil
+	}
+
+	return s.Store.Record(ctx, key, ttl)
 }

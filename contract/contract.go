@@ -60,6 +60,13 @@
 //     }
 //
 // Apply the same pattern to Seen and Record.
+//
+// # Extending the suite
+//
+// Every invariant added here must ship with a matching broken-Store scenario
+// in contract_negative_test.go. The negative suite is what proves an
+// invariant actually detects its violation class; an invariant without a
+// negative scenario can quietly rot into a check that passes everything.
 package contract
 
 import (
