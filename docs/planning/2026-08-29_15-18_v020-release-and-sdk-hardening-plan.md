@@ -1,5 +1,6 @@
 # Execution Plan: v0.2.0 Release Train & SDK Hardening
 
+> **Status:** ✅ EXECUTED 2026-08-29 (same day). All tasks T1–T27 done except: **T22 (`Delete`) intentionally deferred** per [ADR-004](../../adr/004-store-interface-evolution.md) — the owner raised the domain concern that claim invalidation must not become request-path API; revisit on demonstrated need. **T17 FUNDING**: omitted (owner preference; no preference on record). **T15**: Codecov wired + badge added; dashboard activation (one login) left to the owner since it cannot be done from CI. **T27 dprint**: `dprint.json` kept for optional local use, deliberately not wired into CI (tool not in the CI image; Go formatting is enforced by gofmt/gofumpt/golines, living docs by the stale-refs job). **T27.2 LSP fix**: golangci_lint_ls env overrides added to the user's global Crush config (takes effect next session).
 > **Created:** 2026-08-29 15:18 CEST
 > **Method:** Pareto planning (`pareto-planning` skill) over 50 candidate items
 > **Inputs:** `docs/status/2026-08-29_15-09_docs-health-audit-execution-status.md` section (f) (50 items), `TODO_LIST.md` (8 items), PapDashboard consumer evaluation (`docs/feedback/new/2026-08-18_13-07_*.md`), 3 owner decisions open since 2026-08-07
