@@ -20,7 +20,7 @@ func FuzzCheckAndRecord(f *testing.F) {
 	f.Add("fuzz-key", int64(60))
 	f.Add("", int64(1))
 	f.Add("key-with-unicode", int64(0))
-	f.Add("🔑🚀-emoji-ключ-中文", int64(30))
+	f.Add("🔑🚀-emoji-ключ-中文", int64(30)) //nolint:gosmopolitan // unicode key is the point of the seed
 	f.Add(strings.Repeat("K", 4096), int64(30))
 	f.Add("max-ttl", int64(math.MaxInt64))
 	f.Add("negative-ttl", int64(-1))
@@ -61,7 +61,7 @@ func FuzzRecord(f *testing.F) {
 	f.Add("fuzz-key", int64(30))
 	f.Add("", int64(-5))
 	f.Add("another-key", int64(0))
-	f.Add("🔑🚀-emoji-ключ-中文", int64(-1))
+	f.Add("🔑🚀-emoji-ключ-中文", int64(-1)) //nolint:gosmopolitan // unicode key is the point of the seed
 	f.Add(strings.Repeat("R", 4096), int64(15))
 	f.Add("max-ttl", int64(math.MaxInt64))
 
