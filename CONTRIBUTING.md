@@ -39,9 +39,10 @@ Tests live in `idempotency_test` (external test package) and are split by strate
 - **`example_test.go`** — godoc `Example()` functions rendered on pkg.go.dev.
 - **`contract_test.go`** — runs the `contract.RunTests` suite against `MemoryStore`.
 - **`contract/contract.go`** — the reusable contract test suite itself (importable by consumers). It checks 13 invariants: Seen reports unseen/false, recorded/true, expired/false; Record is a no-op on live keys (never extends TTL), re-records after expiry, rejects `ttl <= 0` with `ErrInvalidTTL`; CheckAndRecord succeeds once, returns `ErrDuplicate` on duplicates, allows after expiry, rejects `ttl <= 0`; 200-goroutine atomicity (exactly one winner); key independence; empty-key validity. The consumer-facing table is in README ("What RunTests checks"). If you change the suite, update that table in the same PR.
-- **`contract/contract_test.go`** — self-test: runs `RunTests` against `contract/internal`, an in-memory test Store, so the suite itself is exercised in this repo's CI.
+- **`contract/contract_test.go`** — self-test: runs `RunTests` against `internal/teststore`, an in-memory test Store, so the suite itself is exercised in this repo's CI.
 - **`contract/contract_negative_test.go`** — negative tests: deliberately broken Stores (duplicate swallowed/generic, TTL-blind Record/CheckAndRecord) prove the suite fails against each violation and names the violated invariant.
-- **`contract/internal/`** — minimal test-only in-memory `Store` (internal package; consumers cannot import it). Not a production backend — see ADR-001.
+- **`internal/teststore/`** — minimal test-only in-memory `Store` (module-internal; consumers cannot import it). Not a production backend — see ADR-001. Used by the contract self-test, the negative tests, and the middleware tests.
+- **`middleware/`** — `CommandIdempotency` (transport-agnostic command wrapper) and the `net/http` adapter honoring the `Idempotency-Key` header. Stdlib-only per ADR-002.
 
 Always `defer store.Close()`, even when sweep is disabled (`sweepInterval == 0`).
 

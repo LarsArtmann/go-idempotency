@@ -5,7 +5,7 @@ import (
 
 	"github.com/larsartmann/go-idempotency"
 	"github.com/larsartmann/go-idempotency/contract"
-	"github.com/larsartmann/go-idempotency/contract/internal"
+	"github.com/larsartmann/go-idempotency/internal/teststore"
 )
 
 // TestRunTestsSelfVerification runs the full contract suite against the
@@ -18,7 +18,7 @@ func TestRunTestsSelfVerification(t *testing.T) {
 	contract.RunTests(t, func(t *testing.T) idempotency.Store {
 		t.Helper()
 
-		store := internal.New()
+		store := teststore.New()
 		t.Cleanup(store.Close)
 
 		return store

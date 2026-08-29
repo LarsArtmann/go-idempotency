@@ -170,6 +170,8 @@ linters:
         varnamelen:
             ignore-map-index-ok: true
             ignore-names:
+                - w
+                - r
                 - err
                 - ok
                 - tt

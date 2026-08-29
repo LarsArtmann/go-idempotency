@@ -1,9 +1,9 @@
-// Package internal provides a minimal in-memory idempotency.Store used to
+// Package teststore provides a minimal in-memory idempotency.Store used to
 // self-test the contract suite. It is test infrastructure, not a production
 // backend: no sweep goroutine, a no-op Close, and just enough state to mirror
 // the documented Store semantics (lazy expiry deletion, no TTL extension,
 // atomic CheckAndRecord).
-package internal
+package teststore
 
 import (
 	"context"

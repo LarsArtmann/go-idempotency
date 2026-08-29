@@ -181,7 +181,7 @@ func TestContract(t *testing.T) {
 
 See the [package docs](https://pkg.go.dev/github.com/larsartmann/go-idempotency) for a full Redis adapter example (all three methods).
 
-The suite is self-tested: this repository runs `RunTests` against its own internal in-memory Store (`contract/internal/`, test-only) in CI, so the suite is exercised on every commit — it is not untested code you are asked to trust.
+The suite is self-tested: this repository runs `RunTests` against its own internal in-memory Store (`internal/teststore/`, test-only) in CI, so the suite is exercised on every commit — it is not untested code you are asked to trust.
 
 **What `RunTests` checks** — the thirteen invariants, each a named subtest:
 
@@ -207,7 +207,7 @@ The suite is self-tested: this repository runs `RunTests` against its own intern
 
 `MemoryStore` (single-process, in-memory) is **deprecated**. It remains functional and concurrency-tested but is intended for development and testing only. For production, implement the `Store` interface against your persistence backend and validate with `contract.RunTests` — the [migration guide](docs/migrating-from-memorystore.md) walks the full path with a worked example. `MemoryStore` will be removed in a future major version.
 
-This library will **not** add production backends (Redis, SQL, etc.). That is by design. The `Store` interface and the `contract` test suite let you implement and verify your own backend. The [middleware package](TODO_LIST.md) (CommandIdempotency, EventIdempotency, QueryIdempotency) is the next planned addition to this module.
+This library will **not** add production backends (Redis, SQL, etc.). That is by design. The `Store` interface and the `contract` test suite let you implement and verify your own backend. The [`middleware` package](https://pkg.go.dev/github.com/larsartmann/go-idempotency/middleware) ships `CommandIdempotency` and a `net/http` adapter (stdlib-only per [ADR-002](docs/adr/002-middleware-module-boundary.md)); `EventIdempotency`/`QueryIdempotency` wait for a consumer that needs them.
 
 Versioning: **v0.x** — the error sentinels are stable, but `MemoryStore` is deprecated and the `Store` interface may gain methods (`Delete`, `Stats`) before **v1.0**. See [ROADMAP.md](ROADMAP.md).
 

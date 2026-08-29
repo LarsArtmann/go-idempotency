@@ -11,7 +11,7 @@ import (
 
 	"github.com/larsartmann/go-idempotency"
 	"github.com/larsartmann/go-idempotency/contract"
-	"github.com/larsartmann/go-idempotency/contract/internal"
+	"github.com/larsartmann/go-idempotency/internal/teststore"
 )
 
 // The negative tests in this file prove the opposite of TestRunTestsSelfVerification:
@@ -32,7 +32,7 @@ const helperEnv = "GO_IDEMPOTENCY_CONTRACT_NEGATIVE_HELPER"
 // correct implementations.
 type negativeScenario struct {
 	name      string
-	sabotage  func(*internal.Store) idempotency.Store
+	sabotage  func(*teststore.Store) idempotency.Store
 	invariant string
 	reason    string
 }
@@ -40,7 +40,7 @@ type negativeScenario struct {
 var negativeScenarios = []negativeScenario{
 	{
 		name: "CheckAndRecordDuplicateReturnsNil",
-		sabotage: func(s *internal.Store) idempotency.Store {
+		sabotage: func(s *teststore.Store) idempotency.Store {
 			return silentDuplicate{Store: s}
 		},
 		invariant: "DuplicateReturnsErrDuplicate",
@@ -48,7 +48,7 @@ var negativeScenarios = []negativeScenario{
 	},
 	{
 		name: "CheckAndRecordDuplicateGenericError",
-		sabotage: func(s *internal.Store) idempotency.Store {
+		sabotage: func(s *teststore.Store) idempotency.Store {
 			return genericDuplicateError{Store: s}
 		},
 		invariant: "DuplicateReturnsErrDuplicate",
@@ -56,7 +56,7 @@ var negativeScenarios = []negativeScenario{
 	},
 	{
 		name: "RecordAcceptsNonPositiveTTL",
-		sabotage: func(s *internal.Store) idempotency.Store {
+		sabotage: func(s *teststore.Store) idempotency.Store {
 			return ttlBlindRecord{Store: s}
 		},
 		invariant: "RejectsNonPositiveTTL",
@@ -64,7 +64,7 @@ var negativeScenarios = []negativeScenario{
 	},
 	{
 		name: "CheckAndRecordAcceptsNonPositiveTTL",
-		sabotage: func(s *internal.Store) idempotency.Store {
+		sabotage: func(s *teststore.Store) idempotency.Store {
 			return ttlBlindCheckAndRecord{Store: s}
 		},
 		invariant: "RejectsNonPositiveTTL",
@@ -135,7 +135,7 @@ func runBroken(t *testing.T, scenarioName string) {
 		contract.RunTests(t, func(t *testing.T) idempotency.Store {
 			t.Helper()
 
-			store := internal.New()
+			store := teststore.New()
 			t.Cleanup(store.Close)
 
 			return scenario.sabotage(store)
@@ -150,7 +150,7 @@ func runBroken(t *testing.T, scenarioName string) {
 // silentDuplicate swallows duplicates: CheckAndRecord reports success for a
 // key that is already recorded.
 type silentDuplicate struct {
-	*internal.Store
+	*teststore.Store
 }
 
 func (s silentDuplicate) CheckAndRecord(ctx context.Context, key string, ttl time.Duration) error {
@@ -165,7 +165,7 @@ func (s silentDuplicate) CheckAndRecord(ctx context.Context, key string, ttl tim
 // genericDuplicateError returns an ad-hoc error instead of the ErrDuplicate
 // sentinel on duplicates.
 type genericDuplicateError struct {
-	*internal.Store
+	*teststore.Store
 }
 
 func (s genericDuplicateError) CheckAndRecord(ctx context.Context, key string, ttl time.Duration) error {
@@ -180,7 +180,7 @@ func (s genericDuplicateError) CheckAndRecord(ctx context.Context, key string, t
 
 // ttlBlindRecord never rejects a non-positive TTL.
 type ttlBlindRecord struct {
-	*internal.Store
+	*teststore.Store
 }
 
 func (s ttlBlindRecord) Record(ctx context.Context, key string, ttl time.Duration) error {
@@ -189,7 +189,7 @@ func (s ttlBlindRecord) Record(ctx context.Context, key string, ttl time.Duratio
 
 // ttlBlindCheckAndRecord never rejects a non-positive TTL.
 type ttlBlindCheckAndRecord struct {
-	*internal.Store
+	*teststore.Store
 }
 
 func (s ttlBlindCheckAndRecord) CheckAndRecord(ctx context.Context, key string, ttl time.Duration) error {
