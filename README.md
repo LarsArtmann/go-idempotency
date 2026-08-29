@@ -204,7 +204,7 @@ The suite is self-tested: this repository runs `RunTests` against its own intern
 
 Slow or heavily loaded CI runners can stretch the suite's wall-clock timings with `contract.RunTestsStrict` and `contract.Options{TimingScale: 3}` instead of debugging expiry flakes.
 
-**If your backend honors context cancellation** (any network round-trip should), test it separately with the pattern documented in the [contract package docs](https://pkg.go.dev/github.com/larsartmann/go-idempotency/contract#hdr-Testing_context_cancellation): a canceled call must return the context error and must NOT consume the claim, so the retry after a timeout can still be processed.
+**If your backend honors context cancellation** (any network round-trip should), also run the opt-in cancellation suite: `contract.RunTestsContextAware(t, factory)` asserts that a canceled call returns the context error and does NOT consume the claim, so the retry after a timeout can still be processed. Context-blind stores (like the deprecated `MemoryStore`) must not run it: ignoring cancellation is their documented behavior.
 
 ## Status & roadmap
 

@@ -28,9 +28,11 @@
 // # Testing context cancellation
 //
 // [RunTests] always passes [context.Background], so it cannot assert how your
-// backend treats cancellation. Backends that honor context cancellation (and
-// in particular any backend doing network round-trips) should add a test like
-// the one below. It pins the two invariants callers rely on:
+// backend treats cancellation. That is deliberate: [idempotency.MemoryStore]
+// and other local stores ignore context, and the main suite must stay
+// meaningful for them. Backends that DO honor cancellation (every backend
+// doing network round-trips should) should additionally run
+// [RunTestsContextAware], which pins the two invariants callers rely on:
 //
 //   - A canceled call returns the context error, not nil and not
 //     [idempotency.ErrDuplicate].
@@ -38,28 +40,6 @@
 //   - A canceled call does NOT consume the claim: the key remains unrecorded,
 //     so the retry that arrives after the cancellation can still be processed.
 //     Otherwise a timed-out request would poison its key until TTL expiry.
-//
-//     func TestContextCancellation(t *testing.T) {
-//     t.Parallel()
-//
-//     store := mybackend.NewStore(redisClient)
-//     t.Cleanup(func() { store.Close() })
-//
-//     ctx, cancel := context.WithCancel(context.Background())
-//     cancel()
-//
-//     err := store.CheckAndRecord(ctx, "canceled-key", time.Minute)
-//     if !errors.Is(err, context.Canceled) {
-//     t.Fatalf("canceled CheckAndRecord: want context.Canceled, got %v", err)
-//     }
-//
-//     // The canceled call must not have recorded the key.
-//     if err := store.CheckAndRecord(context.Background(), "canceled-key", time.Minute); err != nil {
-//     t.Fatalf("canceled call consumed the claim: %v", err)
-//     }
-//     }
-//
-// Apply the same pattern to Seen and Record.
 //
 // # Extending the suite
 //
@@ -135,9 +115,10 @@ type Options struct {
 // produced by factory. Each subtest receives a fresh store instance.
 //
 // All tests use [context.Background] and short TTLs where timing matters.
-// Backends that honor context cancellation should also be tested separately
-// for timeout behavior — the contract suite does not assert context semantics
-// because [idempotency.MemoryStore] intentionally ignores context.
+// Backends that honor context cancellation should additionally run
+// [RunTestsContextAware]; the main suite deliberately does not assert
+// context semantics because [idempotency.MemoryStore] intentionally ignores
+// context.
 func RunTests(t *testing.T, factory StoreFactory) {
 	t.Helper()
 	RunTestsStrict(t, factory, Options{})
