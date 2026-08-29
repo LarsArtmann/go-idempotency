@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Contract suite self-test** — `contract/` now ships a test-only internal in-memory `Store` (`contract/internal/`, internal package so consumers cannot import it) and runs `RunTests` against it in `contract/contract_test.go`. The suite is exercised in this repo's own CI (79.6% coverage of `contract/`) instead of shipping with zero coverage.
+- **Negative contract tests** — four deliberately broken Stores (duplicate swallowed as nil, duplicate returning a generic error, non-positive TTL accepted by `Record` and by `CheckAndRecord`) prove the suite detects each violation AND names the violated invariant in its failure output. Each scenario re-executes the test binary in a subprocess, because an expected `t.Fatal` cannot be observed inside the parent's own test tree.
 
 ## [0.2.0] - 2026-08-29
 
