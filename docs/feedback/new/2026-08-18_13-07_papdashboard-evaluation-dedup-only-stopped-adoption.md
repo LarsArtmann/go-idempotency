@@ -34,6 +34,8 @@ This is the decisive one. HTTP idempotency-key semantics (Stripe-style) demand t
 
 We could not fix this by composition either: `CheckAndRecord` gives no hook to attach "the key won → record this response alongside it", and `Seen`+`Record` split re-introduces exactly the TOCTOU race the library (rightly) forbids.
 
+> **Routing note (2026-08-29):** B1 is addressed by the "Recipe: Dedup + Response Replay (HTTP Idempotency)" section added to `doc.go` — atomic claim via `CheckAndRecord`, response stored under a derived `resp:` key in the consumer's own KV backend, replay on duplicate, 409-without-response on claimed-but-unfinished, plus crash-gap correctness notes. Exactly the composition this section asked for; `Store` stays key-only.
+
 ### B2. Nothing shippable for a single-process production app
 
 Our production topology is one process + SQLite. That rules out the intended path ("implement `Store` against Redis/SQL") — there is no Redis, and a SQL-backed store buys nothing over our event store. Which leaves `MemoryStore`, which is:

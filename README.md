@@ -176,6 +176,7 @@ Versioning: **v0.x** — the error sentinels are stable, but `MemoryStore` is de
 ## Documentation
 
 - [API reference (pkg.go.dev)](https://pkg.go.dev/github.com/larsartmann/go-idempotency)
+- [Recipe: dedup + response replay](https://pkg.go.dev/github.com/larsartmann/go-idempotency#hdr-Recipe-Dedup_Response_Replay_HTTP_Idempotency) — HTTP idempotency: atomic claim + replaying the original response to retriers
 - [Features](FEATURES.md) — honest feature inventory with code evidence
 - [Domain language](docs/DOMAIN_LANGUAGE.md) — glossary of idempotency terms
 - [ADR-001: Why no backends](docs/adr/001-no-backends.md) — architecture decision record
