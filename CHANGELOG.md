@@ -5,10 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2026-08-29
 
 ### Changed
 
+- **Interface-first reframe** — the library is now documented and shipped as an SDK, not a batteries-included framework: it owns the `Store` interface, its error semantics, and the contract test suite, and deliberately ships no production backend (see ADR-001). README and package docs rewritten around "you implement the backend"; Redis `SET NX` / SQL `INSERT ... ON CONFLICT DO NOTHING` named as the atomic primitives per backend.
+- **CI hardening** — GitHub Actions pinned by commit SHA; coverage is reported in CI.
 - **Deprecation-consistency pass completed** — closes the P0 debt from `docs/status/2026-08-07_22-30_memorystore-deprecation-self-critique.md`: the `Store` interface comment now points to the deprecation instead of recommending `MemoryStore` (`store.go`); `CONTRIBUTING.md` scope marks MemoryStore deprecated; `AGENTS.md` architecture bullet marks it deprecated; `ExampleStore`/`ExampleMemoryStore` note that the deprecated MemoryStore is illustrative and link to the custom-backend section (`example_test.go`); the contract test comment calls MemoryStore "the deprecated in-process implementation" (`contract_test.go`). Also marks the `doc.go` Redis adapter example as illustrative (the redis client is intentionally not a dependency) and documents why `BenchmarkMemoryUsage_AfterSweep` reports well under 100% reclaimed (`bench_test.go`). CONTRIBUTING.md development setup gained a short fuzz command.
 - **Documentation health audit (2026-08-29)** — accuracy and freshness fixes across living docs: `AGENTS.md` (Go version no longer hardcoded — points at go.mod; "five test files" corrected to six; CI description mentions coverage reporting), `FEATURES.md` (fuzz tests and memory benchmarks added as FULLY_FUNCTIONAL rows; deprecation status corrected to "unreleased; slated for v0.2.0" since v0.2.0 is not yet tagged), `ROADMAP.md` (v0.2.0 marked planned; new "In-Process Store Evolution" section harvesting the PapDashboard consumer evaluation: response-replay recipe and bounded-store-or-documented-position ideas), `docs/DOMAIN_LANGUAGE.md` (added `ErrInvalidTTL` and `Rejection` glossary entries), `docs/adr/001-no-backends.md` (deprecation release wording corrected), `TODO_LIST.md` rebuilt (stale "Done (this session)" trophy section removed — the items live in this changelog; harvested open work: cut v0.2.0, deprecation lint gate, contract suite self-test, fuzz seed corpus, context-cancellation test guidance, coverage badge).
 
@@ -94,7 +96,8 @@ Tagged `v0.1.0`: initial release — idempotency store with TTL-based dedup.
 - **Sweep soak test** — 1000-key concurrent load test verifying sweep reclaims all expired entries
 - **Package documentation** (`doc.go`) with quick-start example and design rationale
 
-[Unreleased]: https://github.com/larsartmann/go-idempotency/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/larsartmann/go-idempotency/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/larsartmann/go-idempotency/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/larsartmann/go-idempotency/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/larsartmann/go-idempotency/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/larsartmann/go-idempotency/releases/tag/v0.1.0
