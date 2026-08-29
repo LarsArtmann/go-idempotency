@@ -13,8 +13,6 @@ Short-term actionable work. Open items only — completed work lives in [CHANGEL
 
 ## Testing
 
-- [ ] **Document the context-cancellation test pattern for custom backends** — `RunTests` says backends honoring context "should be tested separately" but provides no guidance or template. Evidence: [contract/contract.go](contract/contract.go) `RunTests` doc comment, [docs/status/2026-08-07_22-15_execution-plan-completion.md](docs/status/2026-08-07_22-15_execution-plan-completion.md) b.3. **Impact: Low · Effort: S**
-
 ## Infrastructure
 
 - [ ] **Wire a coverage badge** — CI already reports coverage and uploads the artifact (`.github/workflows/ci.yml`); choose Codecov or Coveralls and add the README badge. Evidence: [docs/status/2026-08-07_22-15_execution-plan-completion.md](docs/status/2026-08-07_22-15_execution-plan-completion.md) b.1. **Impact: Low · Effort: S**

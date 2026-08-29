@@ -20,6 +20,42 @@
 // The factory must return an empty store (no pre-existing keys) and register
 // any necessary cleanup via [testing.T.Cleanup] so that each subtest starts
 // from a clean state.
+//
+// # Testing context cancellation
+//
+// [RunTests] always passes [context.Background], so it cannot assert how your
+// backend treats cancellation. Backends that honor context cancellation (and
+// in particular any backend doing network round-trips) should add a test like
+// the one below. It pins the two invariants callers rely on:
+//
+//   - A canceled call returns the context error, not nil and not
+//     [idempotency.ErrDuplicate].
+//
+//   - A canceled call does NOT consume the claim: the key remains unrecorded,
+//     so the retry that arrives after the cancellation can still be processed.
+//     Otherwise a timed-out request would poison its key until TTL expiry.
+//
+//     func TestContextCancellation(t *testing.T) {
+//     t.Parallel()
+//
+//     store := mybackend.NewStore(redisClient)
+//     t.Cleanup(func() { store.Close() })
+//
+//     ctx, cancel := context.WithCancel(context.Background())
+//     cancel()
+//
+//     err := store.CheckAndRecord(ctx, "canceled-key", time.Minute)
+//     if !errors.Is(err, context.Canceled) {
+//     t.Fatalf("canceled CheckAndRecord: want context.Canceled, got %v", err)
+//     }
+//
+//     // The canceled call must not have recorded the key.
+//     if err := store.CheckAndRecord(context.Background(), "canceled-key", time.Minute); err != nil {
+//     t.Fatalf("canceled call consumed the claim: %v", err)
+//     }
+//     }
+//
+// Apply the same pattern to Seen and Record.
 package contract
 
 import (
