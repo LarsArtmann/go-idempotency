@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **ADR-002: middleware module boundary** — subpackage of this module, stdlib-only, HTTP-first; transport adapters requiring dependencies move to their own module at that point. Unblocks the `middleware` package.
+- **ADR-003: bounded store vs documented position** — documented position chosen: restart durability is table stakes for production idempotency and an LRU-capped claim store silently sacrifices exactly-once; no `BoundedStore` ships.
+- **ADR-004: Store interface evolution** — per-item decisions: `Delete` deferred pending demonstrated operational need (owner raised the domain objection to claim invalidation), `Stats`/`Reset`/`CheckAndRecord` return-shape rejected or deferred with rationale; interface unchanged for v0.3.0.
 - **Runnable example** — `example/` is a `go run ./example` walkthrough: a minimal consumer-owned in-memory `Store`, contract-suite validation of it, and a three-attempt exactly-once demo from the caller's perspective. The deprecated `MemoryStore` is deliberately not used — the example models what production code should look like.
 - **Common pitfalls guide** — README section covering the TOCTOU trap, store-errors-mean-don't-process, TTL sized to the retry window, key namespacing, clock ownership, and the claimed-but-unfinished failure mode.
 - **Backend feature matrix** — README table mapping Redis, PostgreSQL, MySQL, DynamoDB, and SQLite/bbolt to their atomic primitive, TTL semantics, and backend-specific gotchas.

@@ -7,8 +7,8 @@ Short-term actionable work. Open items only — completed work lives in [CHANGEL
 
 ## Features
 
-- [ ] **Implement middleware package** — `doc.go` references `CommandIdempotency`, `EventIdempotency`, and `QueryIdempotency` as the way to wire the store into CQRS dispatch pipelines, but no code exists. This is the primary advertised integration point and currently the library is storage-only. **Blocked on module boundary decision** (same module vs separate module — see [docs/status/2026-08-07_21-31_docs-reframe-no-backends.md](docs/status/2026-08-07_21-31_docs-reframe-no-backends.md) question 2). **Impact: High · Effort: L**
-- [ ] **Add `Delete` method to `Store` interface** — manual key invalidation for operational and testing use. No way to force-expire a single key currently exists. **Blocked on open questions** about interface evolution (see [ROADMAP.md](ROADMAP.md) Versioning Strategy). **Impact: Medium · Effort: S**
+- [ ] **Implement middleware package** — `CommandIdempotency` wiring a `Store` into CQRS dispatch pipelines; stdlib-only subpackage per [ADR-002](docs/adr/002-middleware-module-boundary.md). `EventIdempotency`/`QueryIdempotency` wait for a consumer that needs them (YAGNI). **Impact: High · Effort: L**
+- [ ] **Revisit `Delete(ctx, key)` on `Store`** — manual claim invalidation for operational recovery of poisoned claims. **Deferred per [ADR-004](docs/adr/004-store-interface-evolution.md)**: owner raised the domain concern that claim invalidation must not become request-path API; revisit on a demonstrated poisoned-claim need that TTL tuning cannot absorb. **Impact: Medium · Effort: S (when triggered)**
 
 ## Testing
 
