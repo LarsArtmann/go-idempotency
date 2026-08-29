@@ -121,6 +121,9 @@ jobs:
       - name: Fuzz Record
         run: go test -fuzz=FuzzRecord -fuzztime=30s -run '^$' .
 
+      - name: Fuzz Dispatch
+        run: go test -fuzz=FuzzDispatch -fuzztime=30s -run '^$' ./middleware
+
   govulncheck:
     name: Vulnerabilities
     runs-on: ubuntu-latest
