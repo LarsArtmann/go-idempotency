@@ -16,7 +16,7 @@ This library provides the `Store` interface and `MemoryStore` (a **deprecated** 
 
 ## Ecosystem Integration
 
-- **Middleware/dispatch layer** — the `doc.go` package docs reference `CommandIdempotency`, `EventIdempotency`, and `QueryIdempotency` as the integration point for CQRS pipelines. First step is in [TODO_LIST.md](TODO_LIST.md); the broader vision includes transport-agnostic middleware that works with HTTP, gRPC, and message queue consumers.
+- **Middleware/dispatch layer** — **Shipped 2026-08-29** for the command path: `middleware.NewCommand` (transport-agnostic at-most-once dispatch) and the `net/http` adapter honoring `Idempotency-Key` (stdlib-only per [ADR-002](docs/adr/002-middleware-module-boundary.md)). Remaining, demand-gated: `EventIdempotency`/`QueryIdempotency` (only when a consumer needs them) and a gRPC adapter (only as its own module, per ADR-002's split trigger — write the ADR supplement first).
 - **Key generation utilities** — helpers for producing stable idempotency keys (UUID v7, content-hash-based, request-derived). Currently every consumer must roll their own key strategy.
 
 ## Observability
@@ -34,5 +34,6 @@ Raw ideas surfaced by the 2026-08-18 consumer evaluation in `docs/feedback/new/2
 ## Versioning Strategy
 
 - **v0.2.0 (released 2026-08-29)** — contract test suite, implementation examples (Redis adapter), fuzz tests, memory benchmarks, godoc examples, ADR-001. All docs updated to interface-first SDK framing. `MemoryStore` formally deprecated (dev/test only).
+- **v0.3.0 (staging in CHANGELOG `[Unreleased]`)** — `middleware` package (command dispatch + HTTP adapter), `RunTestsStrict`/`TimingScale`, negative-test detection proofs for every contract invariant, runnable `example/`, migration guide, response-replay recipe, governance files. Cut per [RELEASING.md](RELEASING.md) once the owner's ADR veto window closes.
 - **v0.x** — API may change between minor versions. `MemoryStore` is deprecated; the `Store` interface evolves only per [ADR-004](docs/adr/004-store-interface-evolution.md) (`Delete` deferred pending demonstrated need; `Stats`/`Reset`/return-shape changes rejected or deferred). The `middleware` subpackage ships stdlib-only per [ADR-002](docs/adr/002-middleware-module-boundary.md).
-- **v1.0** — `MemoryStore` removed; the interface stabilizes (proven by multiple independent backend implementations in the wild) and the middleware layer ships.
+- **v1.0** — `MemoryStore` removed and the interface stabilizes (proven by multiple independent backend implementations in the wild). The middleware layer already ships as a subpackage; further transports land as their own modules per ADR-002.
