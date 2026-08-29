@@ -210,7 +210,7 @@ Slow or heavily loaded CI runners can stretch the suite's wall-clock timings wit
 
 `MemoryStore` (single-process, in-memory) is **deprecated**. It remains functional and concurrency-tested but is intended for development and testing only. For production, implement the `Store` interface against your persistence backend and validate with `contract.RunTests` — the [migration guide](docs/migrating-from-memorystore.md) walks the full path with a worked example. `MemoryStore` will be removed in a future major version.
 
-This library will **not** add production backends (Redis, SQL, etc.). That is by design. The `Store` interface and the `contract` test suite let you implement and verify your own backend. The [`middleware` package](https://pkg.go.dev/github.com/larsartmann/go-idempotency/middleware) ships `CommandIdempotency` and a `net/http` adapter (stdlib-only per [ADR-002](docs/adr/002-middleware-module-boundary.md)); `EventIdempotency`/`QueryIdempotency` wait for a consumer that needs them.
+This library will **not** add production backends (Redis, SQL, etc.). That is by design. The `Store` interface and the `contract` test suite let you implement and verify your own backend. The [`middleware` package](middleware/) ships `Command`/`NewCommand` and a `net/http` adapter (stdlib-only per [ADR-002](docs/adr/002-middleware-module-boundary.md)); its pkg.go.dev page goes live with the next module release; `EventIdempotency`/`QueryIdempotency` wait for a consumer that needs them.
 
 Versioning: **v0.x** — the error sentinels are stable, but `MemoryStore` is deprecated and the `Store` interface may gain methods (`Delete`, `Stats`) before **v1.0**. See [ROADMAP.md](ROADMAP.md).
 

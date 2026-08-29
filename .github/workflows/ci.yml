@@ -173,10 +173,14 @@ jobs:
 
       - name: Check links
         # Fragment anchors are not verified (lychee default): pkg.go.dev
-        # #hdr-... anchors do not resolve as HTTP fragments.
+        # #hdr-... anchors do not resolve as HTTP fragments. docs/feedback is
+        # a historical snapshot (same policy as check-stale-refs) and may
+        # reference private repositories the CI token cannot see.
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
           args: >-
-            --no-progress --max-retries 3 .
+            --no-progress --max-retries 3
+            --exclude-path docs/feedback
+            .
           fail: true
           token: ${{ secrets.GITHUB_TOKEN }}
