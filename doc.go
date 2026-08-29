@@ -112,6 +112,93 @@
 // conditional write. See the contract test suite (package contract) to verify
 // your implementation against the same invariants as MemoryStore.
 //
+// Example — SQL adapter (PostgreSQL; database/sql is stdlib, but drivers are
+// intentionally NOT dependencies of this module). Schema:
+//
+//	CREATE TABLE idempotency_keys (
+//	    key        TEXT PRIMARY KEY,
+//	    expires_at TIMESTAMPTZ NOT NULL
+//	);
+//
+// The expiry is computed by the application clock in this example; filter on
+// expires_at (or add a scheduled purge) to reclaim expired rows:
+//
+//	type SQLStore struct {
+//	    db *sql.DB
+//	}
+//
+//	func (s *SQLStore) Seen(ctx context.Context, key string) (bool, error) {
+//	    var live bool
+//	    err := s.db.QueryRowContext(ctx,
+//	        `SELECT EXISTS (SELECT 1 FROM idempotency_keys WHERE key = $1 AND expires_at > now())`,
+//	        key,
+//	    ).Scan(&live)
+//
+//	    return live, err
+//	}
+//
+//	func (s *SQLStore) Record(ctx context.Context, key string, ttl time.Duration) error {
+//	    if ttl <= 0 {
+//	        return idempotency.ErrInvalidTTL
+//	    }
+//	    // Set the expiry only when the row is absent or already expired; a
+//	    // live row is left untouched (Record never extends a TTL).
+//	    _, err := s.db.ExecContext(ctx,
+//	        `INSERT INTO idempotency_keys (key, expires_at) VALUES ($1, $2)
+//	         ON CONFLICT (key) DO UPDATE SET expires_at = EXCLUDED.expires_at
+//	         WHERE idempotency_keys.expires_at <= now()`,
+//	        key, time.Now().Add(ttl),
+//	    )
+//
+//	    return err
+//	}
+//
+//	func (s *SQLStore) CheckAndRecord(ctx context.Context, key string, ttl time.Duration) error {
+//	    if ttl <= 0 {
+//	        return idempotency.ErrInvalidTTL
+//	    }
+//
+//	    // Single transaction: the INSERT ... ON CONFLICT DO UPDATE locks the
+//	    // row (or creates it), so concurrent claims of the same key serialize
+//	    // and the check-and-record is atomic.
+//	    tx, err := s.db.BeginTx(ctx, nil)
+//	    if err != nil {
+//	        return err
+//	    }
+//	    defer func() { _ = tx.Rollback() }()
+//
+//	    var expiresAt time.Time
+//	    err = tx.QueryRowContext(ctx,
+//	        `INSERT INTO idempotency_keys (key, expires_at) VALUES ($1, $2)
+//	         ON CONFLICT (key) DO UPDATE SET expires_at = idempotency_keys.expires_at
+//	         RETURNING expires_at`,
+//	        key, time.Now().Add(ttl),
+//	    ).Scan(&expiresAt)
+//	    if err != nil {
+//	        return err
+//	    }
+//
+//	    if time.Now().Before(expiresAt) {
+//	        return idempotency.ErrDuplicate // live claim exists
+//	    }
+//
+//	    if _, err := tx.ExecContext(ctx,
+//	        `UPDATE idempotency_keys SET expires_at = $2 WHERE key = $1`,
+//	        key, time.Now().Add(ttl),
+//	    ); err != nil {
+//	        return err
+//	    }
+//
+//	    return tx.Commit()
+//	}
+//
+//	func (s *SQLStore) Close() error { return s.db.Close() }
+//
+// Example scope: Redis and SQL adapters are documented because they cover the
+// dominant deployments. DynamoDB, MongoDB, and other backend example requests
+// are declined (ADR-001) — the pattern above plus your backend's conditional
+// write primitive is the template.
+//
 // # Recipe: Dedup + Response Replay (HTTP Idempotency)
 //
 // [Store.CheckAndRecord] answers "first attempt or duplicate", but an HTTP

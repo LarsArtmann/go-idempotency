@@ -45,6 +45,14 @@ The interface is intentionally small (three methods) so that implementing a back
 
 **Deferred.** This is viable but not needed today. If demand emerges, separate modules (`go-idempotency-redis`, `go-idempotency-sql`) can be created without changing this module. The `Store` interface and `contract` package already provide everything needed.
 
+## Supplement (2026-08-29): adapter example scope
+
+Documentation carries adapter examples for Redis and SQL (PostgreSQL) only —
+they cover the dominant deployments. Example requests for further backends
+(DynamoDB, MongoDB, etc.) are declined per this ADR: each backend's atomic
+conditional write plus the contract suite is the template consumers follow,
+and every added example would hint that the backend is "supported" here.
+
 ## Consequences
 
 - Consumers must implement the `Store` interface for their backend (typically 20-30 lines of code)
