@@ -161,6 +161,8 @@ func TestContract(t *testing.T) {
 
 See the [package docs](https://pkg.go.dev/github.com/larsartmann/go-idempotency) for a full Redis adapter example (all three methods).
 
+The suite is self-tested: this repository runs `RunTests` against its own internal in-memory Store (`contract/internal/`, test-only) in CI, so the suite is exercised on every commit — it is not untested code you are asked to trust.
+
 ## Status & roadmap
 
 `MemoryStore` (single-process, in-memory) is **deprecated**. It remains functional and concurrency-tested but is intended for development and testing only. For production, implement the `Store` interface against your persistence backend and validate with `contract.RunTests`. `MemoryStore` will be removed in a future major version.

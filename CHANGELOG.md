@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Contract suite self-test** — `contract/` now ships a test-only internal in-memory `Store` (`contract/internal/`, internal package so consumers cannot import it) and runs `RunTests` against it in `contract/contract_test.go`. The suite is exercised in this repo's own CI (79.6% coverage of `contract/`) instead of shipping with zero coverage.
+
 ## [0.2.0] - 2026-08-29
 
 ### Changed

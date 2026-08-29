@@ -39,6 +39,8 @@ Tests live in `idempotency_test` (external test package) and are split by strate
 - **`example_test.go`** — godoc `Example()` functions rendered on pkg.go.dev.
 - **`contract_test.go`** — runs the `contract.RunTests` suite against `MemoryStore`.
 - **`contract/contract.go`** — the reusable contract test suite itself (importable by consumers).
+- **`contract/contract_test.go`** — self-test: runs `RunTests` against `contract/internal`, an in-memory test Store, so the suite itself is exercised in this repo's CI.
+- **`contract/internal/`** — minimal test-only in-memory `Store` (internal package; consumers cannot import it). Not a production backend — see ADR-001.
 
 Always `defer store.Close()`, even when sweep is disabled (`sweepInterval == 0`).
 
