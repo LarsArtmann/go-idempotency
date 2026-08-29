@@ -13,7 +13,7 @@ golangci-lint run ./... # lint (see .golangci.yml for the enabled linters)
 ./scripts/check-stale-refs.sh  # fail on known-stale doc phrases (patterns listed in the script)
 ```
 
-No `flake.nix`, Makefile, or justfile exists. This is a plain Go module — use `go` directly. CI (`.github/workflows/ci.yml`) runs 8 jobs on every push and PR: `go test -race` with coverage (Codecov upload self-activates only when the `CODECOV_TOKEN` secret exists), `go vet`, `golangci-lint`, a `gofmt` check, a `go mod tidy` diff check, 30s fuzzing per fuzz target (store and middleware), `govulncheck`, and a docs job.
+No `flake.nix`, Makefile, or justfile exists. This is a plain Go module — use `go` directly. CI (`.github/workflows/ci.yml`) runs 8 jobs on every push and PR (plus a weekly scheduled full run): a Go compatibility test matrix (go.mod toolchain + previous release; `-race`; coverage + Codecov upload gated on the `CODECOV_TOKEN` secret, pinned entry only; the scheduled run also executes the strict-timing contract pass at `TimingScale: 3` via `GO_IDEMPOTENCY_CONTRACT_TIMING_SCALE`), `go vet`, `golangci-lint`, a `gofmt` check, a `go mod tidy` diff check, 30s fuzzing per fuzz target (store and middleware), `govulncheck`, and a docs job (stale-refs guard + lychee link check, SHA-pinned action).
 
 Environment gotcha: the login shell may export `GOCACHE`/`GOMODCACHE`/`GOLANGCI_LINT_CACHE` pointing at a nonexistent `/mnt/buildcache/...`. Prefix go/golangci-lint commands with `export GOCACHE=/tmp/go-build-cache-idem GOMODCACHE=/tmp/go-mod-cache-idem GOLANGCI_LINT_CACHE=/tmp/golangci-lint-cache-idem`. Editor LSP diagnostics mentioning `/mnt/buildcache` are ghosts from the same cause — the CLI is the source of truth.
 

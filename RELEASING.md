@@ -5,7 +5,7 @@ Worked end-to-end for v0.2.0 (2026-08-29).
 
 ## Pre-flight
 
-1. **Decide the version** per [ROADMAP.md](docs/ROADMAP.md) Versioning Strategy.
+1. **Decide the version** per [ROADMAP.md](ROADMAP.md) Versioning Strategy.
    - Breaking changes to the `Store` interface or error semantics require a major-version module path bump (v2, v3, ...).
    - New additive API (new methods, new packages) → minor bump (v0.x → v0.x+1 while pre-1.0).
    - Docs, tests, tooling only → patch bump.

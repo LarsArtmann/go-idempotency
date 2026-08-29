@@ -4,40 +4,62 @@ on:
   push:
     branches: [master]
   pull_request:
+  schedule:
+    # Weekly full-CI run including the strict-timing contract pass; odd
+    # minute to avoid the top-of-hour runner stampede.
+    - cron: '17 4 * * 1'
 
 permissions:
   contents: read
 
 jobs:
   test:
-    name: Test
+    name: Test (${{ matrix.go-version }})
     runs-on: ubuntu-latest
     env:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Pinned module toolchain (go-version-file) plus the previous Go
+        # release: proves a consumer whose checkout machine runs one release
+        # behind can still build and test the module (the toolchain directive
+        # in go.mod bootstraps the pinned toolchain via GOTOOLCHAIN=auto).
+        go-version: ['go.mod', 'oldstable']
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
-          go-version-file: go.mod
+          go-version: ${{ matrix.go-version != 'go.mod' && matrix.go-version || '' }}
+          go-version-file: ${{ matrix.go-version == 'go.mod' && 'go.mod' || '' }}
 
       - name: Run tests with race detector
         run: go test ./... -race -count=1
 
+      - name: Strict-timing contract pass (scheduled)
+        if: github.event_name == 'schedule'
+        run: go test ./contract -race -count=1 -run TestRunTestsStrict_ScaledTimings
+        env:
+          GO_IDEMPOTENCY_CONTRACT_TIMING_SCALE: '3'
+
       - name: Run tests with coverage
+        if: matrix.go-version == 'go.mod'
         run: go test ./... -coverprofile=coverage.out -covermode=atomic
 
       - name: Print coverage summary
+        if: matrix.go-version == 'go.mod'
         run: go tool cover -func=coverage.out
 
       - name: Upload coverage artifact
+        if: matrix.go-version == 'go.mod'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: coverage
           path: coverage.out
 
       - name: Upload coverage to Codecov
-        if: env.CODECOV_TOKEN != ''
+        if: env.CODECOV_TOKEN != '' && matrix.go-version == 'go.mod'
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           files: coverage.out
@@ -148,3 +170,13 @@ jobs:
 
       - name: Check living docs for stale references
         run: ./scripts/check-stale-refs.sh
+
+      - name: Check links
+        # Fragment anchors are not verified (lychee default): pkg.go.dev
+        # #hdr-... anchors do not resolve as HTTP fragments.
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
+        with:
+          args: >-
+            --no-progress --max-retries 3 .
+          fail: true
+          token: ${{ secrets.GITHUB_TOKEN }}

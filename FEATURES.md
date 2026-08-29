@@ -29,7 +29,7 @@ Honest inventory of what exists, what ships with gaps, and what is planned. Ever
 | **HTTP adapter** — `net/http` middleware reading the `Idempotency-Key` header: first request processes, duplicates get `409 Conflict`, missing header is `400`                 | `middleware/http.go`, `middleware.HeaderKey`                            |
 | **Runnable example** — end-to-end walkthrough: a demo backend validated by the contract suite, then exactly-once processing from the caller's view (`go run ./example`)        | `example/main.go`                                                       |
 | **Lint configuration** — `.golangci.yml` enables `exhaustruct`, `gosec`, `revive`, `misspell`, `gocritic`                                                                       | `.golangci.yml`                                                         |
-| **CI pipeline** — 8 GitHub Actions jobs on every push/PR: test (`-race` + coverage, Codecov upload gated on the secret), vet, lint (60+ linters), gofmt, tidy-diff, fuzz (30s/target), govulncheck, docs | `.github/workflows/ci.yml`                                              |
+| **CI pipeline** — 8 GitHub Actions jobs on every push/PR (plus a weekly scheduled full run): test matrix over the pinned and previous Go toolchains (`-race`; coverage + Codecov upload gated on the secret, pinned entry only), vet, lint (see `.golangci.yml`), gofmt, tidy-diff, fuzz (30s/target), govulncheck, docs (stale-refs guard + lychee link check) | `.github/workflows/ci.yml`                                              |
 
 ## DEPRECATED
 
