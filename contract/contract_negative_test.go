@@ -85,6 +85,7 @@ func TestRunTestsDetectsBrokenStores(t *testing.T) {
 
 	if scenario := os.Getenv(helperEnv); scenario != "" {
 		runBroken(t, scenario)
+
 		return
 	}
 
@@ -92,19 +93,29 @@ func TestRunTestsDetectsBrokenStores(t *testing.T) {
 		t.Run(scenario.name, func(t *testing.T) {
 			t.Parallel()
 
-			cmd := exec.Command(os.Args[0], "-test.run", "^TestRunTestsDetectsBrokenStores$", "-test.v")
+			cmd := exec.CommandContext(t.Context(), os.Args[0],
+				"-test.run", "^TestRunTestsDetectsBrokenStores$", "-test.v")
 
 			cmd.Env = append(os.Environ(), helperEnv+"="+scenario.name)
 
 			out, err := cmd.CombinedOutput()
 			if err == nil {
-				t.Fatalf("suite passed against a deliberately broken Store (%s): the %s invariant did not catch it\noutput:\n%s",
-					scenario.name, scenario.invariant, out)
+				t.Fatalf(
+					"suite passed against a deliberately broken Store (%s): the %s invariant did not catch it\noutput:\n%s",
+					scenario.name,
+					scenario.invariant,
+					out,
+				)
 			}
 
 			if !strings.Contains(string(out), scenario.invariant) || !strings.Contains(string(out), scenario.reason) {
-				t.Fatalf("suite failed against broken Store (%s) but the failure does not name the violated invariant %s (%q must appear)\noutput:\n%s",
-					scenario.name, scenario.invariant, scenario.reason, out)
+				t.Fatalf(
+					"suite failed against broken Store (%s) but the failure does not name the violated invariant %s (%q must appear)\noutput:\n%s",
+					scenario.name,
+					scenario.invariant,
+					scenario.reason,
+					out,
+				)
 			}
 		})
 	}
@@ -160,6 +171,7 @@ type genericDuplicateError struct {
 func (s genericDuplicateError) CheckAndRecord(ctx context.Context, key string, ttl time.Duration) error {
 	err := s.Store.CheckAndRecord(ctx, key, ttl)
 	if errors.Is(err, idempotency.ErrDuplicate) {
+		//nolint:err113 // deliberately not a sentinel: this is the broken implementation under test
 		return errors.New("key " + key + " already processed")
 	}
 
