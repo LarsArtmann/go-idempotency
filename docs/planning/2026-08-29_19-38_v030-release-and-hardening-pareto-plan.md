@@ -5,6 +5,21 @@
 **Method:** Pareto decomposition — find the smallest set of actions that delivers the majority of the result, then the long tail to 100%.
 **Ground rule:** NO VERSCHLIMMBESSERN. Every step is either additive (docs, tests, CI jobs) or gated behind an explicit owner decision. Every step names its verification. No step touches the `Store` interface (ADR-004), adds backend dependencies (ADR-001), or breaks middleware stdlib-only (ADR-002).
 
+> **Status:** ✅ PARTIALLY EXECUTED 2026-08-29 (same evening) — every non-gated branch is done; the remainder is owner-gated by design.
+>
+> **Executed:**
+>
+> - **L1-1** (earlier the same day): 7 commits pushed (`52afbf3..abfe140`), CI 8/8 green (run 33266273402).
+> - **L1-4 long-soak fuzz** (commits `a582ee6` context): 15 min × 4 targets, Go 1.26.7 linux/amd64, 32 workers — FuzzCheckAndRecord ≈260M execs, FuzzRecord 242.7M, FuzzConcurrentMixed ≈205M, FuzzDispatch 164.2M. Zero crashers, zero findings, no `testdata/` additions (12.9–12.14 done; triage had nothing to triage). This soak starts L1-8's clean-soak-week clock.
+> - **L1-12 `contract.RunTestsContextAware`** (commit `a582ee6`): separate entry point (design notes in `contract/contract_context.go`) instead of an `Options` flag — the main suite stays meaningful for context-blind stores, opt-in names the extra promise, surface stays frozen. 5 subtests pin the two cancellation invariants; 5 new broken-Store scenarios (context-blind and claim-poisoning variants) prove detection — 19 negative scenarios total now share one subprocess harness. Self-tested against a `ContextAware` wrapper in `internal/teststore`; README/CONTRIBUTING/FEATURES/AGENTS/CHANGELOG synced in the same commit (12.47–12.51).
+> - **L1-9 Go compatibility matrix** (commit `ce4a969`): test job runs the go.mod toolchain plus the previous Go release (`oldstable`); coverage/Codecov stay on the pinned entry. Both matrix entries green in run 33267632461 (12.39–12.40; the "PR branch" verification was satisfied by the master-run watch per this repo's CI-edit precedent).
+> - **L1-10 lychee link check** (commits `ce4a969`, `5ada011`): SHA-pinned action v2.9.0, authenticated, 3 retries; fragment anchors intentionally unchecked (12.42 resolved by default-off, documented in the workflow). First run caught 2 real dead links and both were fixed: the README middleware pkg.go.dev page (only exists after v0.3.0 — now an in-repo link until the release) and a private-repo link in a `docs/feedback` snapshot (now excluded from the scan, same historical-snapshot policy as the stale-refs guard) (12.41–12.44).
+> - **L1-11 scheduled strict-timing run** (commit `ce4a969`): weekly full-CI `schedule:` trigger plus a scheduled-only contract pass at `TimingScale: 3` through the new `GO_IDEMPOTENCY_CONTRACT_TIMING_SCALE` knob on the scaled self-test; a bogus value fails loudly; local dry run at scale 3 green (12.45–12.46).
+>
+> **Verification:** CI run 33267632461 green on `5ada011` — 9 job conclusions, including both Go matrix entries and the link check. Local gates re-run bare-exit before every commit.
+>
+> **Owner-gated (untouched, as planned):** L1-2 decision batch, L1-3 release train, L1-5 ADR settle + archive, L1-6 ADR-005 draft, L1-7 post-release stale-refs refresh, L1-8 fuzz-budget raise (soak week clock started 2026-08-29), L1-13 coverage floor (needs `CODECOV_TOKEN`), L1-14 demand-gated backlog stays parked.
+
 ---
 
 ## 1. Pareto Analysis
