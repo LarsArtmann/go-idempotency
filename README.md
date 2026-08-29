@@ -167,7 +167,7 @@ The suite is self-tested: this repository runs `RunTests` against its own intern
 
 ## Status & roadmap
 
-`MemoryStore` (single-process, in-memory) is **deprecated**. It remains functional and concurrency-tested but is intended for development and testing only. For production, implement the `Store` interface against your persistence backend and validate with `contract.RunTests`. `MemoryStore` will be removed in a future major version.
+`MemoryStore` (single-process, in-memory) is **deprecated**. It remains functional and concurrency-tested but is intended for development and testing only. For production, implement the `Store` interface against your persistence backend and validate with `contract.RunTests` — the [migration guide](docs/migrating-from-memorystore.md) walks the full path with a worked example. `MemoryStore` will be removed in a future major version.
 
 This library will **not** add production backends (Redis, SQL, etc.). That is by design. The `Store` interface and the `contract` test suite let you implement and verify your own backend. The [middleware package](TODO_LIST.md) (CommandIdempotency, EventIdempotency, QueryIdempotency) is the next planned addition to this module.
 
@@ -177,6 +177,7 @@ Versioning: **v0.x** — the error sentinels are stable, but `MemoryStore` is de
 
 - [API reference (pkg.go.dev)](https://pkg.go.dev/github.com/larsartmann/go-idempotency)
 - [Recipe: dedup + response replay](https://pkg.go.dev/github.com/larsartmann/go-idempotency#hdr-Recipe-Dedup_Response_Replay_HTTP_Idempotency) — HTTP idempotency: atomic claim + replaying the original response to retriers
+- [Migrating from MemoryStore](docs/migrating-from-memorystore.md) — pick a backend, implement it, validate with the contract suite, swap the type
 - [Features](FEATURES.md) — honest feature inventory with code evidence
 - [Domain language](docs/DOMAIN_LANGUAGE.md) — glossary of idempotency terms
 - [ADR-001: Why no backends](docs/adr/001-no-backends.md) — architecture decision record

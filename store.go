@@ -79,7 +79,9 @@ type Store interface {
 // single-process use only. It does not survive restarts and cannot be shared
 // across instances. For production, implement the [Store] interface against
 // your persistence backend and validate it with the contract test suite (see
-// package contract). MemoryStore will be removed in a future major version.
+// package contract). A step-by-step migration guide lives in
+// docs/migrating-from-memorystore.md. MemoryStore will be removed in a future
+// major version.
 type MemoryStore struct {
 	mu       sync.RWMutex
 	entries  map[string]time.Time // key → expiresAt
@@ -95,7 +97,7 @@ type MemoryStore struct {
 // read still bounds growth.
 //
 // Deprecated: Use only for development and testing. See [MemoryStore] for the
-// rationale and the production alternative.
+// rationale and docs/migrating-from-memorystore.md for the migration path.
 func NewMemoryStore(sweepInterval time.Duration) *MemoryStore {
 	s := &MemoryStore{ //nolint:exhaustruct // mu, stopOnce are zero-valued
 		entries: make(map[string]time.Time),
