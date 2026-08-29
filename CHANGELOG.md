@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Enforced deprecation lint gate** — `forbidigo` in `.golangci.yml` now fails the build on any `MemoryStore`/`NewMemoryStore` usage outside `_test.go` (the `store.go` implementation itself is exempt). The deprecation is mechanically enforced by CI, not just documented.
 - **Contract test suite** — `contract/contract.go` with `RunTests(t *testing.T, factory StoreFactory)` covering all `Store` invariants: Seen, Record, CheckAndRecord, TTL expiry, duplicate detection, concurrency safety (200 goroutines), error semantics, empty key handling. Run against `MemoryStore` in `contract_test.go`. Consumers import `github.com/larsartmann/go-idempotency/contract` to verify their own backend.
 - **Fuzz tests** — `FuzzCheckAndRecord` and `FuzzRecord` in `fuzz_test.go` verifying no panics on arbitrary keys and TTLs, and that exactly-once and TTL-validation invariants hold.
 - **Close+concurrent race test** — `TestMemoryStore_CloseDuringConcurrentOps` verifying no panic when `Close()` is called mid-flight during concurrent operations.

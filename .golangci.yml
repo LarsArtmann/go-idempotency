@@ -123,6 +123,10 @@ linters:
         exhaustruct:
             include:
                 - github\.com/larsartmann/go-idempotency\..*
+        forbidigo:
+            forbid:
+                - pattern: 'MemoryStore'
+                  msg: MemoryStore is deprecated (dev/test only); implement idempotency.Store against your own backend instead
         funlen:
             lines: 200
             statements: 100
@@ -212,6 +216,10 @@ linters:
                 - recvcheck
                 - contextcheck
                 - exhaustive
+                - forbidigo
+            - path: store\.go
+              linters:
+                - forbidigo
             - path: _test\.go
               text: unused
               linters:

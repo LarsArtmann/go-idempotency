@@ -11,10 +11,6 @@ Short-term actionable work. Open items only — completed work lives in [CHANGEL
 - [ ] **Implement middleware package** — `doc.go` references `CommandIdempotency`, `EventIdempotency`, and `QueryIdempotency` as the way to wire the store into CQRS dispatch pipelines, but no code exists. This is the primary advertised integration point and currently the library is storage-only. **Blocked on module boundary decision** (same module vs separate module — see [docs/status/2026-08-07_21-31_docs-reframe-no-backends.md](docs/status/2026-08-07_21-31_docs-reframe-no-backends.md) question 2). **Impact: High · Effort: L**
 - [ ] **Add `Delete` method to `Store` interface** — manual key invalidation for operational and testing use. No way to force-expire a single key currently exists. **Blocked on open questions** about interface evolution (see [ROADMAP.md](ROADMAP.md) Versioning Strategy). **Impact: Medium · Effort: S**
 
-## Deprecation enforcement
-
-- [ ] **Add a lint gate against new `MemoryStore` usage** — `forbidigo` (already enabled in `.golangci.yml`) or `depguard` should fail on `NewMemoryStore`/`MemoryStore{}` outside `_test.go`, so the deprecation is enforced by CI instead of by post-mortem. Evidence: [docs/status/2026-08-07_22-30_memorystore-deprecation-self-critique.md](docs/status/2026-08-07_22-30_memorystore-deprecation-self-critique.md) P1.8–P1.9. **Impact: Medium · Effort: S**
-
 ## Testing
 
 - [ ] **Self-test the contract suite** — `contract/` reports `[no test files]` / 0% coverage because it is only exercised from the root package. Ship a tiny internal test-only `Store` and run `RunTests` against it (plus one negative test proving the suite catches a deliberately broken implementation). Evidence: [contract/contract.go](contract/contract.go), [docs/status/2026-08-07_22-15_execution-plan-completion.md](docs/status/2026-08-07_22-15_execution-plan-completion.md) e.5. **Impact: Medium · Effort: M**
