@@ -7,7 +7,7 @@ Honest inventory of what exists, what ships with gaps, and what is planned. Ever
 | Feature                                                                                                                                                                         | Evidence                                                                |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | **Store interface** — 3-method abstraction (`Seen`, `Record`, `CheckAndRecord`) for idempotency key tracking                                                                    | `Store` interface, `store.go`                                           |
-| **MemoryStore** — in-memory `Store` reference implementation backed by `map[string]time.Time` _(deprecated — see DEPRECATED below)_                                             | `MemoryStore` struct, `store.go`                                        |
+| **MemoryStore** — in-memory `Store` implementation backed by `map[string]time.Time` _(deprecated — see DEPRECATED below)_                                             | `MemoryStore` struct, `store.go`                                        |
 | **Atomic CheckAndRecord** — single-lock check-and-set that prevents the TOCTOU race a separate Seen+Record pair would create                                                    | `MemoryStore.CheckAndRecord`, tested `TestMemoryStore_CheckAndRecord_*` |
 | **TTL-based expiration (dual mechanism)** — background sweep goroutine + lazy deletion on read; map cannot grow unboundedly even with sweep disabled                            | `MemoryStore.sweep`, `MemoryStore.Seen`, `MemoryStore.Record`           |
 | **Configurable sweep interval** — `sweepInterval == 0` disables background goroutine; lazy deletion still bounds growth                                                         | `NewMemoryStore` constructor                                            |
@@ -31,7 +31,7 @@ These remain functional and tested, but are scheduled for removal in a future ma
 
 | Feature                                                                                                     | Status                                                                | Replacement                                                                                         | Evidence                                           |
 | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| **MemoryStore** — in-memory `Store` with TTL expiration, background sweep, lazy deletion, graceful shutdown | Deprecated (unreleased; slated for v0.2.0); removal targeted for v1.0 | Implement the `Store` interface against your persistence backend; validate with `contract.RunTests` | `MemoryStore` struct, `NewMemoryStore`, `store.go` |
+| **MemoryStore** — in-memory `Store` with TTL expiration, background sweep, lazy deletion, graceful shutdown | Deprecated since v0.2.0; removal targeted for v1.0 | Implement the `Store` interface against your persistence backend; validate with `contract.RunTests` | `MemoryStore` struct, `NewMemoryStore`, `store.go` |
 
 ## PLANNED
 

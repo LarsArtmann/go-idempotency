@@ -4,7 +4,7 @@ Long-term direction and raw ideas not yet refined into actionable tasks. When an
 
 ## Backend Implementations (Out of Scope by Design)
 
-This library provides the `Store` interface and `MemoryStore` (a **deprecated** reference implementation for development and testing only). It **will not** ship production backends — Redis, SQL, or otherwise.
+This library provides the `Store` interface and `MemoryStore` (a **deprecated** in-memory store for development and testing only). It **will not** ship production backends — Redis, SQL, or otherwise.
 
 **Why:** Each backend carries its own driver dependency, connection-pool semantics, deployment constraints, and operational tradeoffs. Bundling them here would bloat the dependency tree and impose decisions that consumers should own. The interface is intentionally small (three methods) so that implementing your own backend is straightforward.
 
@@ -33,6 +33,6 @@ Raw ideas surfaced by the 2026-08-18 consumer evaluation in `docs/feedback/new/2
 
 ## Versioning Strategy
 
-- **v0.2.0 (planned; content complete on `master`, not yet tagged)** — contract test suite, implementation examples (Redis adapter), fuzz tests, memory benchmarks, godoc examples, ADR-001. All docs updated to interface-first SDK framing. `MemoryStore` formally deprecated (dev/test only).
+- **v0.2.0 (released 2026-08-29)** — contract test suite, implementation examples (Redis adapter), fuzz tests, memory benchmarks, godoc examples, ADR-001. All docs updated to interface-first SDK framing. `MemoryStore` formally deprecated (dev/test only).
 - **v0.x** — API may change between minor versions. `MemoryStore` is deprecated; the `Store` interface may evolve as real-world use reveals missing methods (e.g., `Delete`, `Stats`, `Reset`).
 - **v1.0** — `MemoryStore` removed; the interface stabilizes (proven by multiple independent backend implementations in the wild) and the middleware layer ships.

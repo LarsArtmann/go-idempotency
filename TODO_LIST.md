@@ -4,7 +4,6 @@ Short-term actionable work. Open items only — completed work lives in [CHANGEL
 
 ## Release
 
-- [ ] **Cut v0.2.0** — the v0.2.0 content (contract test suite, fuzz tests, memory benchmarks, godoc examples, ADR-001, docs reframe, `MemoryStore` deprecation) is complete on `master` and staged in CHANGELOG `[Unreleased]`; the deprecation-consistency pass is done. Tag, push, and verify pkg.go.dev. Evidence: [ROADMAP.md](ROADMAP.md) Versioning Strategy, [CHANGELOG.md](CHANGELOG.md) `[Unreleased]`, [docs/status/2026-08-07_22-30_memorystore-deprecation-self-critique.md](docs/status/2026-08-07_22-30_memorystore-deprecation-self-critique.md) P7.38. **Impact: High · Effort: S**
 
 ## Features
 

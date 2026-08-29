@@ -12,14 +12,14 @@ go vet ./...           # static analysis
 golangci-lint run ./... # lint (uses .golangci.yml: 60+ linters, see file for full list)
 ```
 
-No `flake.nix`, Makefile, or justfile exists. This is a plain Go module — use `go` directly. CI (`.github/workflows/ci.yml`) runs `go test -race`, `go vet`, and `golangci-lint` on every push and PR, and reports test coverage.
+No `flake.nix`, Makefile, or justfile exists. This is a plain Go module — use `go` directly. CI (`.github/workflows/ci.yml`) runs `go test -race` with coverage, `go vet`, `golangci-lint`, a `gofmt` check, a `go mod tidy` diff check, 30s fuzzing per fuzz target, and `govulncheck` on every push and PR.
 
 ## Architecture
 
 Single-package library (`package idempotency`) with a `contract/` subpackage for reusable test infrastructure. Root package is flat — no subdirectories except `contract/`.
 
 - **`Store` interface** (`store.go`) — three methods: `Seen`, `Record`, `CheckAndRecord`. All take `context.Context` but `MemoryStore` ignores it (params named `_`).
-- **`MemoryStore`** (`store.go`) — the reference implementation, **deprecated** (development/testing only; removal targeted for v1.0). In-memory `map[string]time.Time` guarded by `sync.RWMutex`, with TTL-based expiration via two mechanisms: a background sweep goroutine AND lazy deletion on read.
+- **`MemoryStore`** (`store.go`) — **deprecated** (development/testing only; removal targeted for v1.0). In-memory `map[string]time.Time` guarded by `sync.RWMutex`, with TTL-based expiration via two mechanisms: a background sweep goroutine AND lazy deletion on read.
 - **`doc.go`** — package documentation with quick-start example and Redis adapter implementation example.
 - **`contract/`** — reusable contract test suite (`RunTests`) that verifies any `Store` implementation against the full invariant set. Consumers import it to verify their own backend.
 

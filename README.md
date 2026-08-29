@@ -43,7 +43,7 @@ Prefer `CheckAndRecord`. Only reach for `Seen` / `Record` separately when you un
 This is an **SDK, not a batteries-included framework**. The library ships:
 
 - The **`Store` interface** (three methods, well-defined error semantics, atomicity contracts)
-- **`MemoryStore`** _(deprecated)_ — in-memory reference implementation for development and testing only; it will be removed in a future major version
+- **`MemoryStore`** _(deprecated)_ — in-memory store kept for development and testing only; it will be removed in a future major version
 
 It deliberately does **not** ship production backends. There will never be a Redis store, SQL store, or any other concrete backend in this module. Each backend has its own driver, connection-pool semantics, deployment constraints, and operational tradeoffs. Encoding those decisions here would bloat the dependency tree and force choices on you that you should make yourself.
 
@@ -128,7 +128,7 @@ Errors are classified by [go-error-family](https://github.com/larsartmann/go-err
 
 - **`Store` interface** — three-method contract (`Seen`, `Record`, `CheckAndRecord`) with well-defined error semantics and atomicity requirements
 - **Contract test suite** — `contract.RunTests` verifies any `Store` implementation against the full invariant set (atomicity, TTL expiry, concurrency safety, error handling)
-- **`MemoryStore`** _(deprecated)_ — in-memory reference implementation for development and testing, with TTL-based expiration (background sweep + lazy deletion), configurable sweep interval, and graceful shutdown; will be removed in a future major version
+- **`MemoryStore`** _(deprecated)_ — in-memory store for development and testing, with TTL-based expiration (background sweep + lazy deletion), configurable sweep interval, and graceful shutdown; will be removed in a future major version
 - **Conflict-classified errors** — `ErrDuplicate` is HTTP 409, non-retryable; `ErrInvalidTTL` is HTTP 400
 - **Concurrency-safe** — exactly-one-winner verified with 200 goroutines, property-based tests, and fuzz tests
 
@@ -208,6 +208,7 @@ Versioning: **v0.x** — the error sentinels are stable, but `MemoryStore` is de
 go test ./... -race    # tests with race detector (mandatory)
 go vet ./...           # static analysis
 golangci-lint run ./... # lint (60+ linters, see .golangci.yml)
+./scripts/check-stale-refs.sh # fail on doc phrases known to go stale (also a CI job)
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full setup, testing strategy, and conventions.

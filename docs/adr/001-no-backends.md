@@ -13,7 +13,7 @@ go-idempotency provides a `Store` interface for idempotency key tracking. The in
 **This module will not ship production backends.** It provides:
 
 1. The `Store` interface (three methods: `Seen`, `Record`, `CheckAndRecord`)
-2. `MemoryStore` — a reference implementation for development and testing (deprecated — unreleased, slated for v0.2.0; removal targeted for v1.0)
+2. `MemoryStore` — an in-memory implementation for development and testing (deprecated since v0.2.0; removal targeted for v1.0)
 3. The `contract` package — a test suite for verifying any `Store` implementation
 
 Consumers implement the `Store` interface against their own backend.
@@ -49,5 +49,5 @@ The interface is intentionally small (three methods) so that implementing a back
 
 - Consumers must implement the `Store` interface for their backend (typically 20-30 lines of code)
 - The `contract` package must be maintained as the source of truth for `Store` invariants
-- `MemoryStore` is deprecated (unreleased; slated for v0.2.0) and will be removed in v1.0; it remains functional for development and testing. Supersedes the original "permanent reference implementation" stance.
+- `MemoryStore` is deprecated (since v0.2.0) and will be removed in v1.0; it remains functional for development and testing. Supersedes the original stance of keeping MemoryStore around permanently.
 - No driver dependencies will ever appear in this module's `go.mod`
