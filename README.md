@@ -163,6 +163,24 @@ See the [package docs](https://pkg.go.dev/github.com/larsartmann/go-idempotency)
 
 The suite is self-tested: this repository runs `RunTests` against its own internal in-memory Store (`contract/internal/`, test-only) in CI, so the suite is exercised on every commit — it is not untested code you are asked to trust.
 
+**What `RunTests` checks** — the thirteen invariants, each a named subtest:
+
+| Method | Invariant (subtest) | Requirement |
+| --- | --- | --- |
+| `Seen` | `UnseenKeyReturnsFalse` | An unseen key reports `(false, nil)`. |
+| `Seen` | `AfterRecordReturnsTrue` | A recorded, unexpired key reports true. |
+| `Seen` | `LazilyDeletesExpired` | After TTL expiry, `Seen` reports false. |
+| `Record` | `NoopOnExistingKey` | Re-recording a live key must NOT extend its TTL. |
+| `Record` | `ReRecordsAfterExpiry` | An expired key accepts a fresh TTL. |
+| `Record` | `RejectsNonPositiveTTL` | `ttl <= 0` returns `ErrInvalidTTL`; nothing is recorded. |
+| `CheckAndRecord` | `FirstCallSucceeds` | The first claim returns nil. |
+| `CheckAndRecord` | `DuplicateReturnsErrDuplicate` | A second claim inside the TTL returns `ErrDuplicate` (`errors.Is`-compatible). |
+| `CheckAndRecord` | `AllowsAfterExpiry` | After expiry the key can be claimed again. |
+| `CheckAndRecord` | `RejectsNonPositiveTTL` | `ttl <= 0` returns `ErrInvalidTTL`; nothing is recorded. |
+| Concurrency | `AtomicUnderConcurrency` | 200 goroutines racing one key: exactly one nil win, all others `ErrDuplicate`, no other errors. |
+| Cross-cutting | `KeysAreIndependent` | Operations on one key never affect another. |
+| Cross-cutting | `EmptyKey` | The empty string is a valid key across all methods. |
+
 **If your backend honors context cancellation** (any network round-trip should), test it separately with the pattern documented in the [contract package docs](https://pkg.go.dev/github.com/larsartmann/go-idempotency/contract#hdr-Testing_context_cancellation): a canceled call must return the context error and must NOT consume the claim, so the retry after a timeout can still be processed.
 
 ## Status & roadmap
