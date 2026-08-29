@@ -40,10 +40,9 @@ var ErrInvalidTTL = errorfamily.NewRejection(
 // loses the acknowledgement, and retries, the store prevents the command from
 // executing twice.
 //
-// Implementations must be safe for concurrent use. [MemoryStore] is provided as
-// a reference implementation for development and single-process use cases;
-// implement this interface against your own backend (Redis, SQL, etc.) for
-// production.
+// Implementations must be safe for concurrent use. [MemoryStore] is provided
+// for development and testing only (it is deprecated); implement this
+// interface against your own backend (Redis, SQL, etc.) for production.
 type Store interface {
 	// Seen reports whether the key is currently recorded and not expired.
 	Seen(ctx context.Context, key string) (bool, error)

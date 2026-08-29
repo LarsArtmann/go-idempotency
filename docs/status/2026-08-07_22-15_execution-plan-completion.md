@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-All 6 active phases + Phase 10 from `docs/planning/2026-08-07_21-50_interface-first-sdk-completion.md` were executed end-to-end. Build, vet, race tests (8s), fuzz tests (280K+ execs), and 60+ linters all pass clean. 100% statement coverage on the main package. The SDK promise is now actionable: docs show HOW (Redis adapter example), the contract test suite verifies correctness, and CONTRIBUTING.md prevents wasted PRs.
+All 6 active phases + Phase 10 from `docs/planning/archived/2026-08-07_21-50_interface-first-sdk-completion.md` (archived after full execution) were executed end-to-end. Build, vet, race tests (8s), fuzz tests (280K+ execs), and 60+ linters all pass clean. 100% statement coverage on the main package. The SDK promise is now actionable: docs show HOW (Redis adapter example), the contract test suite verifies correctness, and CONTRIBUTING.md prevents wasted PRs.
 
 However, several items deserve honest scrutiny before declaring victory.
 
@@ -44,9 +44,9 @@ However, several items deserve honest scrutiny before declaring victory.
 | # | What                                                         | Why partial                                                                                                                                                                                                                                                                                                                                                             | Impact                                                                  |
 | - | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | 1 | **Coverage badge in README**                                 | The plan (Phase 6.3) called for adding a coverage badge to README. CI now reports coverage and uploads an artifact, but there is no badge rendering service (Codecov, Coveralls) wired up. Adding a badge image that points to a non-existent service would be worse than no badge. The CI step exists; the badge does not.                                             | Low — coverage is 100% locally, just not visible to README readers      |
-| 2 | **CONTRIBUTING.md testing section**                          | Updated to list all 5 test files + contract test, but the "Development Setup" commands section still shows only 3 commands (test, vet, lint). Could add `go test -fuzz=.` and `go test -bench=.` commands.                                                                                                                                                              | Low — developers can discover them                                      |
+| ~~2~~ | ~~**CONTRIBUTING.md testing section**~~ done (docs-health pass 2026-08-29) | ~~Updated to list all 5 test files + contract test, but the "Development Setup" commands section still shows only 3 commands (test, vet, lint). Could add `go test -fuzz=.` and `go test -bench=.` commands.~~ | ~~Low — developers can discover them~~ |
 | 3 | **Contract test for context cancellation**                   | The contract suite explicitly does NOT test context cancellation because MemoryStore ignores context. The doc comment on `RunTests` says "Backends that honor context cancellation should also be tested separately." But no guidance or pattern is provided for HOW to test that separately.                                                                           | Medium — consumers implementing context-aware backends have no template |
-| 4 | **doc.go Redis example uses `github.com/redis/go-redis/v9`** | The example references a specific Redis client library that is NOT in go.mod (by design — no backend deps). The example is in a godoc comment block so it won't cause build issues, but a reader might wonder if it's importable. The comment says "Example" but doesn't explicitly say "this is illustrative pseudocode, not compilable without the redis dependency." | Low — intent is clear from context                                      |
+| ~~4~~ | ~~**doc.go Redis example uses `github.com/redis/go-redis/v9`**~~ done (docs-health pass 2026-08-29) | ~~The example references a specific Redis client library that is NOT in go.mod (by design — no backend deps). The example is in a godoc comment block so it won't cause build issues, but a reader might wonder if it's importable. The comment says "Example" but doesn't explicitly say "this is illustrative pseudocode, not compilable without the redis dependency."~~ | ~~Low — intent is clear from context~~ |
 
 ---
 
@@ -100,9 +100,9 @@ The closest thing to a mistake:
 
 ### Immediate polish (session debt)
 
-1. **Add `coverage.out` to `.gitignore`** — prevent accidental commits
-2. **Add `go test -fuzz=.` and `go test -bench=.` to CONTRIBUTING.md Development Setup** — discoverability
-3. **Add a comment to `BenchmarkMemoryUsage_AfterSweep` explaining why %-reclaimed is not ~100%** — map internals aren't shrunk by GC
+1. ~~**Add `coverage.out` to `.gitignore`** — prevent accidental commits~~ done (docs-health pass 2026-08-29)
+2. ~~**Add `go test -fuzz=.` and `go test -bench=.` to CONTRIBUTING.md Development Setup** — discoverability~~ done (docs-health pass 2026-08-29)
+3. ~~**Add a comment to `BenchmarkMemoryUsage_AfterSweep` explaining why %-reclaimed is not ~100%** — map internals aren't shrunk by GC~~ done (docs-health pass 2026-08-29)
 4. **Add a `contract/contract_test.go` that self-tests the suite** — fixes the 0% coverage report on the contract package
 5. **Enrich fuzz seed corpus** — empty strings, long strings, unicode, MaxInt64 durations, negative durations
 
@@ -183,7 +183,7 @@ The closest thing to a mistake:
 
 The SDK framing positions `MemoryStore` as a "reference implementation for development and single-process use cases." But some interface-first SDKs (like `database/sql` without a driver) provide NO default implementation — they force you to bring your own. If the goal is to push consumers toward implementing their own backend, keeping `MemoryStore` might undermine that message (it's too easy to just use `MemoryStore` and never implement the interface). Should `MemoryStore` stay as a permanent citizen, or should there be a migration path toward deprecating it?
 
-**Why I can't decide this:** This is a product/positioning decision. Keeping MemoryStore makes the library immediately useful (you can `go get` and start coding). Removing it makes the SDK message stronger but raises the barrier to entry. Both are valid; the right answer depends on who the target user is.
+**Why I can't decide this:** This is a product/positioning decision. Keeping MemoryStore makes the library immediately useful (you can `go get` and start coding). Removing it makes the SDK message stronger but raises the barrier to entry. Both are valid; the right answer depends on who the target user is. _Answered by the owner later the same day: "deprecate it" — executed in `5848f38` and `67fa850`._
 
 ### 2. Should the middleware package live in this module or a separate module?
 

@@ -62,7 +62,8 @@
 // atomic — use your backend's native check-and-set primitive, not a separate
 // check followed by a record.
 //
-// Example — Redis adapter using github.com/redis/go-redis/v9:
+// Example — Redis adapter using github.com/redis/go-redis/v9 (illustrative:
+// that client is intentionally NOT a dependency of this module):
 //
 //	type RedisStore struct {
 //	    client *redis.Client

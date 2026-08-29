@@ -8,7 +8,7 @@
 
 Reframed the entire documentation surface to communicate a single, consistent message: **go-idempotency is an interface-first SDK. It provides the `Store` interface and `MemoryStore` (a reference implementation only). It will NOT ship production backends (Redis, SQL, etc.). Consumers implement the interface against their own backend.**
 
-9 files were updated. Build, vet, race tests, and 60+ linters pass clean. However, the reframe introduced **stale line-number references** in FEATURES.md and DOMAIN_LANGUAGE.md that need fixing, and there are several consistency gaps that remain.
+9 files were updated. Build, vet, race tests, and 60+ linters pass clean. However, the reframe introduced **stale line-number references** in FEATURES.md and DOMAIN_LANGUAGE.md that need fixing, and there are several consistency gaps that remain. _[2026-08-29: the stale references and gaps were fixed in `e8d545c`; per-item verdicts inline below.]_
 
 ---
 
@@ -34,9 +34,9 @@ Reframed the entire documentation surface to communicate a single, consistent me
 
 | # | What                                    | Why partial                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Impact                                                                                 |
 | - | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| 1 | **Consistency sweep of FEATURES.md**    | The evidence column (line references to `store.go`) is now **stale** — my edits to the `Store` interface comment shifted all line numbers downward by ~3-17 lines. Example: FEATURES.md says `store.go:30-48` for the Store interface, but it is now at `store.go:47-66`. Says `store.go:56-61` for MemoryStore, actually `store.go:78-83`. Says `store.go:118-129` for CheckAndRecord, actually `store.go:147-163`. These were already approximately stale before my edits, but I made them worse. | Medium — evidence column is inaccurate, undermines the "verified against code" promise |
-| 2 | **FEATURES.md MemoryStore description** | Line 10 still says "in-memory `Store` **implementation**" — should say "**reference** implementation" to match the new framing used everywhere else (line 36, README, doc.go, AGENTS.md, DOMAIN_LANGUAGE.md all say "reference implementation").                                                                                                                                                                                                                                                    | Low — minor inconsistency within the same file                                         |
-| 3 | **DOMAIN_LANGUAGE.md line reference**   | Says `store.go:30-48` for the Store interface — now stale (actual: `store.go:47-66`).                                                                                                                                                                                                                                                                                                                                                                                                               | Low — one stale reference                                                              |
+| ~~1~~ | ~~**Consistency sweep of FEATURES.md**~~ done at `e8d545c` | ~~The evidence column (line references to `store.go`) is now **stale** — my edits to the `Store` interface comment shifted all line numbers downward by ~3-17 lines. Example: FEATURES.md says `store.go:30-48` for the Store interface, but it is now at `store.go:47-66`. Says `store.go:56-61` for MemoryStore, actually `store.go:78-83`. Says `store.go:118-129` for CheckAndRecord, actually `store.go:147-163`. These were already approximately stale before my edits, but I made them worse.~~ | ~~Medium — evidence column is inaccurate, undermines the "verified against code" promise~~ |
+| ~~2~~ | ~~**FEATURES.md MemoryStore description**~~ done at `e8d545c` | ~~Line 10 still says "in-memory `Store` **implementation**" — should say "**reference** implementation" to match the new framing used everywhere else (line 36, README, doc.go, AGENTS.md, DOMAIN_LANGUAGE.md all say "reference implementation").~~ | ~~Low — minor inconsistency within the same file~~ |
+| ~~3~~ | ~~**DOMAIN_LANGUAGE.md line reference**~~ done at `e8d545c` | ~~Says `store.go:30-48` for the Store interface — now stale (actual: `store.go:47-66`).~~ | ~~Low — one stale reference~~ |
 
 ---
 
@@ -44,10 +44,10 @@ Reframed the entire documentation surface to communicate a single, consistent me
 
 | # | What                                            | Why it matters                                                                                                                                                                                                                                                                              |
 | - | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 | **Fix stale line-number references**            | FEATURES.md evidence column and DOMAIN_LANGUAGE.md both reference `store.go` line numbers that no longer match. Should update all references to match current line numbers, or switch to a more durable reference style (symbol names, section anchors).                                    |
-| 2 | **Add a custom backend implementation example** | Every doc now says "you implement the Store interface" but none shows what that looks like. A minimal example (e.g., a Redis `SET NX` adapter, 15-20 lines) in `doc.go` or README would make the promise actionable instead of abstract. This is the single highest-value addition missing. |
-| 3 | **CONTRIBUTING.md update**                      | Not touched. Doesn't mention backends explicitly, but could add a note that backend implementations are out of scope and won't be accepted as PRs (manages contributor expectations).                                                                                                       |
-| 4 | **Store interface contract test suite**         | Already in TODO_LIST.md but not started. This is now MORE important than before — it's the primary tool consumers use to validate their own backends. The docs repeatedly reference it as the verification path.                                                                            |
+| ~~1~~ | ~~**Fix stale line-number references**~~ done at `e8d545c` | ~~FEATURES.md evidence column and DOMAIN_LANGUAGE.md both reference `store.go` line numbers that no longer match. Should update all references to match current line numbers, or switch to a more durable reference style (symbol names, section anchors).~~ |
+| ~~2~~ | ~~**Add a custom backend implementation example**~~ done at `43b236a` | ~~Every doc now says "you implement the Store interface" but none shows what that looks like. A minimal example (e.g., a Redis `SET NX` adapter, 15-20 lines) in `doc.go` or README would make the promise actionable instead of abstract. This is the single highest-value addition missing.~~ |
+| ~~3~~ | ~~**CONTRIBUTING.md update**~~ done at `43b236a` | ~~Not touched. Doesn't mention backends explicitly, but could add a note that backend implementations are out of scope and won't be accepted as PRs (manages contributor expectations).~~ |
+| ~~4~~ | ~~**Store interface contract test suite**~~ done at `46aa38d`, ` 9db0f6e` | ~~Already in TODO_LIST.md but not started. This is now MORE important than before — it's the primary tool consumers use to validate their own backends. The docs repeatedly reference it as the verification path.~~ |
 
 ---
 
@@ -81,16 +81,16 @@ Reframed the entire documentation surface to communicate a single, consistent me
 
 ### Immediate fixes (this session's debt)
 
-1. **Fix all stale `store.go` line references in FEATURES.md** — update to current line numbers
-2. **Fix stale `store.go:30-48` reference in DOMAIN_LANGUAGE.md** — update to current
-3. **Update FEATURES.md line 10** — "implementation" → "reference implementation"
-4. **Verify no other files cite stale `store.go` line numbers** — grep for `store.go:` across all `.md` files
+1. ~~**Fix all stale `store.go` line references in FEATURES.md** — update to current line numbers~~ done at `e8d545c`
+2. ~~**Fix stale `store.go:30-48` reference in DOMAIN_LANGUAGE.md** — update to current~~ done at `e8d545c`
+3. ~~**Update FEATURES.md line 10** — "implementation" → "reference implementation"~~ done at `e8d545c`
+4. ~~**Verify no other files cite stale `store.go` line numbers** — grep for `store.go:` across all `.md` files~~ done at `e8d545c`
 
 ### High-value additions
 
-5. **Add a custom Store implementation example** — minimal Redis `SET NX` adapter (~15-20 lines) in `doc.go` or README, showing how simple implementing the interface is
-6. **Add Store interface contract test suite** — table-driven tests any `Store` impl must pass (already in TODO_LIST.md, now critical-path for the SDK framing)
-7. **Add CONTRIBUTING.md scope note** — "Backend implementations (Redis, SQL, etc.) are out of scope and will not be accepted as PRs. Implement the Store interface in your own project."
+5. ~~**Add a custom Store implementation example** — minimal Redis `SET NX` adapter (~15-20 lines) in `doc.go` or README, showing how simple implementing the interface is~~ done at `43b236a`
+6. ~~**Add Store interface contract test suite** — table-driven tests any `Store` impl must pass (already in TODO_LIST.md, now critical-path for the SDK framing)~~ done at `46aa38d`, ` 9db0f6e`
+7. ~~**Add CONTRIBUTING.md scope note** — "Backend implementations (Redis, SQL, etc.) are out of scope and will not be accepted as PRs. Implement the Store interface in your own project."~~ done at `43b236a`
 
 ### Interface evolution (from TODO_LIST.md + ROADMAP.md)
 
@@ -120,44 +120,44 @@ Reframed the entire documentation surface to communicate a single, consistent me
 
 ### Testing improvements (from TODO_LIST.md + self-identified)
 
-25. **Add fuzz tests** — `FuzzCheckAndRecord`, `FuzzRecord` with arbitrary keys, TTLs, concurrency
+25. ~~**Add fuzz tests** — `FuzzCheckAndRecord`, `FuzzRecord` with arbitrary keys, TTLs, concurrency~~ done at `9db0f6e`
 26. **Add concurrent fuzz test** — randomized goroutine counts + interleavings
 27. **Benchmark sweep goroutine overhead** — measure cost of background sweep vs disabled
-28. **Benchmark memory usage** — `testing.B` with `runtime.ReadMemStats` for large key counts
+28. ~~**Benchmark memory usage** — `testing.B` with `runtime.ReadMemStats` for large key counts~~ done at `46aa38d`
 29. **Test context cancellation on custom backends** — contract test should verify ctx is honored
-30. **Add race test for Close + concurrent operations** — verify no panic on use-after-close
+30. ~~**Add race test for Close + concurrent operations** — verify no panic on use-after-close~~ done at `9db0f6e`
 
 ### Observability (from ROADMAP.md)
 
 31. **Add metrics hooks to MemoryStore** — hit/miss/expiry/contention counters
 32. **Add structured logging** — optional `*slog.Logger` for sweep, expiry, operations
-33. **Add tracing support** — OpenTelemetry spans for store operations
-34. **Evaluate sharded mutex design** — benchmark vs single `sync.RWMutex` under contention
-35. **Evaluate `sync.Map`** — benchmark for read-heavy workloads
-36. **Evaluate lock-free approaches** — CAS-based map for extreme contention
+33. ~~**Add tracing support** — OpenTelemetry spans for store operations~~ **Won't implement — rejected in planning doc R1 (OpenTelemetry).**
+34. ~~**Evaluate sharded mutex design** — benchmark vs single `sync.RWMutex` under contention~~ **Won't implement — rejected in planning doc R4 (sharded mutex).**
+35. ~~**Evaluate `sync.Map`** — benchmark for read-heavy workloads~~ **Won't implement — rejected in planning doc R2 (sync.Map).**
+36. ~~**Evaluate lock-free approaches** — CAS-based map for extreme contention~~ **Won't implement — rejected in planning doc R3 (lock-free).**
 
 ### Documentation improvements
 
-37. **Add "Implementing your own backend" guide** — dedicated doc page with patterns, pitfalls, testing
-38. **Add architecture decision record (ADR)** — why no backends, why interface-first
+37. ~~**Add "Implementing your own backend" guide** — dedicated doc page with patterns, pitfalls, testing~~ done at `43b236a`
+38. ~~**Add architecture decision record (ADR)** — why no backends, why interface-first~~ done at `9db0f6e`
 39. **Add example repo link** — reference implementation of a Redis backend in a separate repo
-40. **Add godoc examples** — `Example()` functions that appear on pkg.go.dev
-41. **Rewrite README Features section** — lead with "Store interface" as the product, not MemoryStore features
-42. **Add comparison table** — vs other idempotency libraries (stripe/go-idempotency, etc.)
+40. ~~**Add godoc examples** — `Example()` functions that appear on pkg.go.dev~~ done at `9db0f6e`
+41. ~~**Rewrite README Features section** — lead with "Store interface" as the product, not MemoryStore features~~ done at `43b236a`
+42. ~~**Add comparison table** — vs other idempotency libraries (stripe/go-idempotency, etc.)~~ **Won't implement — rejected in planning doc R5 (comparison table).**
 
 ### CI/CD and release
 
-43. **Add `Store` contract test to CI** — runs against MemoryStore on every push
-44. **Set up GoReleaser** — automated tagged releases with changelog extraction
-45. **Add code coverage reporting** — `go test -cover` + Codecov/badge
-46. **Add `gosec` to CI** — security scanning (gosec is in golangci-lint but not as standalone gate)
-47. **Add dependency scanning** — Dependabot or Renovate for `go.mod`
+43. ~~**Add `Store` contract test to CI** — runs against MemoryStore on every push~~ done at `9db0f6e`
+44. ~~**Set up GoReleaser** — automated tagged releases with changelog extraction~~ **Won't implement — rejected in planning doc R6 (GoReleaser).**
+45. ~~**Add code coverage reporting** — `go test -cover` + Codecov/badge~~ done at `9db0f6e`
+46. ~~**Add `gosec` to CI** — security scanning (gosec is in golangci-lint but not as standalone gate)~~ done (gosec enabled in .golangci.yml)
+47. ~~**Add dependency scanning** — Dependabot or Renovate for `go.mod`~~ done at `9db0f6e`
 48. **Tag v0.2.0** — after middleware package or contract test suite lands
-49. **Plan v1.0 criteria** — interface stability, multiple independent backend implementations in the wild, middleware layer shipped
+49. ~~**Plan v1.0 criteria** — interface stability, multiple independent backend implementations in the wild, middleware layer shipped~~ done (ROADMAP v1.0 criteria documented)
 
 ### Polish
 
-50. **Standardize em-dash usage** — AGENTS.md `store.go:61` uses `*what`.` (missing opening backtick). Search for similar typos across docs.
+50. ~~**Standardize em-dash usage** — AGENTS.md `store.go:61` uses `*what`.` (missing opening backtick). Search for similar typos across docs.~~ done at `e8d545c`
 
 ---
 
@@ -165,7 +165,7 @@ Reframed the entire documentation surface to communicate a single, consistent me
 
 ### 1. Should `MemoryStore` be deprecated/removed eventually, or kept permanently?
 
-The reframe positions `MemoryStore` as a "reference implementation for development and single-process use cases." But some interface-first SDKs (like `database/sql` without a driver) provide NO default implementation — they force you to bring your own. If the goal is to push consumers toward implementing their own backend, keeping `MemoryStore` might undermine that message (it's too easy to just use `MemoryStore` and never implement the interface). Should `MemoryStore` stay as a permanent citizen, or should there be a migration path toward deprecating it in favor of consumer-owned implementations? This is a product/philosophy decision I cannot make.
+The reframe positions `MemoryStore` as a "reference implementation for development and single-process use cases." But some interface-first SDKs (like `database/sql` without a driver) provide NO default implementation — they force you to bring your own. If the goal is to push consumers toward implementing their own backend, keeping `MemoryStore` might undermine that message (it's too easy to just use `MemoryStore` and never implement the interface). Should `MemoryStore` stay as a permanent citizen, or should there be a migration path toward deprecating it in favor of consumer-owned implementations? This is a product/philosophy decision I cannot make. _Answered by the owner on 2026-08-07: "deprecate it" — executed in `5848f38` and `67fa850`; removal targeted for v1.0._
 
 ### 2. Should the middleware package live in this module or a separate module?
 

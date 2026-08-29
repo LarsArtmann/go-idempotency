@@ -63,15 +63,15 @@ _Session focus: Create AGENTS.md, run docs-health + update-old-docs skills, buil
 
 ### Process Improvements
 
-1. **Run `go test -race` every time, not just `go test`.** I recommended `-race` in AGENTS.md and README.md but only ran plain `go test` during the initial quality gate. I caught this during the self-review and re-ran with `-race` (it passed). For a concurrency library, `-race` is non-negotiable. The AGENTS.md and README.md should mark it as mandatory, not "recommended."
+1. ~~**Run `go test -race` every time, not just `go test`.** I recommended `-race` in AGENTS.md and README.md but only ran plain `go test` during the initial quality gate. I caught this during the self-review and re-ran with `-race` (it passed). For a concurrency library, `-race` is non-negotiable. The AGENTS.md and README.md should mark it as mandatory, not "recommended."~~ done at `d026955`
 
-2. **Compile examples before publishing them.** I wrote a README quick-start example and published it without compiling. I caught this during self-review and verified it compiles. But the process should be: write example → compile → publish. Not: publish → maybe verify later.
+2. ~~**Compile examples before publishing them.** I wrote a README quick-start example and published it without compiling. I caught this during self-review and verified it compiles. But the process should be: write example → compile → publish. Not: publish → maybe verify later.~~ done (README example compile-verified in-session; godoc examples are compiled tests (9db0f6e))
 
 3. **Order of operations: docs-health before AGENTS.md.** AGENTS.md references other docs. If those docs change during docs-health, AGENTS.md goes stale. Run docs-health first, then write AGENTS.md.
 
-4. **Verify bug claims with tests before documenting them.** Finding a bug by reading code is valuable, but documenting it as a TODO without a failing test means the claim is unverified. The disciplined approach: write the failing test → confirm it fails → document it with the test as evidence.
+4. ~~**Verify bug claims with tests before documenting them.** Finding a bug by reading code is valuable, but documenting it as a TODO without a failing test means the claim is unverified. The disciplined approach: write the failing test → confirm it fails → document it with the test as evidence.~~ done at `2e399ad`
 
-5. **CONTRIBUTING.md was skipped entirely.** It's still a generic template. The docs-health AUDIT should have caught and rebuilt it. It was visible in the file listing but I focused on the core docs and didn't treat CONTRIBUTING.md as in-scope. It is.
+5. ~~**CONTRIBUTING.md was skipped entirely.** It's still a generic template. The docs-health AUDIT should have caught and rebuilt it. It was visible in the file listing but I focused on the core docs and didn't treat CONTRIBUTING.md as in-scope. It is.~~ done at `c371d9d`
 
 ### Code/Architecture Observations (not actions, just noted this session)
 
@@ -95,63 +95,63 @@ Sorted by impact (Pareto — high-impact items first).
 
 | # | Task                                                                                                                                                                                                          | Impact                                                    | Effort |
 | - | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------ |
-| 1 | **Fix `Record` TTL expiry bug** — add expiry check to `Record` (`store.go:107`), matching `CheckAndRecord`'s pattern                                                                                          | Critical correctness bug                                  | S      |
-| 2 | **Write failing test for the `Record` bug** — `Record` after expiry without `Seen` should re-record with new TTL                                                                                              | Proves the bug, locks the fix                             | S      |
-| 3 | **Add `.golangci.yml`** — enable `exhaustruct` (already referenced via `//nolint`), plus standard linters (`govet`, `staticcheck`, `errcheck`, `gosec`, `revive`)                                             | The `//nolint:exhaustruct` directive is dead without this | S      |
-| 4 | **Add CI/CD (GitHub Actions)** — `go test ./... -race`, `go vet ./...`, `golangci-lint run ./...` on push and PR                                                                                              | Zero automation today; regressions ship silently          | S      |
-| 5 | **Update CONTRIBUTING.md** — replace generic template with project-specific guide: real commands, testing strategy (unit + property-based), `//nolint:exhaustruct` convention, links to AGENTS.md/FEATURES.md | Currently misleading template                             | S      |
-| 6 | **Add `[Unreleased]` comparison link to CHANGELOG** — `[Unreleased]: https://github.com/larsartmann/go-idempotency/compare/v0.1.0...HEAD`                                                                     | Keep a Changelog convention; missing                      | XS     |
-| 7 | **Add FEATURES.md, TODO_LIST.md, ROADMAP.md to CHANGELOG `[Unreleased]`** — these were created this session and aren't logged                                                                                 | CHANGELOG under-reports post-v0.1.0 changes               | XS     |
+| ~~1~~ | ~~**Fix `Record` TTL expiry bug** — add expiry check to `Record` (`store.go:107`), matching `CheckAndRecord`'s pattern~~ done at `d700599`, ` 2e399ad` | ~~Critical correctness bug~~ | ~~S~~ |
+| ~~2~~ | ~~**Write failing test for the `Record` bug** — `Record` after expiry without `Seen` should re-record with new TTL~~ done at `2e399ad` | ~~Proves the bug, locks the fix~~ | ~~S~~ |
+| ~~3~~ | ~~**Add `.golangci.yml`** — enable `exhaustruct` (already referenced via `//nolint`), plus standard linters (`govet`, `staticcheck`, `errcheck`, `gosec`, `revive`)~~ done at `dd9d76f` | ~~The `//nolint:exhaustruct` directive is dead without this~~ | ~~S~~ |
+| ~~4~~ | ~~**Add CI/CD (GitHub Actions)** — `go test ./... -race`, `go vet ./...`, `golangci-lint run ./...` on push and PR~~ done at `0d52a57` | ~~Zero automation today; regressions ship silently~~ | ~~S~~ |
+| ~~5~~ | ~~**Update CONTRIBUTING.md** — replace generic template with project-specific guide: real commands, testing strategy (unit + property-based), `//nolint:exhaustruct` convention, links to AGENTS.md/FEATURES.md~~ done at `c371d9d` | ~~Currently misleading template~~ | ~~S~~ |
+| ~~6~~ | ~~**Add `[Unreleased]` comparison link to CHANGELOG** — `[Unreleased]: https://github.com/larsartmann/go-idempotency/compare/v0.1.0...HEAD`~~ done at `c371d9d` | ~~Keep a Changelog convention; missing~~ | ~~XS~~ |
+| ~~7~~ | ~~**Add FEATURES.md, TODO_LIST.md, ROADMAP.md to CHANGELOG `[Unreleased]`** — these were created this session and aren't logged~~ done at `c371d9d` | ~~CHANGELOG under-reports post-v0.1.0 changes~~ | ~~XS~~ |
 
 ### Important / Medium Impact
 
 | #  | Task                                                                                                                                                 | Impact                                                                 | Effort |
 | -- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ------ |
-| 8  | **Add benchmarks** — `BenchmarkCheckAndRecord` serial and parallel; `BenchmarkSeen` hit vs miss                                                      | Can't reason about performance without baselines                       | M      |
-| 9  | **Create `docs/DOMAIN_LANGUAGE.md`** — define: idempotency key, at-least-once delivery, at-most-once processing, TOCTOU race, Conflict, ErrDuplicate | Domain library needs domain glossary                                   | S      |
-| 10 | **Add context cancellation to sweep goroutine** — `sweep` waits on `ticker.C`; should also respect a context done channel for clean shutdown         | `Close()` stops via `stop` channel but context would be more idiomatic | S      |
-| 11 | **Document that `MemoryStore` ignores context** — add explicit note to `Seen`, `Record`, `CheckAndRecord` doc comments                               | Callers might expect cancellation to work                              | XS     |
+| ~~8~~  | ~~**Add benchmarks** — `BenchmarkCheckAndRecord` serial and parallel; `BenchmarkSeen` hit vs miss~~ done at `0d52a57` | ~~Can't reason about performance without baselines~~ | ~~M~~ |
+| ~~9~~  | ~~**Create `docs/DOMAIN_LANGUAGE.md`** — define: idempotency key, at-least-once delivery, at-most-once processing, TOCTOU race, Conflict, ErrDuplicate~~ done at `0e15d66` | ~~Domain library needs domain glossary~~ | ~~S~~ |
+| ~~10~~ | ~~**Add context cancellation to sweep goroutine** — `sweep` waits on `ticker.C`; should also respect a context done channel for clean shutdown~~ **Won't implement — sweep keeps the Close() stop channel; context ignored by design.** | ~~`Close()` stops via `stop` channel but context would be more idiomatic~~ | ~~S~~ |
+| ~~11~~ | ~~**Document that `MemoryStore` ignores context** — add explicit note to `Seen`, `Record`, `CheckAndRecord` doc comments~~ done (documented on MemoryStore in store.go) | ~~Callers might expect cancellation to work~~ | ~~XS~~ |
 | 12 | **Add `Delete` method to `Store` interface** — manual key invalidation for operational/testing use                                                   | No way to force-expire a single key                                    | S      |
-| 13 | **Document `ErrDuplicate` code (`"idempotency.duplicate"`) as public API contract** — changing it is a breaking change                               | Stability guarantee for consumers                                      | XS     |
-| 14 | **Add fuzz tests** — `FuzzCheckAndRecord`, `FuzzRecord` with arbitrary keys, TTLs, concurrency                                                       | Go native fuzzing, perfect target for this library                     | M      |
-| 15 | **Add test: `Seen` after `Close()`** — verify behavior when sweep goroutine is stopped                                                               | Undefined behavior currently untested                                  | XS     |
-| 16 | **Add test: `CheckAndRecord` after `Close()`** — same as above for the atomic path                                                                   | Undefined behavior currently untested                                  | XS     |
-| 17 | **Make AGENTS.md `-race` mandatory** — change "recommended" to "always run with `-race`"                                                             | Concurrency library; race detector is non-negotiable                   | XS     |
-| 18 | **Add `flake.nix`** — devShell with Go, golangci-lint, and check/test/lint apps                                                                      | Aligns with project owner's Nix-first tooling preference               | M      |
+| ~~13~~ | ~~**Document `ErrDuplicate` code (`"idempotency.duplicate"`) as public API contract** — changing it is a breaking change~~ done (CONTRIBUTING documents the error code as public API contract) | ~~Stability guarantee for consumers~~ | ~~XS~~ |
+| ~~14~~ | ~~**Add fuzz tests** — `FuzzCheckAndRecord`, `FuzzRecord` with arbitrary keys, TTLs, concurrency~~ done at `9db0f6e` | ~~Go native fuzzing, perfect target for this library~~ | ~~M~~ |
+| ~~15~~ | ~~**Add test: `Seen` after `Close()`** — verify behavior when sweep goroutine is stopped~~ done (TestMemoryStore_OperationsAfterClose, added 0e15d66) | ~~Undefined behavior currently untested~~ | ~~XS~~ |
+| ~~16~~ | ~~**Add test: `CheckAndRecord` after `Close()`** — same as above for the atomic path~~ done (TestMemoryStore_OperationsAfterClose, added 0e15d66) | ~~Undefined behavior currently untested~~ | ~~XS~~ |
+| ~~17~~ | ~~**Make AGENTS.md `-race` mandatory** — change "recommended" to "always run with `-race`"~~ done at `d026955` | ~~Concurrency library; race detector is non-negotiable~~ | ~~XS~~ |
+| ~~18~~ | ~~**Add `flake.nix`** — devShell with Go, golangci-lint, and check/test/lint apps~~ **Won't implement — plain Go module by decision (see AGENTS.md).** | ~~Aligns with project owner's Nix-first tooling preference~~ | ~~M~~ |
 
 ### Valuable / Lower Impact
 
 | #  | Task                                                                                                                                                       | Impact                                                            | Effort |
 | -- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ------ |
 | 19 | **Implement middleware package skeleton** — `CommandIdempotency`, `EventIdempotency`, `QueryIdempotency` as referenced in `doc.go:26-31`                   | Primary advertised integration point; currently vaporware         | L      |
-| 20 | **Design Redis store interface** — `SET NX EX` based; resolve key namespacing, cluster mode, connection pooling questions                                  | First distributed backend                                         | L      |
-| 21 | **Design SQL store interface** — `INSERT ... ON CONFLICT DO NOTHING`; resolve driver support, schema/migration strategy                                    | First persistent backend                                          | L      |
+| ~~20~~ | ~~**Design Redis store interface** — `SET NX EX` based; resolve key namespacing, cluster mode, connection pooling questions~~ **Won't implement — ADR-001 rejects production backends.** | ~~First distributed backend~~ | ~~L~~ |
+| ~~21~~ | ~~**Design SQL store interface** — `INSERT ... ON CONFLICT DO NOTHING`; resolve driver support, schema/migration strategy~~ **Won't implement — ADR-001 rejects production backends.** | ~~First persistent backend~~ | ~~L~~ |
 | 22 | **Add metrics hooks** — hit/miss/expiry/contention counters                                                                                                | Operational visibility                                            | M      |
 | 23 | **Evaluate lock strategies** — sharded mutexes, `sync.Map`, lock-free for high-contention scenarios                                                        | Performance optimization after benchmarks                         | L      |
 | 24 | **Add key generation utilities** — UUID v7, content-hash-based, request-derived helpers                                                                    | Consumers currently roll their own                                | M      |
 | 25 | **Add `Reset` method** — clear all entries (distinct from `Close`)                                                                                         | Testing/operational use                                           | XS     |
 | 26 | **Add `Stats` method** — entry count, memory estimate                                                                                                      | Operational visibility                                            | S      |
-| 27 | **Add doc.go example as runnable example** — `func ExampleMemoryStore()` test function                                                                     | pkg.go.dev renders examples; currently only in comment            | S      |
-| 28 | **Add `Store` interface contract test** — table-driven test that any `Store` implementation must pass; run against `MemoryStore`                           | Foundation for testing future backends                            | M      |
-| 29 | **Consider `sync.Map` for `MemoryStore`** — evaluate if read-heavy workloads benefit                                                                       | Performance; needs benchmark data first                           | M      |
-| 30 | **Add Godoc badge to README** — link to pkg.go.dev once published                                                                                          | Consumer discovery                                                | XS     |
-| 31 | **Add license header decision** — currently no license headers on `.go` files; decide whether to add them                                                  | Proprietary license; headers reinforce ownership                  | XS     |
+| ~~27~~ | ~~**Add doc.go example as runnable example** — `func ExampleMemoryStore()` test function~~ done at `9db0f6e` | ~~pkg.go.dev renders examples; currently only in comment~~ | ~~S~~ |
+| ~~28~~ | ~~**Add `Store` interface contract test** — table-driven test that any `Store` implementation must pass; run against `MemoryStore`~~ done at `46aa38d`, ` 9db0f6e` | ~~Foundation for testing future backends~~ | ~~M~~ |
+| ~~29~~ | ~~**Consider `sync.Map` for `MemoryStore`** — evaluate if read-heavy workloads benefit~~ **Won't implement — rejected in planning doc R2 (sync.Map).** | ~~Performance; needs benchmark data first~~ | ~~M~~ |
+| ~~30~~ | ~~**Add Godoc badge to README** — link to pkg.go.dev once published~~ done (pkg.go.dev badge in README) | ~~Consumer discovery~~ | ~~XS~~ |
+| ~~31~~ | ~~**Add license header decision** — currently no license headers on `.go` files; decide whether to add them~~ done (decision: MIT license, no headers (51c2804)) | ~~Proprietary license; headers reinforce ownership~~ | ~~XS~~ |
 | 32 | **Add `.gitattributes` linguist override** — ensure GitHub detects Go correctly (currently detects docs)                                                   | Cosmetic                                                          | XS     |
-| 33 | **Document the `//nolint:exhaustruct` convention** — in AGENTS.md or CONTRIBUTING.md, explain when and why                                                 | Convention exists but is undocumented beyond the inline directive | XS     |
-| 34 | **Add test for concurrent `Record` + `CheckAndRecord` on same key** — verify no deadlock or race                                                           | Mixed-method concurrency untested                                 | S      |
-| 35 | **Add test for concurrent `Close` + `sweep`** — verify no panic on close during sweep                                                                      | Shutdown race condition untested                                  | S      |
-| 36 | **Add version package** — `const Version = "0.1.0"` for runtime version checks                                                                             | Standard Go library practice                                      | XS     |
-| 37 | **Consider `context.Context` in `NewMemoryStore`** — allow canceling the sweep goroutine via context instead of `Close()`                                  | More idiomatic Go; but breaks current API                         | M      |
+| ~~33~~ | ~~**Document the `//nolint:exhaustruct` convention** — in AGENTS.md or CONTRIBUTING.md, explain when and why~~ done (documented in AGENTS.md and CONTRIBUTING.md) | ~~Convention exists but is undocumented beyond the inline directive~~ | ~~XS~~ |
+| ~~34~~ | ~~**Add test for concurrent `Record` + `CheckAndRecord` on same key** — verify no deadlock or race~~ done at `9db0f6e` | ~~Mixed-method concurrency untested~~ | ~~S~~ |
+| ~~35~~ | ~~**Add test for concurrent `Close` + `sweep`** — verify no panic on close during sweep~~ done at `9db0f6e` | ~~Shutdown race condition untested~~ | ~~S~~ |
+| ~~36~~ | ~~**Add version package** — `const Version = "0.1.0"` for runtime version checks~~ **Won't implement — versions tracked via Go module tags.** | ~~Standard Go library practice~~ | ~~XS~~ |
+| ~~37~~ | ~~**Consider `context.Context` in `NewMemoryStore`** — allow canceling the sweep goroutine via context instead of `Close()`~~ **Won't implement — API kept positional sweepInterval and Close().** | ~~More idiomatic Go; but breaks current API~~ | ~~M~~ |
 | 38 | **Add `CHANGELOG.md` entry template** — standard format for contributors                                                                                   | Friction reduction                                                | XS     |
 | 39 | **Add issue/PR templates** — `.github/ISSUE_TEMPLATE/`, `.github/PULL_REQUEST_TEMPLATE.md`                                                                 | Standardize contributions                                         | S      |
 | 40 | **Evaluate `errors.Join` or error wrapping** — for multi-key operations if added                                                                           | Future-proofing                                                   | S      |
 | 41 | **Add `CODEOWNERS` file** — route PRs to the right reviewer                                                                                                | Standard GitHub practice                                          | XS     |
 | 42 | **Consider semantic release automation** — auto-bump versions from conventional commits                                                                    | Currently manual versioning                                       | M      |
-| 43 | **Add `doc.go` cross-references** — link to FEATURES.md, ROADMAP.md for full picture                                                                       | Discoverability                                                   | XS     |
+| ~~43~~ | ~~**Add `doc.go` cross-references** — link to FEATURES.md, ROADMAP.md for full picture~~ **Won't implement — README owns doc cross-links; doc.go stays self-contained.** | ~~Discoverability~~ | ~~XS~~ |
 | 44 | **Add configurable clock** — inject `func() time.Time` for deterministic TTL testing                                                                       | Test determinism for time-based logic                             | S      |
 | 45 | **Evaluate `sync.Pool` for internal allocations** — if benchmarks show allocation pressure                                                                 | Performance                                                       | M      |
-| 46 | **Add integration test with `go-error-family`** — verify `ErrDuplicate` round-trips through `Classify` and `IsRetryable` correctly in a realistic pipeline | Cross-library correctness                                         | S      |
-| 47 | **Add negative tests** — `nil` store, `Closed` store, empty key string, zero/negative TTL                                                                  | Edge case coverage                                                | S      |
+| ~~46~~ | ~~**Add integration test with `go-error-family`** — verify `ErrDuplicate` round-trips through `Classify` and `IsRetryable` correctly in a realistic pipeline~~ done (error-family assertions in store_test.go) | ~~Cross-library correctness~~ | ~~S~~ |
+| ~~47~~ | ~~**Add negative tests** — `nil` store, `Closed` store, empty key string, zero/negative TTL~~ done (empty key, non-positive TTL, post-Close covered) | ~~Edge case coverage~~ | ~~S~~ |
 | 48 | **Document minimum TTL precision** — `MemoryStore` uses `time.Time` which has nanosecond precision; Redis would have millisecond precision                 | Consumer expectation management                                   | XS     |
 | 49 | **Add `go test -timeout` guidance** — property tests with `rapid` can run long; document recommended timeout                                               | Test CI reliability                                               | XS     |
 | 50 | **Cut v0.2.0** — after bug fix, `.golangci.yml`, CI/CD, CONTRIBUTING.md, benchmarks land                                                                   | First release with complete documentation and infrastructure      | —      |
@@ -162,15 +162,15 @@ Sorted by impact (Pareto — high-impact items first).
 
 ### 1. Proprietary license vs public library — is this intentional?
 
-The `LICENSE` is **proprietary** ("Unauthorized copying, distribution, modification, or use of this Software... is strictly prohibited"), but the project is structured as a public Go library: public module path (`github.com/larsartmann/go-idempotency`), `go get` install instructions in README, GitHub-style repository conventions. `go get` clones and compiles the source — which is "copying" and "use" under a proprietary license.
+The `LICENSE` is ~~**proprietary** ("Unauthorized copying, distribution, modification, or use of this Software... is strictly prohibited")~~ **MIT** (switched in `51c2804`), and the project is structured as a public Go library: public module path (`github.com/larsartmann/go-idempotency`), `go get` install instructions in README, GitHub-style repository conventions. `go get` clones and compiles the source — which is "copying" and "use" under a proprietary license.
 
-**Is this a private repo that will be shared selectively?** If so, the README install instructions and public module path are misleading. If it's meant to be open-sourced, the license should be MIT or Apache-2.0. I cannot resolve this — it's a business/legal decision.
+**Is this a private repo that will be shared selectively?** If so, the README install instructions and public module path are misleading. If it's meant to be open-sourced, the license should be MIT or Apache-2.0. ~~I cannot resolve this — it's a business/legal decision.~~ Resolved: open-sourced under MIT in `51c2804`.
 
 ### 2. Is there a larger CQRS framework this is meant to plug into?
 
 `doc.go` references `CommandIdempotency`, `EventIdempotency`, and `QueryIdempotency` as middleware for "command, event, or query dispatch pipelines." This implies an existing CQRS framework with dispatch pipelines. I see no such framework in the dependency tree (`go.mod` only depends on `go-error-family` and `rapid`).
 
-**Does a CQRS dispatch framework exist elsewhere (another repo, uncommitted work) that this store is designed to integrate with?** If yes, the middleware package should be designed against that framework's interfaces. If no, the middleware package design needs to start from scratch, and the `doc.go` references are aspirational rather than integration targets. This fundamentally changes the middleware implementation approach.
+**Does a CQRS dispatch framework exist elsewhere (another repo, uncommitted work) that this store is designed to integrate with?** If yes, the middleware package should be designed against that framework's interfaces. If no, the middleware package design needs to start from scratch, and the `doc.go` references are aspirational rather than integration targets. This fundamentally changes the middleware implementation approach. _Answered 2026-08-07: no framework exists — the interface-first reframe (`249f65d`) and ADR-001 committed to a standalone SDK; the middleware stays aspirational and is tracked in TODO_LIST.md._
 
 ### 3. Should the `Store` interface split into `MemoryStore` and `DistributedStore`?
 
@@ -181,7 +181,7 @@ Two valid approaches:
 - **Keep one interface** with context (current) — simpler, backends just ignore it if not needed. But misleading for `MemoryStore` consumers.
 - **Split interfaces** — `MemoryStore` (no context, in-process) vs `DistributedStore` (context-aware, network backends). More honest but more complex, and middleware would need to handle both.
 
-**Which direction do you want?** This is an API design decision that affects every future implementation and cannot be reversed without a major version bump. I can argue both ways but can't pick for you.
+**Which direction do you want?** This is an API design decision that affects every future implementation and cannot be reversed without a major version bump. I can argue both ways but can't pick for you. _Resolved: one interface kept; `MemoryStore` ignores context and the interface docs say so (`store.go`). The dev/test-vs-production split was later made explicit by deprecating MemoryStore (`5848f38`)._
 
 ---
 

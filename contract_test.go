@@ -8,8 +8,9 @@ import (
 )
 
 // TestContract_MemoryStore runs the full contract test suite against
-// MemoryStore. This verifies that the reference implementation satisfies every
-// invariant that consumers will verify against their own backends.
+// MemoryStore, the deprecated in-process implementation. This verifies that it
+// satisfies every invariant that consumers will verify against their own
+// backends.
 func TestContract_MemoryStore(t *testing.T) {
 	t.Parallel()
 

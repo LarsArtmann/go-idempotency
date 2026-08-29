@@ -184,7 +184,10 @@ func BenchmarkMemoryUsage_AfterSweep(b *testing.B) {
 		// Wait for the sweeper to run multiple cycles past the TTL.
 		time.Sleep(30 * time.Millisecond)
 
-		// Force GC so ReadMemStats reflects the swept entries.
+		// Force GC so ReadMemStats reflects the swept entries. The reported
+		// %-reclaimed stays well below 100% even after a full sweep: Go maps
+		// do not shrink their internal storage when entries are deleted, and
+		// GC frees the buckets only when the map itself becomes unreachable.
 		runtime.GC()
 
 		var after runtime.MemStats

@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-07 22:30
 **Scope:** This session only — the deprecation of `MemoryStore` (triggered by owner decision "deprecate it"). Covers what was done, what was missed, what is broken, and what comes next.
-**Verdict:** 🟡 **PARTIALLY DONE.** The code-level `// Deprecated:` annotations landed cleanly and lint/build/test are green, but the deprecation is **inconsistent across docs** — I missed 4 files, including the `Store` interface doc comment itself, which still _steers users toward_ the deprecated type. A deprecation that is not uniformly applied is worse than none: it teaches readers the wrong default.
+**Verdict:** 🟡 **PARTIALLY DONE.** The code-level `// Deprecated:` annotations landed cleanly and lint/build/test are green, but ~~the deprecation is **inconsistent across docs** — I missed 4 files, including the `Store` interface doc comment itself, which still _steers users toward_ the deprecated type.~~ the deprecation was **inconsistent across docs** — 4 files were missed (fixed in the 2026-08-29 docs-health pass; see P0 verdicts below). A deprecation that is not uniformly applied is worse than none: it teaches readers the wrong default.
 
 > **Format note:** The `status-report` skill canonicalizes HTML output. The user explicitly requested `.md` — the override wins per skill rules, and is flagged here so the divergence is visible.
 
@@ -35,10 +35,10 @@ I applied `// Deprecated:` and "deprecated" language to **10 files**, but **4 fi
 
 | File:line                                     | Current text (stale)                                                                                                                    | Problem                                                                                                                                             |
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`store.go:43-44`**                          | `// [MemoryStore] is provided as a reference implementation for development and single-process use cases;`                              | **Worst miss.** This is the `Store` interface doc — the canonical entry point. It actively recommends the deprecated type with no deprecation note. |
-| **`CONTRIBUTING.md:7`**                       | `It provides the Store interface and MemoryStore (a reference implementation).`                                                         | Contributor-facing doc still frames MemoryStore as a co-equal deliverable. I never touched CONTRIBUTING.md this session.                            |
-| **`AGENTS.md:22`**                            | `**MemoryStore** (store.go) — the reference implementation.`                                                                            | The Architecture section. I updated the "Key Design Decisions" bullets but missed the primary description above them.                               |
-| **`example_test.go` / `contract_test.go:11`** | `ExampleMemoryStore` + `ExampleStore` both construct via `NewMemoryStore`; comment says "the reference implementation satisfies every…" | godoc examples actively demonstrate the deprecated API as the happy path. No `// Deprecated` acknowledgment, no "for production see…" pointer.      |
+| **`store.go:43-44`**                          | `// [MemoryStore] is provided as a reference implementation for development and single-process use cases;`                              | **Worst miss.** This is the `Store` interface doc — the canonical entry point. It actively recommends the deprecated type with no deprecation note. → **Fixed (docs-health 2026-08-29).** |
+| **`CONTRIBUTING.md:7`**                       | `It provides the Store interface and MemoryStore (a reference implementation).`                                                         | Contributor-facing doc still frames MemoryStore as a co-equal deliverable. I never touched CONTRIBUTING.md this session. → **Fixed (docs-health 2026-08-29).**                            |
+| **`AGENTS.md:22`**                            | `**MemoryStore** (store.go) — the reference implementation.`                                                                            | The Architecture section. I updated the "Key Design Decisions" bullets but missed the primary description above them. → **Fixed (docs-health 2026-08-29).**                               |
+| **`example_test.go` / `contract_test.go:11`** | `ExampleMemoryStore` + `ExampleStore` both construct via `NewMemoryStore`; comment says "the reference implementation satisfies every…" | godoc examples actively demonstrate the deprecated API as the happy path. No `// Deprecated` acknowledgment, no "for production see…" pointer. → **Fixed (docs-health 2026-08-29).**      |
 
 **Why this matters:** Deprecation only works if _every_ surface agrees. The `go doc` output now shows `Deprecated:` on the type — but the prose three lines up (in the interface comment) and the runnable examples still say "this is what you use." Mixed signals = no deprecation.
 
@@ -62,12 +62,12 @@ ROADMAP says "v1.0 removal" but there is no issue/TODO item with an owner or a g
 
 | #  | Item                                                                   | Source                        |
 | -- | ---------------------------------------------------------------------- | ----------------------------- |
-| 1  | Fix the 4 stale-file misses above                                      | This session (P1)             |
+| ~~1~~  | ~~Fix the 4 stale-file misses above~~ done (docs-health pass 2026-08-29) | ~~This session (P1)~~ |
 | 2  | `contract/contract_test.go` self-test of the suite (fixes 0% coverage) | Prior critique                |
 | 3  | SQL adapter example in `doc.go` (only Redis exists)                    | Prior critique                |
 | 4  | Enrich fuzz seed corpus (empty strings, unicode, `math.MaxInt64`)      | Prior critique                |
 | 5  | Codecov/Coveralls badge in README                                      | Prior critique                |
-| 6  | Comment on `BenchmarkMemoryUsage_AfterSweep` re: low reclaim %         | Prior critique                |
+| ~~6~~  | ~~Comment on `BenchmarkMemoryUsage_AfterSweep` re: low reclaim %~~ done (docs-health pass 2026-08-29) | ~~Prior critique~~ |
 | 7  | `ErrStoreClosed` sentinel                                              | Open question                 |
 | 8  | Middleware package (`CommandIdempotency` etc.)                         | Blocked — module boundary     |
 | 9  | `Delete` / `Stats` on `Store` interface                                | Blocked — interface evolution |
@@ -104,29 +104,29 @@ Sorted by impact × effort. **P0 = fix the split-brain now.**
 
 **P0 — Close the consistency gap (this session's debt)**
 
-1. Fix `store.go:43-44` Store interface doc to point to deprecation, not "reference implementation."
-2. Fix `CONTRIBUTING.md:7` to mark MemoryStore deprecated.
-3. Fix `AGENTS.md:22` Architecture bullet to mark deprecated.
-4. Rewrite `example_test.go`: keep `ExampleMemoryStore` but add `// Deprecated:` note + a `// See the "Implementing a Custom Backend" section in the package docs.` pointer; ensure `ExampleStore` notes the store is illustrative.
-5. Update `contract_test.go:11` comment language ("reference implementation" → "deprecated in-process store").
-6. Re-run the deprecation grep as the final verification step — zero stale "reference implementation"/"single-process use cases" outside intentional historical contexts.
-7. Sweep `CHANGELOG.md:26` historical wording if it reads as current truth (judgment call).
+1. ~~Fix `store.go:43-44` Store interface doc to point to deprecation, not "reference implementation."~~ done (docs-health pass 2026-08-29)
+2. ~~Fix `CONTRIBUTING.md:7` to mark MemoryStore deprecated.~~ done (docs-health pass 2026-08-29)
+3. ~~Fix `AGENTS.md:22` Architecture bullet to mark deprecated.~~ done (docs-health pass 2026-08-29)
+4. ~~Rewrite `example_test.go`: keep `ExampleMemoryStore` but add `// Deprecated:` note + a `// See the "Implementing a Custom Backend" section in the package docs.` pointer; ensure `ExampleStore` notes the store is illustrative.~~ done (docs-health pass 2026-08-29)
+5. ~~Update `contract_test.go:11` comment language ("reference implementation" → "deprecated in-process store").~~ done (docs-health pass 2026-08-29)
+6. ~~Re-run the deprecation grep as the final verification step — zero stale "reference implementation"/"single-process use cases" outside intentional historical contexts.~~ done (docs-health pass 2026-08-29)
+7. ~~Sweep `CHANGELOG.md:26` historical wording if it reads as current truth (judgment call).~~ done (reviewed - historical CHANGELOG wording reads as historical; no change needed)
 
-**P1 — Make the deprecation enforceable** 8. Add `depguard`/`forbidigo` rule in `.golangci.yml`: block `NewMemoryStore`/`MemoryStore{}` outside `*_test.go`. 9. Add a staticcheck `SA1019` gate to CI (fail on new deprecated usage in non-test code). 10. Add a `// Deprecated:` migration checklist comment block in `store.go` near the type. 11. Write `docs/migrating-from-memorystore.md` — worked Redis + SQL adapter, `contract.RunTests` wiring.
+**P1 — Make the deprecation enforceable** 8. Add `depguard`/`forbidigo` rule in `.golangci.yml`: block `NewMemoryStore`/`MemoryStore{}` outside `*_test.go`. 9. Add a staticcheck `SA1019` gate to CI (fail on new deprecated usage in non-test code). 10. Add a `// Deprecated:` migration checklist comment block in `store.go` near the type. 11. Write `docs/migrating-from-memorystore.md` — worked Redis + SQL adapter, `contract.RunTests` wiring. _[2026-08-29: item 8 → TODO_LIST.md (deprecation lint gate); item 9 partially covered — staticcheck runs via golangci-lint, but no dedicated gate; items 10-11 open.]_
 
-**P2 — Contract suite hardening** 12. Create `contract/internal_test_store` — a minimal in-process Store the suite validates _itself_ against (fixes 0% coverage on `contract/`). 13. Add `contract/contract_test.go` that runs `RunTests` against the internal test store. 14. Add a _negative_ contract test: feed a deliberately broken Store and assert `RunTests` _fails_ (proves the suite can catch bugs). 15. Enrich fuzz seed corpus (`fuzz_test.go`): `""`, unicode, `math.MaxInt64`, negative TTL, very long keys.
+**P2 — Contract suite hardening** 12. Create `contract/internal_test_store` — a minimal in-process Store the suite validates _itself_ against (fixes 0% coverage on `contract/`). 13. Add `contract/contract_test.go` that runs `RunTests` against the internal test store. 14. Add a _negative_ contract test: feed a deliberately broken Store and assert `RunTests` _fails_ (proves the suite can catch bugs). 15. Enrich fuzz seed corpus (`fuzz_test.go`): `""`, unicode, `math.MaxInt64`, negative TTL, very long keys. _[2026-08-29: items 12-15 → TODO_LIST.md (contract self-test, fuzz corpus).]_
 
-**P3 — Documentation & examples** 16. Add SQL adapter example to `doc.go` alongside Redis (INSERT ... ON CONFLICT DO NOTHING). 17. Add DynamoDB PutItem adapter example. 18. Add a MongoDB adapter example. 19. Wire a Codecov/Coveralls badge into README (CI already uploads the artifact). 20. Add comment to `BenchmarkMemoryUsage_AfterSweep` explaining low %-reclaimed (Go maps don't shrink post-delete). 21. Add `go test -fuzz=.` and `go test -bench=.` to CONTRIBUTING.md dev setup. 22. Render the contract invariant list in README/CONTRIBUTING (what `RunTests` actually checks).
+**P3 — Documentation & examples** 16. Add SQL adapter example to `doc.go` alongside Redis (INSERT ... ON CONFLICT DO NOTHING). 17. Add DynamoDB PutItem adapter example. 18. Add a MongoDB adapter example. 19. Wire a Codecov/Coveralls badge into README (CI already uploads the artifact). 20. Add comment to `BenchmarkMemoryUsage_AfterSweep` explaining low %-reclaimed (Go maps don't shrink post-delete). 21. Add `go test -fuzz=.` and `go test -bench=.` to CONTRIBUTING.md dev setup. 22. Render the contract invariant list in README/CONTRIBUTING (what `RunTests` actually checks). _[2026-08-29: item 19 → TODO_LIST.md; items 20-21 done (docs-health pass); items 16-18, 22 open.]_
 
-**P4 — Interface evolution (blocked on owner)** 23. Decide `Delete` method on `Store` (manual key invalidation). 24. Decide `Stats` method (hit/miss/expiry observability). 25. Decide `Reset` / `Clear` method. 26. Decide `ErrStoreClosed` sentinel vs. returning plain error post-Close. 27. Decide method return-shape for `CheckAndRecord` (does it return a stored result/etag?).
+**P4 — Interface evolution (blocked on owner)** 23. Decide `Delete` method on `Store` (manual key invalidation). 24. Decide `Stats` method (hit/miss/expiry observability). 25. Decide `Reset` / `Clear` method. 26. Decide `ErrStoreClosed` sentinel vs. returning plain error post-Close. 27. Decide method return-shape for `CheckAndRecord` (does it return a stored result/etag?). _[2026-08-29: still blocked — Delete in TODO_LIST.md; Stats/Reset/ErrStoreClosed in ROADMAP.md; 27 open.]_
 
-**P5 — Middleware layer (blocked on module boundary)** 28. Decide: middleware in this module, a sibling module, or a separate `go-idempotency-middleware` module. 29. Implement `CommandIdempotency` dispatcher wrapper. 30. Implement `EventIdempotency` handler. 31. Implement `QueryIdempotency` (cacheable, idempotent read). 32. Key generation utilities (UUID v7, content-hash, request-derived).
+**P5 — Middleware layer (blocked on module boundary)** 28. Decide: middleware in this module, a sibling module, or a separate `go-idempotency-middleware` module. 29. Implement `CommandIdempotency` dispatcher wrapper. 30. Implement `EventIdempotency` handler. 31. Implement `QueryIdempotency` (cacheable, idempotent read). 32. Key generation utilities (UUID v7, content-hash, request-derived). _[2026-08-29: middleware → TODO_LIST.md; key generation → ROADMAP.md; module-boundary decision still open.]_
 
-**P6 — Observability & perf** 33. Metrics hooks (hit/miss/expiry/contention). 34. Sharded-mutex benchmark vs single `sync.RWMutex`. 35. `sync.Map` evaluation. 36. Lock-free CheckAndRecord prototype. 37. Allocation-free hot path for `Seen`.
+**P6 — Observability & perf** 33. Metrics hooks (hit/miss/expiry/contention). 34. Sharded-mutex benchmark vs single `sync.RWMutex`. 35. `sync.Map` evaluation. 36. Lock-free CheckAndRecord prototype. 37. Allocation-free hot path for `Seen`. _[2026-08-29: open — metrics and lock-strategy evaluation tracked in ROADMAP.md; 35-36 were earlier rejected as premature (planning doc R2/R3).]_
 
-**P7 — Release hygiene** 38. Cut v0.2.0 tag once deprecation is consistent + enforceable. 39. Verify `go doc ./...` output end-to-end before tag. 40. Verify pkg.go.dev renders deprecation after tag publish. 41. Add `CHANGELOG.md` review to release checklist. 42. Add a `SECURITY.md` (currently absent). 43. Add issue/PR templates (`.github/`).
+**P7 — Release hygiene** 38. Cut v0.2.0 tag once deprecation is consistent + enforceable. 39. Verify `go doc ./...` output end-to-end before tag. 40. Verify pkg.go.dev renders deprecation after tag publish. 41. Add `CHANGELOG.md` review to release checklist. 42. Add a `SECURITY.md` (currently absent). 43. Add issue/PR templates (`.github/`). _[2026-08-29: item 38 → TODO_LIST.md (cut v0.2.0 — deprecation is now consistent); items 39-43 open.]_
 
-**P8 — Quality of life** 44. Add `make`/flake-free task doc (document the exact `go test`/`lint` commands in one place). 45. Add a `doc.go` table of contents for long package doc. 46. Add cross-links from `Store` methods to the contract invariant they satisfy. 47. Add a "backend feature matrix" (Redis/SQL/DynamoDB → which atomic primitive, which limitations). 48. Add a CONTRIBUTING "Adding a contract invariant" guide. 49. Add a `CODE_OF_CONDUCT.md`. 50. Add retry/backoff guidance for transient store errors (`errorfamily.IsRetryable`).
+**P8 — Quality of life** 44. Add `make`/flake-free task doc (document the exact `go test`/`lint` commands in one place). 45. Add a `doc.go` table of contents for long package doc. 46. Add cross-links from `Store` methods to the contract invariant they satisfy. 47. Add a "backend feature matrix" (Redis/SQL/DynamoDB → which atomic primitive, which limitations). 48. Add a CONTRIBUTING "Adding a contract invariant" guide. 49. Add a `CODE_OF_CONDUCT.md`. 50. Add retry/backoff guidance for transient store errors (`errorfamily.IsRetryable`). _[2026-08-29: item 44 done — commands live in AGENTS.md and CONTRIBUTING.md; items 45-50 open.]_
 
 ---
 
@@ -140,4 +140,4 @@ Sorted by impact × effort. **P0 = fix the split-brain now.**
 
 ---
 
-**Bottom line:** The code change is correct and green. The _discipline_ of the deprecation — applying it everywhere before declaring done — failed. Fix P0 items 1-6 before anything else.
+**Bottom line:** The code change is correct and green. The _discipline_ of the deprecation — applying it everywhere before declaring done — failed. ~~Fix P0 items 1-6 before anything else.~~ P0 items 1-6 were fixed in the 2026-08-29 docs-health pass (see verdicts above).

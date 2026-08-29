@@ -4,7 +4,7 @@ Thanks for your interest in contributing to go-idempotency.
 
 ## Scope
 
-This library is an interface-first SDK. It provides the `Store` interface and `MemoryStore` (a reference implementation). **Backend implementations (Redis, SQL, DynamoDB, etc.) are out of scope and will not be accepted as PRs.** Implement the `Store` interface in your own project; use the `contract` package test suite to verify correctness.
+This library is an interface-first SDK. It provides the `Store` interface and `MemoryStore` (a **deprecated** reference implementation for development and testing only). **Backend implementations (Redis, SQL, DynamoDB, etc.) are out of scope and will not be accepted as PRs.** Implement the `Store` interface in your own project; use the `contract` package test suite to verify correctness.
 
 ## How to Contribute
 
@@ -23,6 +23,7 @@ go test ./... -race -count=1   # run all tests with race detector (mandatory)
 go vet ./...                   # static analysis
 golangci-lint run ./...        # lint (uses .golangci.yml)
 go test -bench=. -benchmem     # run benchmarks
+go test -fuzz=FuzzCheckAndRecord -fuzztime=30s   # short fuzz run
 ```
 
 All three checks (test, vet, lint) must pass. CI runs them automatically on push and PR.

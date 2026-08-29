@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Go library providing an idempotency/deduplication store for CQRS command keys. Module: `github.com/larsartmann/go-idempotency` (Go 1.26.5).
+Go library providing an idempotency/deduplication store for CQRS command keys. Module: `github.com/larsartmann/go-idempotency` (Go 1.26+ — see go.mod).
 
 ## Commands
 
@@ -8,18 +8,18 @@ Go library providing an idempotency/deduplication store for CQRS command keys. M
 go test ./...          # run all tests
 go test ./... -race    # run with race detector (MANDATORY — concurrency is core to this lib)
 go test ./... -v       # verbose, shows property-test shrink traces
-go vet ./...           # static analysis (currently clean)
+go vet ./...           # static analysis
 golangci-lint run ./... # lint (uses .golangci.yml: 60+ linters, see file for full list)
 ```
 
-No `flake.nix`, Makefile, or justfile exists. This is a plain Go module — use `go` directly. CI (`.github/workflows/ci.yml`) runs `go test -race`, `go vet`, and `golangci-lint` on every push and PR.
+No `flake.nix`, Makefile, or justfile exists. This is a plain Go module — use `go` directly. CI (`.github/workflows/ci.yml`) runs `go test -race`, `go vet`, and `golangci-lint` on every push and PR, and reports test coverage.
 
 ## Architecture
 
 Single-package library (`package idempotency`) with a `contract/` subpackage for reusable test infrastructure. Root package is flat — no subdirectories except `contract/`.
 
 - **`Store` interface** (`store.go`) — three methods: `Seen`, `Record`, `CheckAndRecord`. All take `context.Context` but `MemoryStore` ignores it (params named `_`).
-- **`MemoryStore`** (`store.go`) — the reference implementation. In-memory `map[string]time.Time` guarded by `sync.RWMutex`, with TTL-based expiration via two mechanisms: a background sweep goroutine AND lazy deletion on read.
+- **`MemoryStore`** (`store.go`) — the reference implementation, **deprecated** (development/testing only; removal targeted for v1.0). In-memory `map[string]time.Time` guarded by `sync.RWMutex`, with TTL-based expiration via two mechanisms: a background sweep goroutine AND lazy deletion on read.
 - **`doc.go`** — package documentation with quick-start example and Redis adapter implementation example.
 - **`contract/`** — reusable contract test suite (`RunTests`) that verifies any `Store` implementation against the full invariant set. Consumers import it to verify their own backend.
 
@@ -53,7 +53,7 @@ This library will NOT ship production backends (Redis, SQL, etc.). `MemoryStore`
 
 - **External test package** (`idempotency_test`) — imports the package as a consumer.
 - **`t.Parallel()` on every test.**
-- **Five test files in root, split by strategy:**
+- **Six test files in root, split by strategy:**
   - `store_test.go` — unit and concurrency tests, one function per scenario. Concurrency tests use a `started chan struct{}` barrier to release all goroutines simultaneously. Includes edge cases (empty key, zero TTL, post-Close behavior).
   - `property_test.go` — property-based tests via `rapid.Check(t, func(t *rapid.T) {...})`. Generators: `rapid.String()`, `rapid.IntRange()`, `rapid.StringMatching()`.
   - `fuzz_test.go` — `FuzzCheckAndRecord`, `FuzzRecord` for panic-safety and invariant checking on arbitrary inputs. Also `TestMemoryStore_CloseDuringConcurrentOps` for use-after-close race safety.

@@ -25,10 +25,12 @@ Ubiquitous vocabulary for the go-idempotency library. These terms appear in code
 
 ## Errors
 
-| Term             | Definition                                                                                                                                                            |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **ErrDuplicate** | The sentinel error returned by `CheckAndRecord` when the key was already recorded and not expired. Stable error code: `"idempotency.duplicate"`.                      |
-| **Conflict**     | The error family `ErrDuplicate` belongs to (via `go-error-family`). Maps to HTTP 409 and is non-retryable. Callers should return this error to the client, not retry. |
+| Term              | Definition                                                                                                                                                            |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ErrDuplicate**  | The sentinel error returned by `CheckAndRecord` when the key was already recorded and not expired. Stable error code: `"idempotency.duplicate"`.                      |
+| **ErrInvalidTTL** | The sentinel error returned by `Record` and `CheckAndRecord` when the TTL is not positive. Stable error code: `"idempotency.invalid-ttl"`.                            |
+| **Conflict**      | The error family `ErrDuplicate` belongs to (via `go-error-family`). Maps to HTTP 409 and is non-retryable. Callers should return this error to the client, not retry. |
+| **Rejection**     | The error family `ErrInvalidTTL` belongs to (via `go-error-family`). Maps to HTTP 400 and is non-retryable: the caller passed bad input.                              |
 
 ## Design Concepts
 

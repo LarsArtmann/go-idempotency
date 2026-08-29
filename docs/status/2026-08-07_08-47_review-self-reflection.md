@@ -83,25 +83,25 @@ Nothing was broken. All quality gates green at session end. But see section (e) 
 
 ### High impact — correctness and API completeness
 
-1. **Flag the breaking change in CHANGELOG** — add a "Changed (BREAKING)" note or bump to v0.2.0 to signal the TTL validation breaks callers passing zero/negative TTL.
-2. **Add fuzz tests** — `FuzzCheckAndRecord`, `FuzzRecord` with arbitrary keys, TTLs, concurrency patterns. Already in TODO_LIST; the TTL fix makes this higher priority (would have caught the bug).
-3. **Add `Store` interface contract test** — table-driven suite that any `Store` impl must pass. Run against `MemoryStore` now; reuse for Redis/SQL. Already in TODO_LIST.
+1. ~~**Flag the breaking change in CHANGELOG** — add a "Changed (BREAKING)" note or bump to v0.2.0 to signal the TTL validation breaks callers passing zero/negative TTL.~~ done (shipped as v0.1.2 (f260ccf); CHANGELOG documents the behavior change)
+2. ~~**Add fuzz tests** — `FuzzCheckAndRecord`, `FuzzRecord` with arbitrary keys, TTLs, concurrency patterns. Already in TODO_LIST; the TTL fix makes this higher priority (would have caught the bug).~~ done at `9db0f6e`
+3. ~~**Add `Store` interface contract test** — table-driven suite that any `Store` impl must pass. Run against `MemoryStore` now; reuse for Redis/SQL. Already in TODO_LIST.~~ done at `46aa38d`, ` 9db0f6e`
 4. **Add property test for TTL validation** — "any ttl <= 0 always returns ErrInvalidTTL, and no key is ever recorded."
 5. **Add `Delete` method to `Store` interface** — manual key invalidation for ops/testing. Already in TODO_LIST.
 6. **Test `errors.Is` across wrapping** — verify `errors.Is(wrappedErr, ErrInvalidTTL)` works when the error is wrapped by a caller.
 
 ### Documentation
 
-7. **Update CONTRIBUTING.md** — mention `ErrInvalidTTL` in the error conventions section if one exists, or add the test file structure note.
-8. **Evaluate DOMAIN_LANGUAGE.md** — decide if "Rejection" classification belongs in the domain glossary.
-9. **Add ErrInvalidTTL to the error table** — if README or docs have an error reference table, add the new sentinel.
+7. ~~**Update CONTRIBUTING.md** — mention `ErrInvalidTTL` in the error conventions section if one exists, or add the test file structure note.~~ done (CONTRIBUTING documents the sentinel code as public API contract (43b236a))
+8. ~~**Evaluate DOMAIN_LANGUAGE.md** — decide if "Rejection" classification belongs in the domain glossary.~~ done (docs-health pass 2026-08-29)
+9. ~~**Add ErrInvalidTTL to the error table** — if README or docs have an error reference table, add the new sentinel.~~ done (README error table includes ErrInvalidTTL)
 
 ### Architecture and future work
 
 10. **Implement middleware package** — `CommandIdempotency`, `EventIdempotency`, `QueryIdempotency`. Primary advertised integration point. Already in TODO_LIST.
-11. **Implement Redis store** — distributed idempotency using `SET NX`. Referenced in Store doc comments. Already in ROADMAP.
-12. **Implement SQL store** — persistent idempotency using `INSERT ... ON CONFLICT DO NOTHING`. Already in ROADMAP.
-13. **Add context cancellation support** — `MemoryStore` ignores `context.Context`. A future store should honor it. Document the current limitation clearly.
+11. ~~**Implement Redis store** — distributed idempotency using `SET NX`. Referenced in Store doc comments. Already in ROADMAP.~~ **Won't implement — ADR-001 rejects production backends.**
+12. ~~**Implement SQL store** — persistent idempotency using `INSERT ... ON CONFLICT DO NOTHING`. Already in ROADMAP.~~ **Won't implement — ADR-001 rejects production backends.**
+13. ~~**Add context cancellation support** — `MemoryStore` ignores `context.Context`. A future store should honor it. Document the current limitation clearly.~~ done (documented: MemoryStore ignores context (store.go))
 14. **Add metrics/observability hooks** — entry count, hit/miss ratio, sweep cycle timing. Useful for production.
 
 ### Testing hardening
@@ -119,7 +119,7 @@ Nothing was broken. All quality gates green at session end. But see section (e) 
 22. **Add `Len()` or `Stats()` method** — expose entry count for monitoring/debugging.
 23. **Consider `Flush()` method** — clear all entries immediately (distinct from `Close`).
 24. **Review the `Seen` write-lock decision** — `Seen` takes a write lock for lazy deletion. Under read-heavy workloads this serializes reads. Consider a separate cleanup strategy.
-25. **Add godoc examples** — `ExampleCheckAndRecord`, `ExampleRecord` runnable examples in godoc.
+25. ~~**Add godoc examples** — `ExampleCheckAndRecord`, `ExampleRecord` runnable examples in godoc.~~ done at `9db0f6e`
 
 ### CI/CD and release
 
@@ -131,17 +131,17 @@ Nothing was broken. All quality gates green at session end. But see section (e) 
 
 ### Ecosystem
 
-31. **Add Redis store integration test** — when implemented, test against a real Redis (testcontainers).
-32. **Add SQL store integration test** — when implemented, test against a real database.
+31. ~~**Add Redis store integration test** — when implemented, test against a real Redis (testcontainers).~~ **Won't implement — ADR-001 rejects production backends.**
+32. ~~**Add SQL store integration test** — when implemented, test against a real database.~~ **Won't implement — ADR-001 rejects production backends.**
 33. **Consider a `MultiStore` or `ChainStore`** — check multiple backends (memory + Redis) for defense-in-depth.
-34. **Add OpenTelemetry tracing** — span per CheckAndRecord call.
+34. ~~**Add OpenTelemetry tracing** — span per CheckAndRecord call.~~ **Won't implement — rejected in planning doc R1 (OpenTelemetry).**
 35. **Add Prometheus metrics** — standard observability.
 
 ### Documentation polish
 
-36. **Add architecture decision records (ADRs)** — document why CheckAndRecord is atomic, why ErrDuplicate is Conflict, etc.
-37. **Add a comparison table** — vs other idempotency libraries (if any exist).
-38. **Add a "common pitfalls" section** — e.g., "don't split Seen + Record."
+36. ~~**Add architecture decision records (ADRs)** — document why CheckAndRecord is atomic, why ErrDuplicate is Conflict, etc.~~ done at `9db0f6e`
+37. ~~**Add a comparison table** — vs other idempotency libraries (if any exist).~~ **Won't implement — rejected in planning doc R5 (comparison table).**
+38. ~~**Add a "common pitfalls" section** — e.g., "don't split Seen + Record."~~ done (README shows the racy Seen+Record anti-pattern)
 39. **Add a production-readiness checklist** — what to verify before using in production.
 40. **Website launch** — public docs site (per the website-launch skill pattern).
 
@@ -155,9 +155,9 @@ Nothing was broken. All quality gates green at session end. But see section (e) 
 
 ### Edge cases
 
-46. **Test behavior under memory pressure** — large number of entries, GC behavior.
+46. ~~**Test behavior under memory pressure** — large number of entries, GC behavior.~~ done (memory benchmarks (46aa38d))
 47. **Test sweep goroutine leak** — verify the goroutine exits on Close (use `runtime.NumGoroutine()`).
-48. **Test concurrent Close + operations** — what if Close races with an in-flight CheckAndRecord?
+48. ~~**Test concurrent Close + operations** — what if Close races with an in-flight CheckAndRecord?~~ done at `9db0f6e`
 49. **Test clock manipulation** — inject a clock for deterministic TTL testing (avoid `time.Sleep` in tests).
 50. **Test empty-string vs whitespace-only keys** — currently empty string is valid; should whitespace-only be trimmed?
 
@@ -165,8 +165,8 @@ Nothing was broken. All quality gates green at session end. But see section (e) 
 
 ## g) Questions I cannot figure out myself
 
-1. **Is the TTL validation a breaking change that warrants a v0.2.0 tag, or do we treat v0.x as "no SemVer guarantee" and leave it as a fix?** Go's module convention says v0 can break at any time, but I want to know the project's stance before tagging.
+1. **Is the TTL validation a breaking change that warrants a v0.2.0 tag, or do we treat v0.x as "no SemVer guarantee" and leave it as a fix?** Go's module convention says v0 can break at any time, but I want to know the project's stance before tagging. _Answered: shipped as the v0.1.2 patch release (`f260ccf`) — v0.x treated as no-SemVer-guarantee._
 
 2. **Should `ErrInvalidTTL` carry the offending TTL value in its context (`.WithContext("ttl", ttl.String())`), or is the error message "ttl must be positive" sufficient?** This is a developer-experience tradeoff I can't resolve without knowing the project's error-context philosophy.
 
-3. **Should the middleware package come before or after Redis/SQL backends?** The middleware is the "primary advertised integration point" (doc.go) but backends enable distributed use. Both are high-value; I don't know which serves the project's users better first.
+3. **Should the middleware package come before or after Redis/SQL backends?** The middleware is the "primary advertised integration point" (doc.go) but backends enable distributed use. Both are high-value; I don't know which serves the project's users better first. _Answered 2026-08-07 by ADR-001: backends will never ship in this module — middleware is the only integration path (tracked in TODO_LIST.md)._

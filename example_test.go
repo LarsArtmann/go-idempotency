@@ -11,6 +11,9 @@ import (
 
 // ExampleStore shows the primary usage pattern: CheckAndRecord as a single
 // atomic step that prevents duplicate processing of a retried command.
+//
+// It uses the deprecated MemoryStore for illustration only; for production,
+// see the "Implementing a Custom Backend" section in the package docs.
 func ExampleStore() {
 	store := idempotency.NewMemoryStore(5 * time.Minute)
 	defer store.Close()
@@ -42,6 +45,8 @@ func ExampleStore() {
 }
 
 // ExampleMemoryStore demonstrates the full lifecycle: create, use, close.
+// The deprecated MemoryStore keeps the example runnable; see the package docs
+// for the production path (implement Store against your own backend).
 func ExampleMemoryStore() {
 	store := idempotency.NewMemoryStore(5 * time.Minute)
 	defer store.Close()
