@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Contract suite self-test** — `contract/` now ships a test-only internal in-memory `Store` (`contract/internal/`, internal package so consumers cannot import it) and runs `RunTests` against it in `contract/contract_test.go`. The suite is exercised in this repo's own CI (79.6% coverage of `contract/`) instead of shipping with zero coverage.
 - **Negative contract tests** — four deliberately broken Stores (duplicate swallowed as nil, duplicate returning a generic error, non-positive TTL accepted by `Record` and by `CheckAndRecord`) prove the suite detects each violation AND names the violated invariant in its failure output. Each scenario re-executes the test binary in a subprocess, because an expected `t.Fatal` cannot be observed inside the parent's own test tree.
+- **Enriched fuzz seed corpus** — both fuzz targets now seed an empty key, a 4 KB key, a unicode/emoji key, `math.MaxInt64` (TTL conversion overflow), and negative TTLs, up from 3 inputs per target. 60 s of live fuzzing (15.7M execs) found no failures.
 
 ## [0.2.0] - 2026-08-29
 

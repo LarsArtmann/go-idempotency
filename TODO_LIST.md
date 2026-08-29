@@ -13,7 +13,6 @@ Short-term actionable work. Open items only — completed work lives in [CHANGEL
 
 ## Testing
 
-- [ ] **Enrich the fuzz seed corpus** — `fuzz_test.go` seeds only 3 inputs per fuzz target; add empty string, unicode, very long keys, `math.MaxInt64` and negative TTL durations. Evidence: [fuzz_test.go](fuzz_test.go), [docs/status/2026-08-07_22-30_memorystore-deprecation-self-critique.md](docs/status/2026-08-07_22-30_memorystore-deprecation-self-critique.md) P2.15. **Impact: Low · Effort: XS**
 - [ ] **Document the context-cancellation test pattern for custom backends** — `RunTests` says backends honoring context "should be tested separately" but provides no guidance or template. Evidence: [contract/contract.go](contract/contract.go) `RunTests` doc comment, [docs/status/2026-08-07_22-15_execution-plan-completion.md](docs/status/2026-08-07_22-15_execution-plan-completion.md) b.3. **Impact: Low · Effort: S**
 
 ## Infrastructure

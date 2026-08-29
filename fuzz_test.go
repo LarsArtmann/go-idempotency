@@ -3,6 +3,8 @@ package idempotency_test
 import (
 	"context"
 	"errors"
+	"math"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -18,6 +20,10 @@ func FuzzCheckAndRecord(f *testing.F) {
 	f.Add("fuzz-key", int64(60))
 	f.Add("", int64(1))
 	f.Add("key-with-unicode", int64(0))
+	f.Add("🔑🚀-emoji-ключ-中文", int64(30))
+	f.Add(strings.Repeat("K", 4096), int64(30))
+	f.Add("max-ttl", int64(math.MaxInt64))
+	f.Add("negative-ttl", int64(-1))
 
 	f.Fuzz(func(t *testing.T, key string, ttlSeconds int64) {
 		store := idempotency.NewMemoryStore(0)
@@ -55,6 +61,9 @@ func FuzzRecord(f *testing.F) {
 	f.Add("fuzz-key", int64(30))
 	f.Add("", int64(-5))
 	f.Add("another-key", int64(0))
+	f.Add("🔑🚀-emoji-ключ-中文", int64(-1))
+	f.Add(strings.Repeat("R", 4096), int64(15))
+	f.Add("max-ttl", int64(math.MaxInt64))
 
 	f.Fuzz(func(t *testing.T, key string, ttlSeconds int64) {
 		store := idempotency.NewMemoryStore(0)
