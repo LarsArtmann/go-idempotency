@@ -19,14 +19,14 @@
 
 ## Proof, not assumption
 
-| Claim | Evidence |
-| --- | --- |
-| CI green on the tagged commit | Run [33970380542](https://github.com/LarsArtmann/go-idempotency/actions/runs/33970380542): success, 10/10 jobs, on `dd48290` = `v0.3.0` |
-| Proxy indexed the tag at the right commit | `proxy.golang.org/.../@v/v0.3.0.info` → `{"Version":"v0.3.0","Hash":"dd48290410cba9d95c10769d01df85bf284df862","Ref":"refs/tags/v0.3.0"}` |
-| Consumers can `go get` it | Clean-module `go get github.com/larsartmann/go-idempotency@v0.3.0` resolves, pulling only `go-error-family v0.10.0` |
-| pkg.go.dev renders the release | [v0.3.0 module page](https://pkg.go.dev/github.com/larsartmann/go-idempotency@v0.3.0): deprecation notices, godoc examples, `contract`/`example`/`middleware` directories; [middleware page](https://pkg.go.dev/github.com/larsartmann/go-idempotency/middleware) renders `Command`/`NewCommand`/`HTTP`/`HeaderKey` + `ExampleNewCommand` |
-| GitHub Release live | [v0.3.0 Release](https://github.com/LarsArtmann/go-idempotency/releases/tag/v0.3.0), notes from `docs/releases/v0.3.0-notes.md`, marked Latest (matching the v0.2.0 precedent: v0.x releases are not flagged prerelease) |
-| Fuzz clean before the budget raise | Local 90 s × 4 targets ≈ 93.6M execs, zero findings, no `testdata/` additions |
+| Claim                                     | Evidence                                                                                                                                                                                                                                                                                                                                  |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CI green on the tagged commit             | Run [33970380542](https://github.com/LarsArtmann/go-idempotency/actions/runs/33970380542): success, 10/10 jobs, on `dd48290` = `v0.3.0`                                                                                                                                                                                                   |
+| Proxy indexed the tag at the right commit | `proxy.golang.org/.../@v/v0.3.0.info` → `{"Version":"v0.3.0","Hash":"dd48290410cba9d95c10769d01df85bf284df862","Ref":"refs/tags/v0.3.0"}`                                                                                                                                                                                                 |
+| Consumers can `go get` it                 | Clean-module `go get github.com/larsartmann/go-idempotency@v0.3.0` resolves, pulling only `go-error-family v0.10.0`                                                                                                                                                                                                                       |
+| pkg.go.dev renders the release            | [v0.3.0 module page](https://pkg.go.dev/github.com/larsartmann/go-idempotency@v0.3.0): deprecation notices, godoc examples, `contract`/`example`/`middleware` directories; [middleware page](https://pkg.go.dev/github.com/larsartmann/go-idempotency/middleware) renders `Command`/`NewCommand`/`HTTP`/`HeaderKey` + `ExampleNewCommand` |
+| GitHub Release live                       | [v0.3.0 Release](https://github.com/LarsArtmann/go-idempotency/releases/tag/v0.3.0), notes from `docs/releases/v0.3.0-notes.md`, marked Latest (matching the v0.2.0 precedent: v0.x releases are not flagged prerelease)                                                                                                                  |
+| Fuzz clean before the budget raise        | Local 90 s × 4 targets ≈ 93.6M execs, zero findings, no `testdata/` additions                                                                                                                                                                                                                                                             |
 
 ## Remaining open
 
