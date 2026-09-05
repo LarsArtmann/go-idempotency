@@ -85,7 +85,7 @@ Nothing was broken. All quality gates green at session end. But see section (e) 
 
 1. ~~**Flag the breaking change in CHANGELOG** — add a "Changed (BREAKING)" note or bump to v0.2.0 to signal the TTL validation breaks callers passing zero/negative TTL.~~ done (shipped as v0.1.2 (f260ccf); CHANGELOG documents the behavior change)
 2. ~~**Add fuzz tests** — `FuzzCheckAndRecord`, `FuzzRecord` with arbitrary keys, TTLs, concurrency patterns. Already in TODO_LIST; the TTL fix makes this higher priority (would have caught the bug).~~ done at `9db0f6e`
-3. ~~**Add `Store` interface contract test** — table-driven suite that any `Store` impl must pass. Run against `MemoryStore` now; reuse for Redis/SQL. Already in TODO_LIST.~~ done at `46aa38d`, ` 9db0f6e`
+3. ~~**Add `Store` interface contract test** — table-driven suite that any `Store` impl must pass. Run against `MemoryStore` now; reuse for Redis/SQL. Already in TODO_LIST.~~ done at `46aa38d`, `9db0f6e`
 4. **Add property test for TTL validation** — "any ttl <= 0 always returns ErrInvalidTTL, and no key is ever recorded."
 5. **Add `Delete` method to `Store` interface** — manual key invalidation for ops/testing. Already in TODO_LIST.
 6. **Test `errors.Is` across wrapping** — verify `errors.Is(wrappedErr, ErrInvalidTTL)` works when the error is wrapped by a caller.

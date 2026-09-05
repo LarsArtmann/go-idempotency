@@ -25,7 +25,7 @@ golangci-lint config verify     # config must validate
 golangci-lint run ./...         # must report 0 issues
 ```
 
-3. **`go mod tidy` diff check** — run tidy on a *copy* of the module, never on
+3. **`go mod tidy` diff check** — run tidy on a _copy_ of the module, never on
    the live tree (protects uncommitted work):
 
 ```bash

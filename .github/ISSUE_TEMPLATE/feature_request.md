@@ -1,9 +1,9 @@
 ---
 name: Feature request
 about: Propose an addition to the SDK
-title: ''
+title: ""
 labels: enhancement
-assignees: ''
+assignees: ""
 ---
 
 **Problem first**

@@ -2,10 +2,10 @@
 
 ## Supported versions
 
-| Version | Supported |
-| ------- | --------- |
-| latest release on pkg.go.dev | yes |
-| older releases | no — upgrade via `go get -u github.com/larsartmann/go-idempotency` |
+| Version                      | Supported                                                          |
+| ---------------------------- | ------------------------------------------------------------------ |
+| latest release on pkg.go.dev | yes                                                                |
+| older releases               | no — upgrade via `go get -u github.com/larsartmann/go-idempotency` |
 
 Go's module system means consumers pin an exact version; fixes land in a new
 tag, never retroactively.

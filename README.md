@@ -151,13 +151,13 @@ See [FEATURES.md](FEATURES.md) for the full, code-evidenced inventory.
 
 The `Store` interface is three methods. Each maps to a single round-trip on a typical backend. The critical requirement is that `CheckAndRecord` is **atomic** — use your backend's native check-and-set primitive.
 
-| Backend | `CheckAndRecord` primitive | TTL semantics | Gotchas |
-| --- | --- | --- | --- |
-| Redis | `SET key 1 NX EX <ttl>` | Server-side expiry — clock-safe | Prefix keys (`idem:`); NX returning "not set" means duplicate |
-| PostgreSQL | `INSERT ... ON CONFLICT DO NOTHING` | `expires_at` column; filter on read, purge with a scheduled `DELETE` | Wrap the business effect in the same transaction when you can |
-| MySQL | `INSERT IGNORE` | `expires_at` column, as above | `INSERT IGNORE` also swallows unrelated errors — prefer `ON DUPLICATE KEY` with error checks |
-| DynamoDB | `PutItem` with `attribute_not_exists(key)` | TTL attribute is best-effort (deletion can lag hours) — always check expiry on read | Conditional writes are extra cost on duplicate retries |
-| SQLite / bbolt | `INSERT OR IGNORE` in a transaction | `expires_at` column | Single-writer; local to one process — dead after a crash by definition |
+| Backend        | `CheckAndRecord` primitive                 | TTL semantics                                                                       | Gotchas                                                                                      |
+| -------------- | ------------------------------------------ | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Redis          | `SET key 1 NX EX <ttl>`                    | Server-side expiry — clock-safe                                                     | Prefix keys (`idem:`); NX returning "not set" means duplicate                                |
+| PostgreSQL     | `INSERT ... ON CONFLICT DO NOTHING`        | `expires_at` column; filter on read, purge with a scheduled `DELETE`                | Wrap the business effect in the same transaction when you can                                |
+| MySQL          | `INSERT IGNORE`                            | `expires_at` column, as above                                                       | `INSERT IGNORE` also swallows unrelated errors — prefer `ON DUPLICATE KEY` with error checks |
+| DynamoDB       | `PutItem` with `attribute_not_exists(key)` | TTL attribute is best-effort (deletion can lag hours) — always check expiry on read | Conditional writes are extra cost on duplicate retries                                       |
+| SQLite / bbolt | `INSERT OR IGNORE` in a transaction        | `expires_at` column                                                                 | Single-writer; local to one process — dead after a crash by definition                       |
 
 | Method           | What it does                           | Typical backend primitive                                      |
 | ---------------- | -------------------------------------- | -------------------------------------------------------------- |
@@ -186,21 +186,21 @@ The suite is self-tested: this repository runs `RunTests` against its own intern
 
 **What `RunTests` checks** — the thirteen invariants, each a named subtest:
 
-| Method | Invariant (subtest) | Requirement |
-| --- | --- | --- |
-| `Seen` | `UnseenKeyReturnsFalse` | An unseen key reports `(false, nil)`. |
-| `Seen` | `AfterRecordReturnsTrue` | A recorded, unexpired key reports true. |
-| `Seen` | `LazilyDeletesExpired` | After TTL expiry, `Seen` reports false. |
-| `Record` | `NoopOnExistingKey` | Re-recording a live key must NOT extend its TTL. |
-| `Record` | `ReRecordsAfterExpiry` | An expired key accepts a fresh TTL. |
-| `Record` | `RejectsNonPositiveTTL` | `ttl <= 0` returns `ErrInvalidTTL`; nothing is recorded. |
-| `CheckAndRecord` | `FirstCallSucceeds` | The first claim returns nil. |
-| `CheckAndRecord` | `DuplicateReturnsErrDuplicate` | A second claim inside the TTL returns `ErrDuplicate` (`errors.Is`-compatible). |
-| `CheckAndRecord` | `AllowsAfterExpiry` | After expiry the key can be claimed again. |
-| `CheckAndRecord` | `RejectsNonPositiveTTL` | `ttl <= 0` returns `ErrInvalidTTL`; nothing is recorded. |
-| Concurrency | `AtomicUnderConcurrency` | 200 goroutines racing one key: exactly one nil win, all others `ErrDuplicate`, no other errors. |
-| Cross-cutting | `KeysAreIndependent` | Operations on one key never affect another. |
-| Cross-cutting | `EmptyKey` | The empty string is a valid key across all methods. |
+| Method           | Invariant (subtest)            | Requirement                                                                                     |
+| ---------------- | ------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `Seen`           | `UnseenKeyReturnsFalse`        | An unseen key reports `(false, nil)`.                                                           |
+| `Seen`           | `AfterRecordReturnsTrue`       | A recorded, unexpired key reports true.                                                         |
+| `Seen`           | `LazilyDeletesExpired`         | After TTL expiry, `Seen` reports false.                                                         |
+| `Record`         | `NoopOnExistingKey`            | Re-recording a live key must NOT extend its TTL.                                                |
+| `Record`         | `ReRecordsAfterExpiry`         | An expired key accepts a fresh TTL.                                                             |
+| `Record`         | `RejectsNonPositiveTTL`        | `ttl <= 0` returns `ErrInvalidTTL`; nothing is recorded.                                        |
+| `CheckAndRecord` | `FirstCallSucceeds`            | The first claim returns nil.                                                                    |
+| `CheckAndRecord` | `DuplicateReturnsErrDuplicate` | A second claim inside the TTL returns `ErrDuplicate` (`errors.Is`-compatible).                  |
+| `CheckAndRecord` | `AllowsAfterExpiry`            | After expiry the key can be claimed again.                                                      |
+| `CheckAndRecord` | `RejectsNonPositiveTTL`        | `ttl <= 0` returns `ErrInvalidTTL`; nothing is recorded.                                        |
+| Concurrency      | `AtomicUnderConcurrency`       | 200 goroutines racing one key: exactly one nil win, all others `ErrDuplicate`, no other errors. |
+| Cross-cutting    | `KeysAreIndependent`           | Operations on one key never affect another.                                                     |
+| Cross-cutting    | `EmptyKey`                     | The empty string is a valid key across all methods.                                             |
 
 Slow or heavily loaded CI runners can stretch the suite's wall-clock timings with `contract.RunTestsStrict` and `contract.Options{TimingScale: 3}` instead of debugging expiry flakes.
 

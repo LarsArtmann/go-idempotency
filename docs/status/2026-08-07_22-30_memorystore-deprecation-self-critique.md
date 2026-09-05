@@ -33,8 +33,8 @@
 
 I applied `// Deprecated:` and "deprecated" language to **10 files**, but **4 files were missed** and still describe `MemoryStore` as the default path. A reader hitting any of these learns the wrong thing:
 
-| File:line                                     | Current text (stale)                                                                                                                    | Problem                                                                                                                                             |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| File:line                                     | Current text (stale)                                                                                                                    | Problem                                                                                                                                                                                   |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **`store.go:43-44`**                          | `// [MemoryStore] is provided as a reference implementation for development and single-process use cases;`                              | **Worst miss.** This is the `Store` interface doc — the canonical entry point. It actively recommends the deprecated type with no deprecation note. → **Fixed (docs-health 2026-08-29).** |
 | **`CONTRIBUTING.md:7`**                       | `It provides the Store interface and MemoryStore (a reference implementation).`                                                         | Contributor-facing doc still frames MemoryStore as a co-equal deliverable. I never touched CONTRIBUTING.md this session. → **Fixed (docs-health 2026-08-29).**                            |
 | **`AGENTS.md:22`**                            | `**MemoryStore** (store.go) — the reference implementation.`                                                                            | The Architecture section. I updated the "Key Design Decisions" bullets but missed the primary description above them. → **Fixed (docs-health 2026-08-29).**                               |
@@ -60,18 +60,18 @@ ROADMAP says "v1.0 removal" but there is no issue/TODO item with an owner or a g
 
 ## c) NOT STARTED (carried over + new)
 
-| #  | Item                                                                   | Source                        |
-| -- | ---------------------------------------------------------------------- | ----------------------------- |
-| ~~1~~  | ~~Fix the 4 stale-file misses above~~ done (docs-health pass 2026-08-29) | ~~This session (P1)~~ |
-| 2  | `contract/contract_test.go` self-test of the suite (fixes 0% coverage) | Prior critique                |
-| 3  | SQL adapter example in `doc.go` (only Redis exists)                    | Prior critique                |
-| 4  | Enrich fuzz seed corpus (empty strings, unicode, `math.MaxInt64`)      | Prior critique                |
-| 5  | Codecov/Coveralls badge in README                                      | Prior critique                |
-| ~~6~~  | ~~Comment on `BenchmarkMemoryUsage_AfterSweep` re: low reclaim %~~ done (docs-health pass 2026-08-29) | ~~Prior critique~~ |
-| 7  | `ErrStoreClosed` sentinel                                              | Open question                 |
-| 8  | Middleware package (`CommandIdempotency` etc.)                         | Blocked — module boundary     |
-| 9  | `Delete` / `Stats` on `Store` interface                                | Blocked — interface evolution |
-| 10 | Standalone migration guide doc                                         | This session                  |
+| #     | Item                                                                                                  | Source                        |
+| ----- | ----------------------------------------------------------------------------------------------------- | ----------------------------- |
+| ~~1~~ | ~~Fix the 4 stale-file misses above~~ done (docs-health pass 2026-08-29)                              | ~~This session (P1)~~         |
+| 2     | `contract/contract_test.go` self-test of the suite (fixes 0% coverage)                                | Prior critique                |
+| 3     | SQL adapter example in `doc.go` (only Redis exists)                                                   | Prior critique                |
+| 4     | Enrich fuzz seed corpus (empty strings, unicode, `math.MaxInt64`)                                     | Prior critique                |
+| 5     | Codecov/Coveralls badge in README                                                                     | Prior critique                |
+| ~~6~~ | ~~Comment on `BenchmarkMemoryUsage_AfterSweep` re: low reclaim %~~ done (docs-health pass 2026-08-29) | ~~Prior critique~~            |
+| 7     | `ErrStoreClosed` sentinel                                                                             | Open question                 |
+| 8     | Middleware package (`CommandIdempotency` etc.)                                                        | Blocked — module boundary     |
+| 9     | `Delete` / `Stats` on `Store` interface                                                               | Blocked — interface evolution |
+| 10    | Standalone migration guide doc                                                                        | This session                  |
 
 ---
 

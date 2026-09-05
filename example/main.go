@@ -45,6 +45,7 @@ func (s *demoStore) Seen(_ context.Context, key string) (bool, error) {
 }
 
 func (s *demoStore) Record(_ context.Context, key string, ttl time.Duration) error {
+	// art-dupl:accept example intentionally re-implements the store to demonstrate the contract standalone
 	if ttl <= 0 {
 		return idempotency.ErrInvalidTTL
 	}
@@ -64,6 +65,7 @@ func (s *demoStore) Record(_ context.Context, key string, ttl time.Duration) err
 }
 
 func (s *demoStore) CheckAndRecord(_ context.Context, key string, ttl time.Duration) error {
+	// art-dupl:accept example intentionally re-implements the store to demonstrate the contract standalone
 	if ttl <= 0 {
 		return idempotency.ErrInvalidTTL
 	}

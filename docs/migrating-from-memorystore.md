@@ -17,13 +17,13 @@ The library deliberately ships no production backend (see
 [ADR-001](adr/001-no-backends.md)). You implement `idempotency.Store` against
 whatever storage you already run:
 
-| Your situation | Backend to target | Atomic primitive |
-| --- | --- | --- |
-| Multiple service instances, already run Redis | Redis | `SET NX EX` |
-| Multiple instances, relational stack | PostgreSQL/MySQL | `INSERT ... ON CONFLICT DO NOTHING` / `INSERT IGNORE` |
-| AWS-native | DynamoDB | `PutItem` with `attribute_not_exists` condition |
-| Single process, non-critical dedup (dev/test, best-effort) | In-process map (like MemoryStore, but yours) | `sync.Mutex` critical section |
-| Single process, must survive restart | SQLite/bbolt | transaction with unique key constraint |
+| Your situation                                             | Backend to target                            | Atomic primitive                                      |
+| ---------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------- |
+| Multiple service instances, already run Redis              | Redis                                        | `SET NX EX`                                           |
+| Multiple instances, relational stack                       | PostgreSQL/MySQL                             | `INSERT ... ON CONFLICT DO NOTHING` / `INSERT IGNORE` |
+| AWS-native                                                 | DynamoDB                                     | `PutItem` with `attribute_not_exists` condition       |
+| Single process, non-critical dedup (dev/test, best-effort) | In-process map (like MemoryStore, but yours) | `sync.Mutex` critical section                         |
+| Single process, must survive restart                       | SQLite/bbolt                                 | transaction with unique key constraint                |
 
 Pick the smallest thing that survives the failures you care about. The rule of
 thumb: **the store must outlive every process that might claim a key** —
@@ -211,12 +211,12 @@ context cancellation, also cover the
 
 With tests green, replace the type and delete the MemoryStore call sites:
 
-| Before (deprecated) | After |
-| --- | --- |
+| Before (deprecated)                           | After                                                   |
+| --------------------------------------------- | ------------------------------------------------------- |
 | `idempotency.NewMemoryStore(5 * time.Minute)` | `redistore.New(client)` (or `teststore.New()` in tests) |
-| `store.CheckAndRecord(ctx, key, ttl)` | unchanged |
-| `errors.Is(err, idempotency.ErrDuplicate)` | unchanged |
-| `defer store.Close()` | unchanged |
+| `store.CheckAndRecord(ctx, key, ttl)`         | unchanged                                               |
+| `errors.Is(err, idempotency.ErrDuplicate)`    | unchanged                                               |
+| `defer store.Close()`                         | unchanged                                               |
 
 The method set you call does not change — only the constructor does. This
 repository's own lint config (`forbidigo` in `.golangci.yml`) fails any new

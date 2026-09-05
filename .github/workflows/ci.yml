@@ -7,7 +7,7 @@ on:
   schedule:
     # Weekly full-CI run including the strict-timing contract pass; odd
     # minute to avoid the top-of-hour runner stampede.
-    - cron: '17 4 * * 1'
+    - cron: "17 4 * * 1"
 
 permissions:
   contents: read
@@ -25,7 +25,7 @@ jobs:
         # release: proves a consumer whose checkout machine runs one release
         # behind can still build and test the module (the toolchain directive
         # in go.mod bootstraps the pinned toolchain via GOTOOLCHAIN=auto).
-        go-version: ['go.mod', 'oldstable']
+        go-version: ["go.mod", "oldstable"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -41,7 +41,7 @@ jobs:
         if: github.event_name == 'schedule'
         run: go test ./contract -race -count=1 -run TestRunTestsStrict_ScaledTimings
         env:
-          GO_IDEMPOTENCY_CONTRACT_TIMING_SCALE: '3'
+          GO_IDEMPOTENCY_CONTRACT_TIMING_SCALE: "3"
 
       - name: Run tests with coverage
         if: matrix.go-version == 'go.mod'

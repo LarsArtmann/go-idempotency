@@ -96,7 +96,7 @@ Radical honesty; includes the brutal self-review answers. Nothing here is unreco
    - One wasted no-op shell call and several oversized `job_output` dumps while waiting on soaks — noisy, slow, avoidable.
 
 6. **Ghost systems / split brains check (asked for explicitly): none found from this session's work.**
-   Every new artifact is wired: `ContextAware` wrapper ← self-test; env knob ← CI scheduled step; shared harness ← both negative suites; docs counts consistent across FEATURES/AGENTS/CONTRIBUTING/README (19 = 14+5; 8 jobs / 9 conclusions is jobs-vs-matrix-conclusions, not a split brain). Two KNOWN pre-existing stalenesses noticed, both self-healing at v0.3.0: the *published* pkg.go.dev still shows the v0.2.0 README ("middleware is the next planned addition") and the old contract doc text — the tag fixes both; do not "fix" them on master.
+   Every new artifact is wired: `ContextAware` wrapper ← self-test; env knob ← CI scheduled step; shared harness ← both negative suites; docs counts consistent across FEATURES/AGENTS/CONTRIBUTING/README (19 = 14+5; 8 jobs / 9 conclusions is jobs-vs-matrix-conclusions, not a split brain). Two KNOWN pre-existing stalenesses noticed, both self-healing at v0.3.0: the _published_ pkg.go.dev still shows the v0.2.0 README ("middleware is the next planned addition") and the old contract doc text — the tag fixes both; do not "fix" them on master.
    Did I lie anywhere? No; the two `≈` numbers are labeled as approximations everywhere they appear.
 
 ## e) WHAT WE SHOULD IMPROVE
@@ -115,58 +115,58 @@ Radical honesty; includes the brutal self-review answers. Nothing here is unreco
 
 Sorted by impact. Category: Bug/Feature/Quality/Cleanup/Documentation/Decision. "OWNER" = gated on the owner; "ROADMAP" = park, don't schedule (docs-health HARVEST: route with rigor).
 
-| # | Task | Impact | Effort | Category |
-|---|------|--------|--------|----------|
-| 1 | OWNER: answer the L1-2 batch — Delete fate, ADR-002/003/004 vetoes, `CODECOV_TOKEN`, PR #6, FUNDING | Critical | S | Decision |
-| 2 | Execute the v0.3.0 release train per RELEASING.md (12.15–12.24) | Critical | M | Feature |
-| 3 | OWNER: confirm ADR-002/003/004 → flip statuses to settled (L1-5) | High | S | Documentation |
-| 4 | Archive executed plans to `docs/planning/archived/` + fix inbound links (12.27–12.28) | Medium | S | Cleanup |
-| 5 | L1-7: teach `check-stale-refs.sh` the post-tag release-status phrases; run repo-wide | Medium | S | Quality |
-| 6 | Flip README middleware link to its pkg.go.dev page after the tag | Low | S | Documentation |
-| 7 | Verify module proxy + pkg.go.dev render `middleware`/`contract`/`example`, hide `internal` (12.20/12.22) | High | S | Quality |
-| 8 | Draft v0.3.0 release notes from the changelog section (12.17) and cut the GitHub Release (12.21) | High | S | Documentation |
-| 9 | OWNER: set `CODECOV_TOKEN` → verify badge shows a real % (12.23) | Medium | S | Decision |
-| 10 | L1-13: coverage floor via `codecov.yml`/CI step, document in CONTRIBUTING (12.52–12.54) | Medium | S | Quality |
-| 11 | L1-8: raise CI fuzz budget 30s → 2–5 min/target after the clean soak week (12.37–12.38) | Medium | S | Quality |
-| 12 | OWNER: decide go.mod directive strategy — keep patch-pin `1.26.7` vs minor floor (see g, Q1) | High | S | Decision |
-| 13 | If directive is lowered: make the oldstable entry a real build (`GOTOOLCHAIN=local`) and re-verify | High | S | Quality |
-| 14 | Add `workflow_dispatch` trigger so the scheduled strict-timing path can be dry-run on demand | Medium | S | Quality |
-| 15 | Add `concurrency:` group (cancel superseded runs on same-ref pushes) | Medium | S | Quality |
-| 16 | Add `timeout-minutes:` to all 8 jobs so a hung job can't eat the 6h limit | Medium | S | Quality |
-| 17 | Add `scripts/soak-fuzz.sh` (4 targets, per-target log files, summary table) | Medium | S | Cleanup |
-| 18 | Add `scripts/check-links.sh` wrapper + lychee in a devShell so local link checks match CI | Medium | M | Quality |
-| 19 | Re-record exact soak totals for FuzzCheckAndRecord/FuzzConcurrentMixed (replace the two `≈`) | Low | S | Cleanup |
-| 20 | OWNER: merge or close Dependabot PR #6; then confirm Node 20 warnings disappear | Low | S | Decision |
-| 21 | Check `.github/dependabot.yml` covers gomod + actions + weekly cadence; adjust if not | Low | S | Cleanup |
-| 22 | Verify setup-go build caching actually hits on both matrix entries (check job logs) | Low | S | Quality |
-| 23 | Consider moving govulncheck to the weekly schedule only (cuts per-push minutes; tradeoff: slower vuln signal) | Low | S | Decision |
-| 24 | OWNER: nod or veto the ADR-005 disposition-model draft (see g, Q3) | Medium | S | Decision |
-| 25 | If nodded: write ADR-005 (Context/Decision+triggers/Alternatives/Consequences + index row, status Proposed) — 12.30–12.33 | Medium | M | Documentation |
-| 26 | If ADR-005 lands: implement the ~20-line Skip disposition in middleware as the demand-gated increment | Medium | S | Feature |
-| 27 | HARVEST this section into TODO_LIST/ROADMAP (docs-health), pruning anything already covered | Medium | S | Cleanup |
-| 28 | Write the CI-verification policy (PR-branch vs master-watch) into AGENTS.md | Low | S | Documentation |
-| 29 | CONTRIBUTING: document what "Test (oldstable)" proves today (bootstrap) and what changes if #13 lands | Low | S | Documentation |
-| 30 | ROADMAP: Delete implementation with ops-recovery framing when ADR-004's trigger fires | Low | — | ROADMAP |
-| 31 | ROADMAP: EventIdempotency (Skip) when an event consumer appears | Low | — | ROADMAP |
-| 32 | ROADMAP: Replay disposition productization (recipe → middleware helper) behind ADR-005 + demand | Low | — | ROADMAP |
-| 33 | ROADMAP: gRPC adapter as its own module when a transport needs dependencies (ADR-002 split trigger) | Low | — | ROADMAP |
-| 34 | ROADMAP: key-generation utilities (e.g., derived `resp:`-style key helpers) on demand | Low | — | ROADMAP |
-| 35 | ROADMAP: metrics hooks (claims/duplicates/expiries) on demand | Low | — | ROADMAP |
-| 36 | ROADMAP: lock-strategy evaluation note (single-flight vs store-native CAS) | Low | — | ROADMAP |
-| 37 | ROADMAP: clock injection seam for TTL tests if timing flakes ever recur | Low | — | ROADMAP |
-| 38 | Consider a rapid-based property test randomized-cancellation sequences for the ContextAware suite (only if cancellation bugs ever appear; else YAGNI) | Low | M | ROADMAP |
-| 39 | PROPERTY: after v0.3.0, re-check pkg.go.dev renders (middleware present, `Deprecated:` notices intact, internal hidden) and record evidence in the release plan annotations | Medium | S | Quality |
-| 40 | Announcement draft naming the contract suite + deprecation + middleware (12.24) — needs #2 | Low | S | Documentation |
-| 41 | Sweep remaining living docs for "60+ linters"-style drifting numbers (FEATURES CI row fixed this session; audit others) | Low | S | Cleanup |
-| 42 | Add `DOMAIN_LANGUAGE.md` entries: cancellation contract terms (canceled call / claim poisoning) introduced this session | Low | S | Documentation |
-| 43 | Verify dependabot config also bumps the lychee-action pin (it's in the actions ecosystem — should be covered; confirm) | Low | S | Cleanup |
-| 44 | Double-check the scheduled run actually fired after a week (or after #14, trigger manually) | Low | S | Quality |
-| 45 | Re-run the relative-link inventory after every docs batch (already ad-hoc — consider folding into `check-links.sh`, see #18) | Low | S | Cleanup |
-| 46 | Consider `-shuffle=on` for the test suite in CI to catch ordering dependencies | Low | S | Quality |
-| 47 | ROADMAP: example for a context-honoring backend in `example/` (second demo backend using the ContextAware suite) — only if consumers ask | Low | M | ROADMAP |
-| 48 | Consider badge for the weekly scheduled run (workflow badge shows last run on any trigger — probably not worth it; note and drop) | Low | S | ROADMAP |
-| 49 | Post-release: re-run stale-refs + link checker with the new release vocabulary and fix every hit (pairs with #5) | Medium | S | Quality |
-| 50 | Owner-preference items deliberately parked: release-please vs RELEASING.md, Renovate vs Dependabot, branch-protection rules (require the 8 checks) — decide whenever | Low | S | Decision |
+| #  | Task                                                                                                                                                                        | Impact   | Effort | Category      |
+| -- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------ | ------------- |
+| 1  | OWNER: answer the L1-2 batch — Delete fate, ADR-002/003/004 vetoes, `CODECOV_TOKEN`, PR #6, FUNDING                                                                         | Critical | S      | Decision      |
+| 2  | Execute the v0.3.0 release train per RELEASING.md (12.15–12.24)                                                                                                             | Critical | M      | Feature       |
+| 3  | OWNER: confirm ADR-002/003/004 → flip statuses to settled (L1-5)                                                                                                            | High     | S      | Documentation |
+| 4  | Archive executed plans to `docs/planning/archived/` + fix inbound links (12.27–12.28)                                                                                       | Medium   | S      | Cleanup       |
+| 5  | L1-7: teach `check-stale-refs.sh` the post-tag release-status phrases; run repo-wide                                                                                        | Medium   | S      | Quality       |
+| 6  | Flip README middleware link to its pkg.go.dev page after the tag                                                                                                            | Low      | S      | Documentation |
+| 7  | Verify module proxy + pkg.go.dev render `middleware`/`contract`/`example`, hide `internal` (12.20/12.22)                                                                    | High     | S      | Quality       |
+| 8  | Draft v0.3.0 release notes from the changelog section (12.17) and cut the GitHub Release (12.21)                                                                            | High     | S      | Documentation |
+| 9  | OWNER: set `CODECOV_TOKEN` → verify badge shows a real % (12.23)                                                                                                            | Medium   | S      | Decision      |
+| 10 | L1-13: coverage floor via `codecov.yml`/CI step, document in CONTRIBUTING (12.52–12.54)                                                                                     | Medium   | S      | Quality       |
+| 11 | L1-8: raise CI fuzz budget 30s → 2–5 min/target after the clean soak week (12.37–12.38)                                                                                     | Medium   | S      | Quality       |
+| 12 | OWNER: decide go.mod directive strategy — keep patch-pin `1.26.7` vs minor floor (see g, Q1)                                                                                | High     | S      | Decision      |
+| 13 | If directive is lowered: make the oldstable entry a real build (`GOTOOLCHAIN=local`) and re-verify                                                                          | High     | S      | Quality       |
+| 14 | Add `workflow_dispatch` trigger so the scheduled strict-timing path can be dry-run on demand                                                                                | Medium   | S      | Quality       |
+| 15 | Add `concurrency:` group (cancel superseded runs on same-ref pushes)                                                                                                        | Medium   | S      | Quality       |
+| 16 | Add `timeout-minutes:` to all 8 jobs so a hung job can't eat the 6h limit                                                                                                   | Medium   | S      | Quality       |
+| 17 | Add `scripts/soak-fuzz.sh` (4 targets, per-target log files, summary table)                                                                                                 | Medium   | S      | Cleanup       |
+| 18 | Add `scripts/check-links.sh` wrapper + lychee in a devShell so local link checks match CI                                                                                   | Medium   | M      | Quality       |
+| 19 | Re-record exact soak totals for FuzzCheckAndRecord/FuzzConcurrentMixed (replace the two `≈`)                                                                                | Low      | S      | Cleanup       |
+| 20 | OWNER: merge or close Dependabot PR #6; then confirm Node 20 warnings disappear                                                                                             | Low      | S      | Decision      |
+| 21 | Check `.github/dependabot.yml` covers gomod + actions + weekly cadence; adjust if not                                                                                       | Low      | S      | Cleanup       |
+| 22 | Verify setup-go build caching actually hits on both matrix entries (check job logs)                                                                                         | Low      | S      | Quality       |
+| 23 | Consider moving govulncheck to the weekly schedule only (cuts per-push minutes; tradeoff: slower vuln signal)                                                               | Low      | S      | Decision      |
+| 24 | OWNER: nod or veto the ADR-005 disposition-model draft (see g, Q3)                                                                                                          | Medium   | S      | Decision      |
+| 25 | If nodded: write ADR-005 (Context/Decision+triggers/Alternatives/Consequences + index row, status Proposed) — 12.30–12.33                                                   | Medium   | M      | Documentation |
+| 26 | If ADR-005 lands: implement the ~20-line Skip disposition in middleware as the demand-gated increment                                                                       | Medium   | S      | Feature       |
+| 27 | HARVEST this section into TODO_LIST/ROADMAP (docs-health), pruning anything already covered                                                                                 | Medium   | S      | Cleanup       |
+| 28 | Write the CI-verification policy (PR-branch vs master-watch) into AGENTS.md                                                                                                 | Low      | S      | Documentation |
+| 29 | CONTRIBUTING: document what "Test (oldstable)" proves today (bootstrap) and what changes if #13 lands                                                                       | Low      | S      | Documentation |
+| 30 | ROADMAP: Delete implementation with ops-recovery framing when ADR-004's trigger fires                                                                                       | Low      | —      | ROADMAP       |
+| 31 | ROADMAP: EventIdempotency (Skip) when an event consumer appears                                                                                                             | Low      | —      | ROADMAP       |
+| 32 | ROADMAP: Replay disposition productization (recipe → middleware helper) behind ADR-005 + demand                                                                             | Low      | —      | ROADMAP       |
+| 33 | ROADMAP: gRPC adapter as its own module when a transport needs dependencies (ADR-002 split trigger)                                                                         | Low      | —      | ROADMAP       |
+| 34 | ROADMAP: key-generation utilities (e.g., derived `resp:`-style key helpers) on demand                                                                                       | Low      | —      | ROADMAP       |
+| 35 | ROADMAP: metrics hooks (claims/duplicates/expiries) on demand                                                                                                               | Low      | —      | ROADMAP       |
+| 36 | ROADMAP: lock-strategy evaluation note (single-flight vs store-native CAS)                                                                                                  | Low      | —      | ROADMAP       |
+| 37 | ROADMAP: clock injection seam for TTL tests if timing flakes ever recur                                                                                                     | Low      | —      | ROADMAP       |
+| 38 | Consider a rapid-based property test randomized-cancellation sequences for the ContextAware suite (only if cancellation bugs ever appear; else YAGNI)                       | Low      | M      | ROADMAP       |
+| 39 | PROPERTY: after v0.3.0, re-check pkg.go.dev renders (middleware present, `Deprecated:` notices intact, internal hidden) and record evidence in the release plan annotations | Medium   | S      | Quality       |
+| 40 | Announcement draft naming the contract suite + deprecation + middleware (12.24) — needs #2                                                                                  | Low      | S      | Documentation |
+| 41 | Sweep remaining living docs for "60+ linters"-style drifting numbers (FEATURES CI row fixed this session; audit others)                                                     | Low      | S      | Cleanup       |
+| 42 | Add `DOMAIN_LANGUAGE.md` entries: cancellation contract terms (canceled call / claim poisoning) introduced this session                                                     | Low      | S      | Documentation |
+| 43 | Verify dependabot config also bumps the lychee-action pin (it's in the actions ecosystem — should be covered; confirm)                                                      | Low      | S      | Cleanup       |
+| 44 | Double-check the scheduled run actually fired after a week (or after #14, trigger manually)                                                                                 | Low      | S      | Quality       |
+| 45 | Re-run the relative-link inventory after every docs batch (already ad-hoc — consider folding into `check-links.sh`, see #18)                                                | Low      | S      | Cleanup       |
+| 46 | Consider `-shuffle=on` for the test suite in CI to catch ordering dependencies                                                                                              | Low      | S      | Quality       |
+| 47 | ROADMAP: example for a context-honoring backend in `example/` (second demo backend using the ContextAware suite) — only if consumers ask                                    | Low      | M      | ROADMAP       |
+| 48 | Consider badge for the weekly scheduled run (workflow badge shows last run on any trigger — probably not worth it; note and drop)                                           | Low      | S      | ROADMAP       |
+| 49 | Post-release: re-run stale-refs + link checker with the new release vocabulary and fix every hit (pairs with #5)                                                            | Medium   | S      | Quality       |
+| 50 | Owner-preference items deliberately parked: release-please vs RELEASING.md, Renovate vs Dependabot, branch-protection rules (require the 8 checks) — decide whenever        | Low      | S      | Decision      |
 
 ## g) Three questions I cannot answer myself
 
@@ -176,4 +176,4 @@ Sorted by impact. Category: Bug/Feature/Quality/Cleanup/Documentation/Decision. 
 
 ---
 
-*Point-in-time snapshot; goes stale by design. Section (f) is HARVEST input for `TODO_LIST.md` / `ROADMAP.md`. Historical status report — excluded from the stale-refs guard per policy.*
+_Point-in-time snapshot; goes stale by design. Section (f) is HARVEST input for `TODO_LIST.md` / `ROADMAP.md`. Historical status report — excluded from the stale-refs guard per policy._

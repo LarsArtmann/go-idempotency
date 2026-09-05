@@ -55,6 +55,7 @@ func (s *Store) Seen(_ context.Context, key string) (bool, error) {
 // extended). If the key is expired, Record sets a fresh TTL. Returns
 // [idempotency.ErrInvalidTTL] if ttl is not positive.
 func (s *Store) Record(_ context.Context, key string, ttl time.Duration) error {
+	// art-dupl:accept TTL guard + lock prologue is deliberately explicit per Store method; the test double mirrors the example's demo store
 	if ttl <= 0 {
 		return idempotency.ErrInvalidTTL
 	}
@@ -93,6 +94,7 @@ func (s *Store) ForceRecord(_ context.Context, key string, ttl time.Duration) er
 // record happen under a single lock, so concurrent callers with the same key
 // are serialized: exactly one wins.
 func (s *Store) CheckAndRecord(_ context.Context, key string, ttl time.Duration) error {
+	// art-dupl:accept TTL guard + lock prologue is deliberately explicit per Store method; the test double mirrors the example's demo store
 	if ttl <= 0 {
 		return idempotency.ErrInvalidTTL
 	}
