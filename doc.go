@@ -56,11 +56,13 @@
 // [Store.CheckAndRecord] name the atomic primitive each backend should use
 // (Redis SET NX, SQL INSERT ... ON CONFLICT DO NOTHING).
 //
-// This module owns the storage contract only. A future middleware package
-// (planned, not yet implemented) will provide CommandIdempotency,
-// EventIdempotency, and QueryIdempotency helpers that wire a Store into CQRS
-// dispatch pipelines. For custom integrations (transport hooks, manual checks),
-// use the [Store] interface directly.
+// This module owns the storage contract; the middleware subpackage
+// (github.com/larsartmann/go-idempotency/middleware) wires a Store into CQRS
+// dispatch pipelines: middleware.NewCommand wraps a command function for
+// at-most-once dispatch and the net/http adapter honors the Idempotency-Key
+// header (stdlib-only per ADR-002). EventIdempotency and QueryIdempotency
+// helpers wait for a consumer that needs them. For custom integrations
+// (transport hooks, manual checks), use the [Store] interface directly.
 //
 // # Implementing a Custom Backend
 //

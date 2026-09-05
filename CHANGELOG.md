@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet.
 
+### Fixed
+
+- **Post-release doc sync** — the README middleware link points back at its pkg.go.dev page (live since v0.3.0), and `doc.go`'s stale "middleware planned, not yet implemented" paragraph (spotted in the pkg.go.dev v0.3.0 render) now describes the shipped package. The stale-refs checker learned the two new release-status phrases ("staging in CHANGELOG", "goes live with the next").
+
 ## [0.3.0] - 2026-09-05
 
 ### Added

@@ -18,6 +18,12 @@
 #                                       edit; reference symbols instead.
 #   4. "not yet tagged"               — release-status drift; update the
 #                                       version line when a tag is cut.
+#   5. "staging in CHANGELOG"          — release-status drift; the version was
+#                                       tagged but a doc still describes the
+#                                       content as staging in [Unreleased].
+#   6. "goes live with the next"       — placeholder note about a page that
+#                                       materializes only with the next
+#                                       release (e.g. a pkg.go.dev page).
 #
 # Usage: scripts/check-stale-refs.sh   (exit 0 = clean, 1 = stale refs found)
 
@@ -51,6 +57,12 @@ check 'store\.go:[0-9]+' \
 
 check 'not yet tagged' \
 	"release-status drift: 'not yet tagged' (update the version line when the tag is cut)"
+
+check 'staging in CHANGELOG' \
+	"release-status drift: content described as staging in CHANGELOG [Unreleased] after the version was tagged"
+
+check 'goes live with the next' \
+	"release-status drift: placeholder note about a page that appears with the next release"
 
 if [ "$status" -eq 0 ]; then
 	echo "check-stale-refs: living docs clean"
