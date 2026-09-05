@@ -30,7 +30,7 @@ golangci-lint run ./...         # must report 0 issues
 
 ```bash
 rm -rf /tmp/tidycheck && mkdir -p /tmp/tidycheck
-cp -r go.mod go.sum *.go contract /tmp/tidycheck/
+cp -r go.mod go.sum *.go contract internal middleware example /tmp/tidycheck/
 cd /tmp/tidycheck && go mod tidy
 diff ../go-idempotency/go.mod go.mod && diff ../go-idempotency/go.sum go.sum   # must be identical
 ```
