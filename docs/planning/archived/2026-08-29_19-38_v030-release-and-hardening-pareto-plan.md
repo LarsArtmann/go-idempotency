@@ -19,6 +19,8 @@
 > **Verification:** CI run 33267632461 green on `5ada011` — 9 job conclusions, including both Go matrix entries and the link check. Local gates re-run bare-exit before every commit.
 >
 > **Owner-gated (untouched, as planned):** L1-2 decision batch, L1-3 release train, L1-5 ADR settle + archive, L1-6 ADR-005 draft, L1-7 post-release stale-refs refresh, L1-8 fuzz-budget raise (soak week clock started 2026-08-29), L1-13 coverage floor (needs `CODECOV_TOKEN`), L1-14 demand-gated backlog stays parked.
+>
+> **Closed 2026-09-05:** the owner's explicit go-ahead closed the veto window and the owner-gated branches executed in one session. **L1-2** — no vetoes: ADR-002/004 confirmed and their statuses settled, `Delete` stays deferred behind its demonstrated-need trigger, FUNDING stays omitted, Dependabot PR #6 merged 2026-09-04, `CODECOV_TOKEN` remains unset (L1-13 stays blocked on it). **L1-3** — v0.3.0 release train run per RELEASING.md (changelog finalized, annotated tag pushed, GitHub Release created, module proxy + pkg.go.dev verified). **L1-5** — ADR statuses settled and both 2026-08-29 plans archived (this file included). **L1-7** — post-release stale-refs pattern refresh. **L1-8** — fuzz budget raised to 3 min per target after the clean soak week (2026-08-29 → 2026-09-05), re-verified locally with zero findings before raising. Still parked by design: L1-6 (ADR-005 draft awaits its own demand trigger) and L1-14.
 
 ---
 

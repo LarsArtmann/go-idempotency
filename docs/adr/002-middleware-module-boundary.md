@@ -2,9 +2,8 @@
 
 ## Status
 
-Accepted (2026-08-29, provisionally under the owner's blanket approval to
-execute the v0.2.0-hardening plan; cheap to reverse pre-1.0 — see
-Consequences)
+Accepted (2026-08-29; the owner's veto window closed 2026-09-05 with the
+explicit go-ahead to execute the v0.3.0 release train)
 
 ## Context
 

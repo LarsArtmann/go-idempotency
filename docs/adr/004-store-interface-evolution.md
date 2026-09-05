@@ -2,8 +2,9 @@
 
 ## Status
 
-Accepted (2026-08-29): per-item decisions below; `Delete` deferred pending
-owner confirmation
+Accepted (2026-08-29): per-item decisions below; `Delete` deferred — the
+owner confirmed the deferral 2026-09-05 (revisit only on the demonstrated
+need documented below)
 
 ## Context
 
