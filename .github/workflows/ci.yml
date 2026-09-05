@@ -128,7 +128,7 @@ jobs:
           git diff --exit-code go.mod go.sum
 
   fuzz:
-    name: Fuzz (30s)
+    name: Fuzz (3m)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -138,13 +138,16 @@ jobs:
           go-version-file: go.mod
 
       - name: Fuzz CheckAndRecord
-        run: go test -fuzz=FuzzCheckAndRecord -fuzztime=30s -run '^$' .
+        run: go test -fuzz=FuzzCheckAndRecord -fuzztime=3m -run '^$' .
 
       - name: Fuzz Record
-        run: go test -fuzz=FuzzRecord -fuzztime=30s -run '^$' .
+        run: go test -fuzz=FuzzRecord -fuzztime=3m -run '^$' .
+
+      - name: Fuzz ConcurrentMixed
+        run: go test -fuzz=FuzzConcurrentMixed -fuzztime=3m -run '^$' .
 
       - name: Fuzz Dispatch
-        run: go test -fuzz=FuzzDispatch -fuzztime=30s -run '^$' ./middleware
+        run: go test -fuzz=FuzzDispatch -fuzztime=3m -run '^$' ./middleware
 
   govulncheck:
     name: Vulnerabilities
