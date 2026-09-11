@@ -56,7 +56,7 @@ func NewCommand(store idempotency.Store, ttl time.Duration, execute func(ctx con
 			// where it surfaced; errors.Is still reaches the cause. fmt.Errorf
 			// is deliberate, not a gap: ADR-002 keeps this package stdlib-only
 			// (plus this module), so no error library may be imported here.
-			return fmt.Errorf("command idempotency check failed (command not executed): %w", err) //nolint:erraudit // ADR-002: stdlib-only package; %w wrap keeps errors.Is intact
+			return fmt.Errorf("command idempotency check failed (command not executed): %w", err)
 		}
 	}
 }
