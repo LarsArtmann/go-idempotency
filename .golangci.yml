@@ -125,17 +125,25 @@ linters:
         - github\.com/larsartmann/go-idempotency\..*
     forbidigo:
       forbid:
-        - pattern: "MemoryStore"
-          msg: MemoryStore is deprecated (dev/test only); implement idempotency.Store against your own backend instead
+        - msg: MemoryStore is deprecated (dev/test only); implement idempotency.Store against your own backend instead
+          pattern: MemoryStore
     funlen:
       lines: 200
       statements: 100
     ginkgolinter:
       forbid-focus-container: true
       forbid-spec-pollution: true
+    gocognit:
+      min-complexity: 25
+    goconst:
+      ignore-tests: true
+      min-length: 4
+      min-occurrences: 5
     gocritic:
       disabled-checks:
         - ifElseChain
+    gocyclo:
+      min-complexity: 20
     gomoddirectives:
       replace-local: true
     gosec:
@@ -157,12 +165,25 @@ linters:
         - "1"
         - "2"
         - "100"
+    nestif:
+      min-complexity: 6
     revive:
       rules:
         - disabled: true
           name: exported
         - disabled: true
           name: package-comments
+    tagalign:
+      align: false
+      order:
+        - binding
+        - json
+        - yaml
+        - xml
+        - toml
+        - validate
+        - mapstructure
+      sort: true
     testifylint:
       disable:
         - go-require
