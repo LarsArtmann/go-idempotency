@@ -221,6 +221,9 @@ linters:
         - .WithMessage(
         - .WithMessagef(
         - .WithStack(
+          # go-error-family errors are terminal: already classified (family,
+          # code, retryability), they are returned as-is, never wrapped.
+        - github.com/larsartmann/go-error-family.New
   exclusions:
     generated: lax
     rules:
