@@ -21,6 +21,48 @@ import (
 // redelivery of the same key is rejected with ErrDuplicate without executing,
 // and a concurrent burst on a fresh store executes the side effect exactly
 // once.
+// fuzzConcurrentBurst hammers a fresh store with 8 concurrent dispatches of
+// the same key: exactly one may claim and execute, the rest see nil or
+// ErrDuplicate, and nothing else.
+func fuzzConcurrentBurst(t *testing.T, ctx context.Context, key string, ttl time.Duration) {
+	t.Helper()
+
+	burstStore := teststore.New()
+	t.Cleanup(burstStore.Close)
+
+	var burstExecuted atomic.Int32
+
+	burst := middleware.NewCommand(burstStore, ttl, func(_ context.Context) error {
+		burstExecuted.Add(1)
+
+		return nil
+	})
+
+	const goroutines = 8
+
+	var wg sync.WaitGroup
+
+	wg.Add(goroutines)
+
+	for range goroutines {
+		go func() {
+			defer wg.Done()
+
+			switch err := burst(ctx, key); {
+			case err == nil, errors.Is(err, idempotency.ErrDuplicate):
+			default:
+				t.Errorf("burst dispatch: unexpected error %v", err)
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	if burstExecuted.Load() != 1 {
+		t.Fatalf("burst executed = %d, want exactly 1", burstExecuted.Load())
+	}
+}
+
 func FuzzDispatch(f *testing.F) {
 	f.Add("order-42:place", int64(60))
 	f.Add("", int64(0))
@@ -73,39 +115,6 @@ func FuzzDispatch(f *testing.F) {
 
 		// Concurrent burst on a fresh store: exactly one dispatch may claim
 		// the key and execute; every other dispatch sees ErrDuplicate.
-		burstStore := teststore.New()
-		t.Cleanup(burstStore.Close)
-
-		var burstExecuted atomic.Int32
-
-		burst := middleware.NewCommand(burstStore, ttl, func(_ context.Context) error {
-			burstExecuted.Add(1)
-
-			return nil
-		})
-
-		const goroutines = 8
-
-		var wg sync.WaitGroup
-
-		wg.Add(goroutines)
-
-		for range goroutines {
-			go func() {
-				defer wg.Done()
-
-				switch err := burst(ctx, key); {
-				case err == nil, errors.Is(err, idempotency.ErrDuplicate):
-				default:
-					t.Errorf("burst dispatch: unexpected error %v", err)
-				}
-			}()
-		}
-
-		wg.Wait()
-
-		if burstExecuted.Load() != 1 {
-			t.Fatalf("burst executed = %d, want exactly 1", burstExecuted.Load())
-		}
+		fuzzConcurrentBurst(t, ctx, key, ttl)
 	})
 }
