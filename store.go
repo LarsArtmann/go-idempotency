@@ -12,7 +12,12 @@ import (
 // recorded and has not expired. It is classified as a Conflict: a retried
 // command with the same idempotency key conflicts with a prior, still-valid
 // recording.
-var ErrDuplicate = errorfamily.NewConflict(
+//
+// The declared type is the error interface, not the concrete classification
+// type: callers contract on the sentinel value (via errors.Is), never on the
+// implementation behind it, so a future classification change cannot break
+// compilation of consumer code.
+var ErrDuplicate error = errorfamily.NewConflict(
 	"idempotency.duplicate",
 	"key has already been recorded",
 )
@@ -26,7 +31,10 @@ var ErrDuplicate = errorfamily.NewConflict(
 //
 // It is classified as a Rejection (HTTP 400, non-retryable): the caller passed
 // bad input. Check with errors.Is(err, idempotency.ErrInvalidTTL).
-var ErrInvalidTTL = errorfamily.NewRejection(
+//
+// Like [ErrDuplicate], the declared type is the error interface: the sentinel
+// is the contract, the classification type is an implementation detail.
+var ErrInvalidTTL error = errorfamily.NewRejection(
 	"idempotency.invalid-ttl",
 	"ttl must be positive",
 )

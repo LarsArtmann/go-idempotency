@@ -183,11 +183,16 @@ func runSeenTests(t *testing.T, ctx context.Context, factory StoreFactory, tm ti
 		t.Parallel()
 		store := factory(t)
 
-		_ = store.Record(ctx, "lazy-key", tm.shortTTL)
+		if err := store.Record(ctx, "lazy-key", tm.shortTTL); err != nil {
+			t.Fatalf("Record: %v", err)
+		}
 
 		time.Sleep(tm.waitAfter)
 
-		seen, _ := store.Seen(ctx, "lazy-key")
+		seen, err := store.Seen(ctx, "lazy-key")
+		if err != nil {
+			t.Fatalf("Seen after expiry: %v", err)
+		}
 
 		if seen {
 			t.Fatal("after TTL expiry: Seen should return false")
@@ -214,7 +219,10 @@ func runRecordTests(t *testing.T, ctx context.Context, factory StoreFactory, tm 
 		// Wait past the original short TTL but well within the long TTL.
 		time.Sleep(tm.waitAfter)
 
-		seen, _ := store.Seen(ctx, "noop-key")
+		seen, err := store.Seen(ctx, "noop-key")
+		if err != nil {
+			t.Fatalf("Seen after noop Record: %v", err)
+		}
 
 		if seen {
 			t.Fatal("Record extended the TTL: key should have expired under the original short TTL")
@@ -236,7 +244,10 @@ func runRecordTests(t *testing.T, ctx context.Context, factory StoreFactory, tm 
 			t.Fatalf("Record after expiry: %v", err)
 		}
 
-		seen, _ := store.Seen(ctx, "expiry-key")
+		seen, err := store.Seen(ctx, "expiry-key")
+		if err != nil {
+			t.Fatalf("Seen after re-record: %v", err)
+		}
 
 		if !seen {
 			t.Fatal("Record after expiry: key should be seen with fresh TTL")
@@ -256,7 +267,10 @@ func runRecordTests(t *testing.T, ctx context.Context, factory StoreFactory, tm 
 		}
 
 		// No key must have been recorded.
-		seen, _ := store.Seen(ctx, "bad-ttl-record")
+		seen, err := store.Seen(ctx, "bad-ttl-record")
+		if err != nil {
+			t.Fatalf("Seen after rejected TTL: %v", err)
+		}
 
 		if seen {
 			t.Fatal("key must not be recorded after a rejected TTL")
@@ -328,7 +342,10 @@ func runCheckAndRecordTests(t *testing.T, ctx context.Context, factory StoreFact
 		}
 
 		// No key must have been recorded.
-		seen, _ := store.Seen(ctx, "bad-ttl-car")
+		seen, err := store.Seen(ctx, "bad-ttl-car")
+		if err != nil {
+			t.Fatalf("Seen after rejected TTL: %v", err)
+		}
 
 		if seen {
 			t.Fatal("key must not be recorded after a rejected TTL")
@@ -402,7 +419,10 @@ func runCrossCuttingTests(t *testing.T, ctx context.Context, factory StoreFactor
 			t.Fatalf("Record A: %v", err)
 		}
 
-		seenB, _ := store.Seen(ctx, "key-B")
+		seenB, err := store.Seen(ctx, "key-B")
+		if err != nil {
+			t.Fatalf("Seen key-B: %v", err)
+		}
 
 		if seenB {
 			t.Fatal("key-B should not be seen (only key-A was recorded)")
@@ -412,7 +432,10 @@ func runCrossCuttingTests(t *testing.T, ctx context.Context, factory StoreFactor
 			t.Fatalf("CheckAndRecord B: %v", err)
 		}
 
-		seenA, _ := store.Seen(ctx, "key-A")
+		seenA, err := store.Seen(ctx, "key-A")
+		if err != nil {
+			t.Fatalf("Seen key-A: %v", err)
+		}
 
 		if !seenA {
 			t.Fatal("key-A should still be seen after operating on key-B")
@@ -427,13 +450,16 @@ func runCrossCuttingTests(t *testing.T, ctx context.Context, factory StoreFactor
 			t.Fatalf("Record empty key: %v", err)
 		}
 
-		seen, _ := store.Seen(ctx, "")
+		seen, err := store.Seen(ctx, "")
+		if err != nil {
+			t.Fatalf("Seen empty key: %v", err)
+		}
 
 		if !seen {
 			t.Fatal("empty key should be seen after Record")
 		}
 
-		err := store.CheckAndRecord(ctx, "", tm.longTTL)
+		err = store.CheckAndRecord(ctx, "", tm.longTTL)
 
 		if !errors.Is(err, idempotency.ErrDuplicate) {
 			t.Fatalf("CheckAndRecord on existing empty key: want ErrDuplicate, got %v", err)
