@@ -128,7 +128,7 @@ type MemoryStore struct {
 // Deprecated: Use only for development and testing. See [MemoryStore] for the
 // rationale and docs/migrating-from-memorystore.md for the migration path.
 func NewMemoryStore(sweepInterval time.Duration) *MemoryStore {
-	s := &MemoryStore{ //nolint:exhaustruct // mu, stopOnce are zero-valued
+	s := &MemoryStore{ //nolint:exhaustruct_v5 // mu, stopOnce are zero-valued
 		entries: make(map[string]time.Time),
 		stop:    make(chan struct{}),
 	}
