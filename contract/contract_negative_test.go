@@ -106,7 +106,7 @@ var negativeScenarios = []negativeScenario{
 	{
 		name: "RecordIgnoresRerecordAfterExpiry",
 		sabotage: func(s *teststore.Store) idempotency.Store {
-			return &writeOnceRecord{Store: s}
+			return &writeOnceRecord{Store: s, mu: sync.Mutex{}, written: nil}
 		},
 		invariant: "ReRecordsAfterExpiry",
 		reason:    "key should be seen with fresh TTL",
@@ -122,7 +122,7 @@ var negativeScenarios = []negativeScenario{
 	{
 		name: "CheckAndRecordKeepsExpiredClaims",
 		sabotage: func(s *teststore.Store) idempotency.Store {
-			return &immortalClaims{Store: s, claimed: make(map[string]struct{})}
+			return &immortalClaims{Store: s, mu: sync.Mutex{}, claimed: make(map[string]struct{})}
 		},
 		invariant: "AllowsAfterExpiry",
 		reason:    "after expiry: want nil",
@@ -130,7 +130,7 @@ var negativeScenarios = []negativeScenario{
 	{
 		name: "CheckAndRecordAllowsTwoWinners",
 		sabotage: func(s *teststore.Store) idempotency.Store {
-			return &doubleWinner{Store: s}
+			return &doubleWinner{Store: s, mu: sync.Mutex{}, winner: 0}
 		},
 		invariant: "AtomicUnderConcurrency",
 		reason:    "want exactly 1",

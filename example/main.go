@@ -32,7 +32,7 @@ type demoStore struct {
 }
 
 func newDemoStore() *demoStore {
-	return &demoStore{expires: make(map[string]time.Time)}
+	return &demoStore{mu: sync.Mutex{}, expires: make(map[string]time.Time)}
 }
 
 func (s *demoStore) Seen(_ context.Context, key string) (bool, error) {

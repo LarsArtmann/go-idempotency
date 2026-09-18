@@ -20,7 +20,7 @@ type exampleStore struct {
 }
 
 func newExampleStore() *exampleStore {
-	return &exampleStore{expires: make(map[string]time.Time)}
+	return &exampleStore{mu: sync.Mutex{}, expires: make(map[string]time.Time)}
 }
 
 func (s *exampleStore) Seen(_ context.Context, key string) (bool, error) {

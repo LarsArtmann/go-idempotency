@@ -121,7 +121,7 @@ type Options struct {
 // context.
 func RunTests(t *testing.T, factory StoreFactory) {
 	t.Helper()
-	RunTestsStrict(t, factory, Options{})
+	RunTestsStrict(t, factory, Options{TimingScale: 0})
 }
 
 // RunTestsStrict behaves exactly like [RunTests] but accepts options.

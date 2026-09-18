@@ -26,6 +26,7 @@ type Store struct {
 // New returns an empty Store.
 func New() *Store {
 	return &Store{
+		mu:      sync.Mutex{},
 		entries: make(map[string]time.Time),
 	}
 }
