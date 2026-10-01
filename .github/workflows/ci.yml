@@ -36,6 +36,8 @@ jobs:
 
       - name: Run tests with race detector
         run: go test ./... -race -count=1
+        env:
+          GOTOOLCHAIN: auto
 
       - name: Strict-timing contract pass (scheduled)
         if: github.event_name == 'schedule'
