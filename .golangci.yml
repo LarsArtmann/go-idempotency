@@ -121,7 +121,7 @@ linters:
     cyclop:
       max-complexity: 12
     exhaustruct_v5:
-      include:
+      enforce-patterns:
         - github\.com/larsartmann/go-idempotency\..*
     forbidigo:
       forbid:
