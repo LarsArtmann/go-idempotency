@@ -169,6 +169,30 @@ TOCTOU race where two concurrent first-attempts both win. Use your backend's
 native check-and-set (`SET NX`, `INSERT ... ON CONFLICT DO NOTHING`,
 conditional `PutItem`), not two round-trips.
 
+### SQLite pitfalls (found in production)
+
+SQLite is a great "single process, must survive restart" target, but both of
+these bit a production consumer (2026-10-03) and neither shows up in tests
+that only ever ran on a single connection:
+
+- **`:memory:` is per-connection.** Every pooled `*sql.DB` connection gets its
+  own private, empty database — migrations land on connection one and queries
+  fail with "no such table" on connection two. Use
+  `file:<name>?mode=memory&cache=shared` (plus `SetMaxOpenConns(1)` in tests)
+  and a UNIQUE name per test: a fixed shared-cache name makes parallel tests
+  share one database and leak claims across cases.
+- **A file-backed pool needs WAL + busy_timeout.** A lazy
+  `DELETE ... WHERE expires_at <= now` purge racing a concurrent
+  `CheckAndRecord` fails instantly with `SQLITE_BUSY` — surfacing as a 5xx on
+  a legitimate command. Apply both via DSN so every pooled connection gets
+  them (`?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)`); a `PRAGMA`
+  issued through `db.Exec` configures only one pooled connection.
+- On SQLite specifically, the atomic claim needs NO transaction: a `PRIMARY
+  KEY` column plus one `INSERT ... ON CONFLICT(key) DO NOTHING` and a
+  `RowsAffected()` check is the whole `CheckAndRecord` (simpler than the
+  read-back transaction PostgreSQL needs). See the package doc's "SQL adapter
+  notes — SQLite specifics" for the worked example.
+
 ## 3. Validate with the contract suite
 
 Do not trust your implementation — prove it. The
