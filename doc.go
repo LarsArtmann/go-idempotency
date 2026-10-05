@@ -206,23 +206,25 @@
 //  1. ":memory:" is PER-CONNECTION: every pooled *sql.DB connection gets its
 //     own private, empty database. Use "file:<name>?mode=memory&cache=shared"
 //     so the pool shares one schema — and SetMaxOpenConns(1) in tests.
+//
 //  2. A file-backed pool needs WAL + busy_timeout on the DSN, or the lazy
 //     purge racing a concurrent CheckAndRecord fails instantly with
 //     SQLITE_BUSY (a 5xx on a legitimate command):
 //
-//	dsn += "?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"
+//     dsn += "?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"
 //
 //     DSN pragmas apply to every pooled connection; a PRAGMA via db.Exec
 //     configures only one.
+//
 //  3. CheckAndRecord needs NO explicit transaction on SQLite: the PRIMARY KEY
 //     makes a single INSERT the atomic claim, and ON CONFLICT(key) DO NOTHING
 //     plus RowsAffected() detects the duplicate in one statement:
 //
-//	res, err := db.ExecContext(ctx,
-//	    `INSERT INTO idempotency_keys (key, expires_at) VALUES (?, ?)
-//	     ON CONFLICT(key) DO NOTHING`,
-//	    key, time.Now().Add(ttl))
-//	// claimed==0 => idempotency.ErrDuplicate
+//     res, err := db.ExecContext(ctx,
+//     `INSERT INTO idempotency_keys (key, expires_at) VALUES (?, ?)
+//     ON CONFLICT(key) DO NOTHING`,
+//     key, time.Now().Add(ttl))
+//     // claimed==0 => idempotency.ErrDuplicate
 //
 //     This is simpler AND faster than the two-step BEGIN/RETURNING/UPDATE
 //     transaction the PostgreSQL example needs (that one must read the live
