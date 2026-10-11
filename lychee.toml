@@ -1,0 +1,8 @@
+# Shared lychee configuration — used by BuildFlow's `lychee` step (auto-discovered)
+# and merged with the explicit flags in .github/workflows/ci.yml (Docs job).
+#
+# Historical snapshots are excluded with the same policy as
+# scripts/check-stale-refs.sh: they record what was true at the time and may
+# link to repositories that were renamed or deleted since (e.g. a feedback
+# doc linking to an archived evaluation repo).
+exclude_path = ["docs/feedback", "docs/status", "docs/planning"]
