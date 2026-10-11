@@ -6,7 +6,7 @@
 [![Codecov](https://codecov.io/gh/LarsArtmann/go-idempotency/graph/badge.svg)](https://codecov.io/gh/LarsArtmann/go-idempotency)
 [![Go Reference](https://pkg.go.dev/badge/github.com/larsartmann/go-idempotency.svg)](https://pkg.go.dev/github.com/larsartmann/go-idempotency)
 [![Go Report Card](https://goreportcard.com/badge/github.com/larsartmann/go-idempotency)](https://goreportcard.com/report/github.com/larsartmann/go-idempotency)
-[![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://go.dev)
+[![Go Version](https://img.shields.io/badge/Go-1.27+-00ADD8?logo=go)](https://go.dev)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A focused Go library that deduplicates retried operations using idempotency keys, so a retried command never executes twice. Built for CQRS command handling, it works for any at-most-once-processing need.
@@ -67,13 +67,17 @@ func (s *RedisStore) CheckAndRecord(ctx context.Context, key string, ttl time.Du
 
 See the [package docs](https://pkg.go.dev/github.com/larsartmann/go-idempotency) for the full Redis adapter (all three methods) and use the [contract test suite](contract/) to verify your implementation.
 
-## Quick start
-
-> **Note:** `MemoryStore` is deprecated and intended for development/testing only. The example illustrates the API — in production, substitute your own `Store` implementation.
+## Installation
 
 ```bash
 go get github.com/larsartmann/go-idempotency
 ```
+
+Requires Go 1.27 or newer. The only runtime dependency is [go-error-family](https://github.com/larsartmann/go-error-family) (error classification).
+
+## Quick start
+
+> **Note:** `MemoryStore` is deprecated and intended for development/testing only. The example illustrates the API — in production, substitute your own `Store` implementation.
 
 ```go
 package main

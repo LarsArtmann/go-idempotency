@@ -20,9 +20,27 @@ tag, never retroactively.
 2. Include: affected version(s), a minimal reproduction, and your assessment
    of impact.
 
-You will get an acknowledgement within 7 days and a fix-or-decision within 30
-days for anything confirmed. Credit is given in the release notes unless you
-prefer otherwise.
+We respond within 7 days with an acknowledgement and follow up with a
+fix-or-decision within 30 days for anything confirmed. Credit is given in
+the release notes unless you prefer otherwise.
+
+## Security Practices
+
+- **Minimal attack surface.** The library performs no network I/O, no file
+  I/O, and spawns no subprocesses; keys live in whatever storage the consumer
+  implements. The only runtime dependency is `go-error-family`.
+- **Continuous verification.** CI runs `govulncheck` on every push, fuzzes
+  all four fuzz targets for 3 minutes each, and gates every change behind
+  the race detector and the 13-invariant contract suite.
+- **Fail-closed dispatch.** The middleware executes a command only when
+  `CheckAndRecord` confirms the key is new; a store failure never degrades
+  into "not a duplicate", because executing twice is the unrecoverable
+  outcome.
+- **Input validation at the boundary.** Non-positive TTLs are rejected with
+  `ErrInvalidTTL` instead of silently recording an already-past expiry that
+  would weaken the exactly-once guarantee.
+- **Hardened releases.** Releases are built by CI from pinned commits; tags
+  are annotated and pushed from `master` only after every gate is green.
 
 ## Scope notes
 
