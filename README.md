@@ -50,6 +50,8 @@ It deliberately does **not** ship production backends. There will never be a Red
 
 **You implement the `Store` interface** against whatever backend fits your system. The interface is small and the [API docs](https://pkg.go.dev/github.com/larsartmann/go-idempotency) name the atomic primitive each backend should use (Redis `SET NX`, SQL `INSERT ... ON CONFLICT DO NOTHING`, etc.).
 
+**On the go-cqrs-lite stack? You do not need to write a backend.** The [`metaengine.DedupStore` engine capability](https://github.com/larsartmann/go-cqrs-lite) (ADR-0142 there) is implemented by every go-cqrs-lite storage engine — SQL engines natively, map-shaped engines via the degraded `MapDedupStore` runtime — with cross-engine semantics pinned by its conformance suite. That repo's own `idempotency/{kvstore,sqlstore}` modules were retired in the capability's favor (ADR-0158 there). Everyone else implements `Store` as described below.
+
 For example, a Redis `CheckAndRecord` is a single `SET NX` call:
 
 ```go

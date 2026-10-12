@@ -56,6 +56,11 @@
 // [Store.CheckAndRecord] name the atomic primitive each backend should use
 // (Redis SET NX, SQL INSERT ... ON CONFLICT DO NOTHING).
 //
+// One first-party implementation exists outside this module: go-cqrs-lite's
+// metaengine.DedupStore engine capability (github.com/larsartmann/go-cqrs-lite),
+// implemented by every go-cqrs-lite storage engine and pinned by cross-engine
+// conformance tests. Consumers of that stack do not hand-write a backend.
+//
 // This module owns the storage contract; the middleware subpackage
 // (github.com/larsartmann/go-idempotency/middleware) wires a Store into CQRS
 // dispatch pipelines: middleware.NewCommand wraps a command function for

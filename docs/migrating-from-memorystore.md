@@ -17,6 +17,10 @@ The library deliberately ships no production backend (see
 [ADR-001](adr/001-no-backends.md)). You implement `idempotency.Store` against
 whatever storage you already run:
 
+Already on [go-cqrs-lite](https://github.com/larsartmann/go-cqrs-lite)? Its
+`metaengine.DedupStore` engine capability is a ready-made, conformance-tested
+implementation — no hand-written backend needed.
+
 | Your situation                                             | Backend to target                            | Atomic primitive                                      |
 | ---------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------- |
 | Multiple service instances, already run Redis              | Redis                                        | `SET NX EX`                                           |

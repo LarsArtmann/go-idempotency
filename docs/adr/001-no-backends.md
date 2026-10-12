@@ -59,3 +59,14 @@ and every added example would hint that the backend is "supported" here.
 - The `contract` package must be maintained as the source of truth for `Store` invariants
 - `MemoryStore` is deprecated (since v0.2.0) and will be removed in v1.0; it remains functional for development and testing. Supersedes the original stance of keeping MemoryStore around permanently.
 - No driver dependencies will ever appear in this module's `go.mod`
+
+## Addendum (2026-10-11)
+
+A first-party implementation now exists OUTSIDE this module: go-cqrs-lite's
+`metaengine.DedupStore` engine capability (ADR-0142 there), implemented by
+every go-cqrs-lite storage engine; that repo retired its own
+`idempotency/{kvstore,sqlstore}` modules in the capability's favor (ADR-0158
+there). The no-backends stance is unchanged — this module still ships no
+driver and takes no storage dependency — but consumers on the go-cqrs-lite
+stack have an engine-backed dedup primitive instead of hand-writing a
+`Store`.
