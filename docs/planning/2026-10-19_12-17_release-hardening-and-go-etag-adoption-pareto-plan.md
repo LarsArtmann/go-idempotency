@@ -10,11 +10,11 @@
 
 Every task from the status report was re-verified against source. Three claims from the 06:14 report are corrected here:
 
-| # | Erratum | Evidence (this session) |
-|---|---------|------------------------|
-| E1 | Status task 15 ("add real-wire integration test for middleware") is **already done** — `middleware/http_test.go` uses `httptest.NewServer` + real client round-trips throughout | File read 2026-10-19; `TestHTTP_FirstRequestProcesses` et al. |
-| E2 | "middleware probably depends on root" → **confirmed fact**: `middleware.go` imports the root package, matches `idempotency.ErrDuplicate`/`ErrInvalidTTL` (middleware.go:43–45) | File read |
-| E3 | Fleet survey was a 4-consumer sample → **now full population**: 10/10 consumers swept. Root-only: DiscordSync, Zlota44, cqrs-htmx, file-and-image-renamer. Root+contract: KeyHolderAI, bank-sync. Indirect-only: Cyberdom, accountability-system, go-localsync, crm. **Zero consumers import `middleware/`** | grep sweep across `~/projects/*/​**.go` |
+| #  | Erratum                                                                                                                                                                                                                                                                                                      | Evidence (this session)                                       |
+| -- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
+| E1 | Status task 15 ("add real-wire integration test for middleware") is **already done** — `middleware/http_test.go` uses `httptest.NewServer` + real client round-trips throughout                                                                                                                              | File read 2026-10-19; `TestHTTP_FirstRequestProcesses` et al. |
+| E2 | "middleware probably depends on root" → **confirmed fact**: `middleware.go` imports the root package, matches `idempotency.ErrDuplicate`/`ErrInvalidTTL` (middleware.go:43–45)                                                                                                                               | File read                                                     |
+| E3 | Fleet survey was a 4-consumer sample → **now full population**: 10/10 consumers swept. Root-only: DiscordSync, Zlota44, cqrs-htmx, file-and-image-renamer. Root+contract: KeyHolderAI, bank-sync. Indirect-only: Cyberdom, accountability-system, go-localsync, crm. **Zero consumers import `middleware/`** | grep sweep across `~/projects/*/​**.go`                        |
 
 **New finding (P2, live bug):** tag `v0.3.1` exists (`git tag`) but `CHANGELOG.md` contains **no `[0.3.1]` section** — grep for "0.3.1" in CHANGELOG returns nothing. The post-release doc-sync work sits under `[Unreleased]` instead of a released section. RELEASING.md steps 5–6 were skipped for v0.3.1. A one-command release gate (P1) fails loudly on exactly this class.
 
@@ -27,7 +27,7 @@ Every task from the status report was re-verified against source. Three claims f
 ### The 1% that delivers 51%
 
 **P1 — `scripts/pre-release-check.sh`: one failure-loud command encoding the entire release gate.**
-It is the keystone because (a) every future release inherits every gate below in one invocation, (b) it would have *caught the v0.3.1 changelog gap that already happened*, (c) it retro-justifies itself: the one release where the checklist was run manually step-by-step (v0.3.1) is the one where a step was skipped. Encodes: gofmt, go vet, build, `go test -race`, golangci-lint (config verify + run), tidy-diff-on-copy, `go mod verify`, erraudit (`--enforce-go-error-family`), check-stale-refs, anchored `go 1.27` directive check, tag↔CHANGELOG parity, clean-tree check.
+It is the keystone because (a) every future release inherits every gate below in one invocation, (b) it would have _caught the v0.3.1 changelog gap that already happened_, (c) it retro-justifies itself: the one release where the checklist was run manually step-by-step (v0.3.1) is the one where a step was skipped. Encodes: gofmt, go vet, build, `go test -race`, golangci-lint (config verify + run), tidy-diff-on-copy, `go mod verify`, erraudit (`--enforce-go-error-family`), check-stale-refs, anchored `go 1.27` directive check, tag↔CHANGELOG parity, clean-tree check.
 
 ### The 4% that deliver 64% (P1 +)
 
@@ -45,37 +45,37 @@ It is the keystone because (a) every future release inherits every gate below in
 
 ### The other 80% → 100% (deferred / demand-gated / owner-gated — the tail)
 
-| Item | Gate | Owner |
-|------|------|-------|
-| Coverage floor (~90%) in CI | `CODECOV_TOKEN` secret set | Owner |
-| Announce v0.3.x | channel/timing call | Owner |
-| `EventIdempotency` / `QueryIdempotency` | first consumer need | YAGNI (ADR-002) |
-| gRPC adapter (+ ADR-002 supplement first) | first consumer need | YAGNI |
-| `Delete(ctx, key)` on Store | demonstrated poisoned-claim need | ADR-004 deferral |
-| Key-generation utilities | design session (ROADMAP raw idea) | — |
-| Metrics hooks | design session (ROADMAP raw idea) | — |
-| Lock strategy optimization | **blocked on P8 baselines** | — |
-| v1.0 execution (MemoryStore removal) | mini-staircase (P7) + multiple wild backends | ROADMAP |
-| Watch `release.yml` first live fire | next root tag after P4 | — |
+| Item                                      | Gate                                         | Owner            |
+| ----------------------------------------- | -------------------------------------------- | ---------------- |
+| Coverage floor (~90%) in CI               | `CODECOV_TOKEN` secret set                   | Owner            |
+| Announce v0.3.x                           | channel/timing call                          | Owner            |
+| `EventIdempotency` / `QueryIdempotency`   | first consumer need                          | YAGNI (ADR-002)  |
+| gRPC adapter (+ ADR-002 supplement first) | first consumer need                          | YAGNI            |
+| `Delete(ctx, key)` on Store               | demonstrated poisoned-claim need             | ADR-004 deferral |
+| Key-generation utilities                  | design session (ROADMAP raw idea)            | —                |
+| Metrics hooks                             | design session (ROADMAP raw idea)            | —                |
+| Lock strategy optimization                | **blocked on P8 baselines**                  | —                |
+| v1.0 execution (MemoryStore removal)      | mini-staircase (P7) + multiple wild backends | ROADMAP          |
+| Watch `release.yml` first live fire       | next root tag after P4                       | —                |
 
 ---
 
 ## Step 2 — Comprehensive Plan (30–100 min per task, sorted by importance/impact/effort/customer-value)
 
-| # | Task | Delivers | Impact | Effort (min) | Category | Depends |
-|---|------|----------|--------|--------------|----------|----------|
-| T1 | Write `scripts/pre-release-check.sh` (all gates from P1), smoke-test green + red on the live tree, document in AGENTS.md Commands | P1 | Critical | 90 | Quality | — |
-| T2 | Add retroactive `[0.3.1]` CHANGELOG section + compare links; run stale-refs | P2 | High | 30 | Documentation | — |
-| T3 | Write ADR-005 (no module split; evidence + triggers); link from ADR index + AGENTS.md; annotate 06:14 report | P3 | High | 40 | Documentation | — |
-| T4 | Add `release.yml` (tag-triggered, CHANGELOG-section extractor, Latest Release, fail-loud); actionlint + local extractor dry-run; update RELEASING.md step 10 | P4 | High | 75 | Feature | T2 (extractor needs stable sections) |
-| T5 | Upgrade DOMAIN_LANGUAGE.md: Where column, Bounded contexts, Deprecated terms | P5 | Medium | 55 | Documentation | — |
-| T6 | Harvest this plan → TODO_LIST.md (house style, impact/effort); prune E1 | P6 | Medium | 30 | Documentation | Plan approved |
-| T7 | Pre-record MemoryStore v1.0 mini-staircase + fleet `MemoryStore` usage audit; link from ROADMAP v1.0 bullet | P7 | High | 60 | Documentation | — |
-| T8 | Benchmark baseline convention: capture initial `-count=6 -benchmem` baselines to `reports/bench/`; document in AGENTS.md | P8 | Medium | 50 | Quality | — |
-| T9 | Spec-citation pass: map 13 invariants → authorities; edit `contract/contract.go` names/comments; verify negative-test README rows 1:1 | P9 | Medium | 60 | Quality | — |
-| T10 | Draft coverage-floor CI step (Codecov threshold) behind the token flag as a ready-to-flip diff | Tail | Medium | 30 | Infrastructure | Owner token |
-| T11 | RELEASING.md deltas: proxy `.info`-hash check, clean-room `go get`, `go mod verify`, point gates at T1's script | P1/P4 | Medium | 30 | Documentation | T1 |
-| T12 | Backlog tending: annotate ROADMAP demand-gated items with 2026-10-19 fleet evidence; re-confirm YAGNI gates | Tail | Low | 30 | Cleanup | — |
+| #   | Task                                                                                                                                                         | Delivers | Impact   | Effort (min) | Category       | Depends                              |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | -------- | ------------ | -------------- | ------------------------------------ |
+| T1  | Write `scripts/pre-release-check.sh` (all gates from P1), smoke-test green + red on the live tree, document in AGENTS.md Commands                            | P1       | Critical | 90           | Quality        | —                                    |
+| T2  | Add retroactive `[0.3.1]` CHANGELOG section + compare links; run stale-refs                                                                                  | P2       | High     | 30           | Documentation  | —                                    |
+| T3  | Write ADR-005 (no module split; evidence + triggers); link from ADR index + AGENTS.md; annotate 06:14 report                                                 | P3       | High     | 40           | Documentation  | —                                    |
+| T4  | Add `release.yml` (tag-triggered, CHANGELOG-section extractor, Latest Release, fail-loud); actionlint + local extractor dry-run; update RELEASING.md step 10 | P4       | High     | 75           | Feature        | T2 (extractor needs stable sections) |
+| T5  | Upgrade DOMAIN_LANGUAGE.md: Where column, Bounded contexts, Deprecated terms                                                                                 | P5       | Medium   | 55           | Documentation  | —                                    |
+| T6  | Harvest this plan → TODO_LIST.md (house style, impact/effort); prune E1                                                                                      | P6       | Medium   | 30           | Documentation  | Plan approved                        |
+| T7  | Pre-record MemoryStore v1.0 mini-staircase + fleet `MemoryStore` usage audit; link from ROADMAP v1.0 bullet                                                  | P7       | High     | 60           | Documentation  | —                                    |
+| T8  | Benchmark baseline convention: capture initial `-count=6 -benchmem` baselines to `reports/bench/`; document in AGENTS.md                                     | P8       | Medium   | 50           | Quality        | —                                    |
+| T9  | Spec-citation pass: map 13 invariants → authorities; edit `contract/contract.go` names/comments; verify negative-test README rows 1:1                        | P9       | Medium   | 60           | Quality        | —                                    |
+| T10 | Draft coverage-floor CI step (Codecov threshold) behind the token flag as a ready-to-flip diff                                                               | Tail     | Medium   | 30           | Infrastructure | Owner token                          |
+| T11 | RELEASING.md deltas: proxy `.info`-hash check, clean-room `go get`, `go mod verify`, point gates at T1's script                                              | P1/P4    | Medium   | 30           | Documentation  | T1                                   |
+| T12 | Backlog tending: annotate ROADMAP demand-gated items with 2026-10-19 fleet evidence; re-confirm YAGNI gates                                                  | Tail     | Low      | 30           | Cleanup        | —                                    |
 
 **Total: ~9.5 h.** 12 tasks covers ALL open TODOs (actionable now + deferred registers below).
 
@@ -90,56 +90,56 @@ It is the keystone because (a) every future release inherits every gate below in
 
 ## Step 3 — Fine Breakdown (≤12 min per task, sorted by execution order within dependency groups)
 
-| # | Micro-task | Task | Est (min) |
-|---|-----------|------|-----------|
-| M1 | Script skeleton: `set -euo pipefail`, cache-env prefixes, step counter, summary trap | T1 | 12 |
-| M2 | Gate: `gofmt -l .` empty | T1 | 6 |
-| M3 | Gate: `go vet ./...` | T1 | 5 |
-| M4 | Gate: `go build ./...` | T1 | 5 |
-| M5 | Gate: `go test ./... -race -count=1` | T1 | 12 |
-| M6 | Gate: `golangci-lint config verify` + `run ./...` | T1 | 12 |
-| M7 | Gate: tidy-diff-on-copy (RELEASING.md §3 recipe as function) | T1 | 12 |
-| M8 | Gate: `go mod verify` | T1 | 4 |
-| M9 | Gate: erraudit `--enforce-go-error-family` (expect 0) | T1 | 6 |
-| M10 | Gate: `scripts/check-stale-refs.sh` | T1 | 4 |
-| M11 | Gate: anchored go-directive check (`go 1.27` exact) | T1 | 8 |
-| M12 | Gate: tag↔CHANGELOG parity (latest tag has section; `[Unreleased]` link valid) | T1 | 12 |
-| M13 | Gate: clean-tree check (`git status --porcelain` empty, warn-only) | T1 | 6 |
-| M14 | End-to-end smoke on clean tree → exit 0 | T1 | 12 |
-| M15 | Sabotage test (break one gate deliberately, verify loud failure, revert) | T1 | 12 |
-| M16 | Document one-liner in AGENTS.md Commands | T1 | 6 |
-| M17 | Extract `git log v0.3.0..v0.3.1` + diff stat | T2 | 5 |
-| M18 | Draft `[0.3.1]` section (post-release doc sync: README link, doc.go paragraph, stale-refs patterns) | T2 | 12 |
-| M19 | Add compare links; fix `[Unreleased]` target | T2 | 8 |
-| M20 | Run stale-refs + render check | T2 | 6 |
-| M21 | Draft ADR-005: context (go-etag anatomy), evidence (E3 matrix, contract dep-free), decision, triggers | T3 | 12 |
-| M22 | Finish ADR-005 body + status header | T3 | 12 |
-| M23 | Link from `docs/adr/README.md` + AGENTS.md Architecture | T3 | 8 |
-| M24 | Annotate 06:14 status report with ADR-005 pointer (append, don't rewrite) | T3 | 6 |
-| M25 | `release.yml` skeleton: `on.push.tags: v*`, least permissions | T4 | 10 |
-| M26 | Extractor step (heading-prefix match; fail if section absent) | T4 | 12 |
-| M27 | Release step (gh CLI, notes-file from extractor, `--latest`, idempotent) | T4 | 10 |
-| M28 | actionlint + extractor dry-run against current CHANGELOG | T4 | 12 |
-| M29 | Update RELEASING.md step 10 (auto path + manual fallback) | T4 | 8 |
-| M30 | DOMAIN_LANGUAGE: Where column — Core Concepts table | T5 | 12 |
-| M31 | DOMAIN_LANGUAGE: Where column — Operations + Errors + Design tables | T5 | 12 |
-| M32 | DOMAIN_LANGUAGE: Bounded contexts section (Store / middleware / contract vocab) | T5 | 10 |
-| M33 | DOMAIN_LANGUAGE: Deprecated terms section (MemoryStore) | T5 | 8 |
-| M34 | Harvest actionable tasks → TODO_LIST.md (house style) | T6 | 12 |
-| M35 | Prune/annotate E1 (real-wire test already done) in TODO_LIST | T6 | 5 |
-| M36 | Fleet audit: `rg -l "MemoryStore"` across consumer repos; usage matrix | T7 | 12 |
-| M37 | Draft mini-staircase: preconditions, steps, major-bump plan | T7 | 12 |
-| M38 | Finish + store doc; link from ROADMAP v1.0 bullet | T7 | 10 |
-| M39 | Capture timing baselines (CheckAndRecord/Seen/Record, serial+contended+parallel) | T8 | 12 |
-| M40 | Capture memory baselines (bytes/key, %-reclaimed) | T8 | 12 |
-| M41 | Document baseline convention in AGENTS.md Testing Conventions | T8 | 8 |
-| M42 | Map 13 invariants → authority (TOCTOU/claim/TTL/family/ADR) | T9 | 12 |
-| M43 | Apply citations in contract.go; run contract suite | T9 | 12 |
-| M44 | Verify negative-test README rows 1:1 with invariants | T9 | 6 |
-| M45 | Draft coverage-threshold codecov step as ready diff (in TODO_LIST note) | T10 | 12 |
-| M46 | RELEASING.md: add proxy `.info`-hash + clean-room `go get` steps | T11 | 10 |
-| M47 | RELEASING.md: point verification gates at pre-release-check.sh | T11 | 6 |
-| M48 | Annotate ROADMAP demand-gated items with fleet evidence; sweep TODO_LIST | T12 | 12 |
+| #   | Micro-task                                                                                            | Task | Est (min) |
+| --- | ----------------------------------------------------------------------------------------------------- | ---- | --------- |
+| M1  | Script skeleton: `set -euo pipefail`, cache-env prefixes, step counter, summary trap                  | T1   | 12        |
+| M2  | Gate: `gofmt -l .` empty                                                                              | T1   | 6         |
+| M3  | Gate: `go vet ./...`                                                                                  | T1   | 5         |
+| M4  | Gate: `go build ./...`                                                                                | T1   | 5         |
+| M5  | Gate: `go test ./... -race -count=1`                                                                  | T1   | 12        |
+| M6  | Gate: `golangci-lint config verify` + `run ./...`                                                     | T1   | 12        |
+| M7  | Gate: tidy-diff-on-copy (RELEASING.md §3 recipe as function)                                          | T1   | 12        |
+| M8  | Gate: `go mod verify`                                                                                 | T1   | 4         |
+| M9  | Gate: erraudit `--enforce-go-error-family` (expect 0)                                                 | T1   | 6         |
+| M10 | Gate: `scripts/check-stale-refs.sh`                                                                   | T1   | 4         |
+| M11 | Gate: anchored go-directive check (`go 1.27` exact)                                                   | T1   | 8         |
+| M12 | Gate: tag↔CHANGELOG parity (latest tag has section; `[Unreleased]` link valid)                        | T1   | 12        |
+| M13 | Gate: clean-tree check (`git status --porcelain` empty, warn-only)                                    | T1   | 6         |
+| M14 | End-to-end smoke on clean tree → exit 0                                                               | T1   | 12        |
+| M15 | Sabotage test (break one gate deliberately, verify loud failure, revert)                              | T1   | 12        |
+| M16 | Document one-liner in AGENTS.md Commands                                                              | T1   | 6         |
+| M17 | Extract `git log v0.3.0..v0.3.1` + diff stat                                                          | T2   | 5         |
+| M18 | Draft `[0.3.1]` section (post-release doc sync: README link, doc.go paragraph, stale-refs patterns)   | T2   | 12        |
+| M19 | Add compare links; fix `[Unreleased]` target                                                          | T2   | 8         |
+| M20 | Run stale-refs + render check                                                                         | T2   | 6         |
+| M21 | Draft ADR-005: context (go-etag anatomy), evidence (E3 matrix, contract dep-free), decision, triggers | T3   | 12        |
+| M22 | Finish ADR-005 body + status header                                                                   | T3   | 12        |
+| M23 | Link from `docs/adr/README.md` + AGENTS.md Architecture                                               | T3   | 8         |
+| M24 | Annotate 06:14 status report with ADR-005 pointer (append, don't rewrite)                             | T3   | 6         |
+| M25 | `release.yml` skeleton: `on.push.tags: v*`, least permissions                                         | T4   | 10        |
+| M26 | Extractor step (heading-prefix match; fail if section absent)                                         | T4   | 12        |
+| M27 | Release step (gh CLI, notes-file from extractor, `--latest`, idempotent)                              | T4   | 10        |
+| M28 | actionlint + extractor dry-run against current CHANGELOG                                              | T4   | 12        |
+| M29 | Update RELEASING.md step 10 (auto path + manual fallback)                                             | T4   | 8         |
+| M30 | DOMAIN_LANGUAGE: Where column — Core Concepts table                                                   | T5   | 12        |
+| M31 | DOMAIN_LANGUAGE: Where column — Operations + Errors + Design tables                                   | T5   | 12        |
+| M32 | DOMAIN_LANGUAGE: Bounded contexts section (Store / middleware / contract vocab)                       | T5   | 10        |
+| M33 | DOMAIN_LANGUAGE: Deprecated terms section (MemoryStore)                                               | T5   | 8         |
+| M34 | Harvest actionable tasks → TODO_LIST.md (house style)                                                 | T6   | 12        |
+| M35 | Prune/annotate E1 (real-wire test already done) in TODO_LIST                                          | T6   | 5         |
+| M36 | Fleet audit: `rg -l "MemoryStore"` across consumer repos; usage matrix                                | T7   | 12        |
+| M37 | Draft mini-staircase: preconditions, steps, major-bump plan                                           | T7   | 12        |
+| M38 | Finish + store doc; link from ROADMAP v1.0 bullet                                                     | T7   | 10        |
+| M39 | Capture timing baselines (CheckAndRecord/Seen/Record, serial+contended+parallel)                      | T8   | 12        |
+| M40 | Capture memory baselines (bytes/key, %-reclaimed)                                                     | T8   | 12        |
+| M41 | Document baseline convention in AGENTS.md Testing Conventions                                         | T8   | 8         |
+| M42 | Map 13 invariants → authority (TOCTOU/claim/TTL/family/ADR)                                           | T9   | 12        |
+| M43 | Apply citations in contract.go; run contract suite                                                    | T9   | 12        |
+| M44 | Verify negative-test README rows 1:1 with invariants                                                  | T9   | 6         |
+| M45 | Draft coverage-threshold codecov step as ready diff (in TODO_LIST note)                               | T10  | 12        |
+| M46 | RELEASING.md: add proxy `.info`-hash + clean-room `go get` steps                                      | T11  | 10        |
+| M47 | RELEASING.md: point verification gates at pre-release-check.sh                                        | T11  | 6         |
+| M48 | Annotate ROADMAP demand-gated items with fleet evidence; sweep TODO_LIST                              | T12  | 12        |
 
 **48 micro-tasks, ~7.3 h total.** Every open item is scheduled or explicitly registered as deferred.
 
@@ -181,11 +181,11 @@ flowchart TD
 
 ## Anti-Verschlimmbesserung Contract
 
-- No Go API changes; no dependency changes; no CI job removals. T4 only *adds* a workflow; manual `gh release create` stays as documented fallback.
+- No Go API changes; no dependency changes; no CI job removals. T4 only _adds_ a workflow; manual `gh release create` stays as documented fallback.
 - The `[0.3.1]` section is reconstructed strictly from `git log v0.3.0..v0.3.1` — no invented entries.
 - DOMAIN_LANGUAGE edits add columns/sections; existing definitions are not rewritten.
 - The 06:14 status report is annotated (appendix only), never rewritten.
-- Every gate in T1 that can fail on the *current* tree is smoke-tested both green and red before commit.
+- Every gate in T1 that can fail on the _current_ tree is smoke-tested both green and red before commit.
 
 ## Post-Plan Obligations
 

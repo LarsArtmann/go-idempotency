@@ -1,12 +1,12 @@
 # Status Report — BuildFlow Gate Triage: securitymd + AGENTS.md Freshness (go-idempotency)
 
-| | |
-| --- | --- |
-| **Date** | 2026-10-19 05:59 CEST |
-| **Repo** | `/home/lars/projects/go-idempotency` (module `github.com/larsartmann/go-idempotency`) |
-| **Trigger** | `buildflow --fix --build-mode=full` exited **69**: 2 error-severity findings remained after auto-fix (`go-structure-linter` 1, `securitymd` 1) |
-| **Outcome** | Gate **green (exit 0)**, verified twice (full mode + fast mode). All fixes committed by the auto-commit daemon (`ab2b2e7` + follow-up). |
-| **Scope discipline** | Session was triage-and-fix of the BuildFlow findings gate only; no Go code was touched. |
+|                      |                                                                                                                                                |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Date**             | 2026-10-19 05:59 CEST                                                                                                                          |
+| **Repo**             | `/home/lars/projects/go-idempotency` (module `github.com/larsartmann/go-idempotency`)                                                          |
+| **Trigger**          | `buildflow --fix --build-mode=full` exited **69**: 2 error-severity findings remained after auto-fix (`go-structure-linter` 1, `securitymd` 1) |
+| **Outcome**          | Gate **green (exit 0)**, verified twice (full mode + fast mode). All fixes committed by the auto-commit daemon (`ab2b2e7` + follow-up).        |
+| **Scope discipline** | Session was triage-and-fix of the BuildFlow findings gate only; no Go code was touched.                                                        |
 
 ---
 
@@ -78,7 +78,7 @@
 
 ## c) NOT STARTED
 
-All of the below was *observed* this session but intentionally not started (below the error gate, or out of scope):
+All of the below was _observed_ this session but intentionally not started (below the error gate, or out of scope):
 
 1. **file-size debt**: `store_test.go` (516), `contract/contract.go` (434), `contract/contract_negative_test.go` (483) all exceed the 350-line warning threshold. Not started; splitting test/contract files has real design cost and was not gated.
 2. **art-dupl findings (20)**: token-level duplication in `bench_test.go` and `example/main.go`. The repo has an established "annotate accepted duplication" pattern (commit `96d0d04`); triaging these 20 into harmful-vs-accepted was not started.
@@ -112,58 +112,58 @@ All of the below was *observed* this session but intentionally not started (belo
 
 Ranked by impact; effort S (<30min) / M (30min–2h) / L (>2h). **This section is the harvest input for `docs-health` → HARVEST into TODO_LIST.md/ROADMAP.md.** Items 1–15 are directly grounded in this session's observations; 16–50 are repo-health items noticed in passing.
 
-| # | Task | Impact | Effort | Category |
-|---|------|--------|--------|----------|
-| 1 | HARVEST this report: pull items below into TODO_LIST.md (short-term) and ROADMAP.md (ideas) | High | S | Documentation |
-| 2 | Watch next CI run: confirm the Docs job (lychee-action) accepts `lychee.toml` merged with its explicit `--exclude-path` flags | High | S | Quality |
-| 3 | Add AGENTS.md bullet: `-s <tool>` can replay cached findings after edits; use `BUILDFLOW_NO_RESULT_CACHE=1` | Medium | S | Documentation |
-| 4 | Update FEATURES.md with real drift: doc.go SQLite section, migration guide, lychee.toml, Go 1.27 floor | Medium | S | Documentation |
-| 5 | Decide fleet lychee policy: export GITHUB_TOKEN (authenticate) vs exclude `github.com/larsartmann/.*` (fleet-wide, BuildFlow preflight says undecided) | High | S | Quality |
-| 6 | Triage the 20 art-dupl findings in `bench_test.go`/`example/main.go`: extract harmful dupes, annotate accepted ones (repo precedent `96d0d04`) | Medium | M | Cleanup |
-| 7 | Split `contract/contract.go` (434 lines) if a natural seam exists (suite vs helpers vs README/docs block) | Medium | M | Cleanup |
-| 8 | Split `contract/contract_negative_test.go` (483 lines) — likely by suite (main vs context) | Medium | M | Cleanup |
-| 9 | Split `store_test.go` (516 lines) by strategy (unit vs concurrency vs edge cases) | Medium | M | Cleanup |
-| 10 | Run the strict-timing contract pass locally (`GO_IDEMPOTENCY_CONTRACT_TIMING_SCALE=3 go test ./contract/...`) to confirm local parity with the weekly CI job | Medium | S | Quality |
-| 11 | Run all four fuzz targets 3m each locally once (`go test -fuzz=... -fuzztime=3m`) for parity with CI | Medium | M | Quality |
-| 12 | Run `erraudit . --enforce-go-error-family` to re-confirm 0 violations (policy sanity, no error code touched this session) | Low | S | Quality |
-| 13 | Annotate the `docs/feedback/new/…papdashboard…` snapshot noting the linked repo is gone (annotation, not rewrite — historical snapshot policy) | Low | S | Documentation |
-| 14 | Sweep living docs for other links to deleted/renamed repos (papdashboard pattern) before they hit lychee | Medium | S | Documentation |
-| 15 | Verify CODECOV_TOKEN secret is actually set (CI gates the upload on it; silent no-op if absent) | Medium | S | Quality |
-| 16 | Decide whether this repo wants a minimal `.buildflow.yml` (codify skips/tool-options) or stays zero-config | Low | S | Quality |
-| 17 | Consider a `doc-files-age-check` noise policy (7-day threshold vs realistic doc cadence) — config or accepted-warnings note | Low | S | Quality |
-| 18 | Establish a cadence/mechanism so the AGENTS.md 14-day gate is met by genuine refreshes (calendar, CI reminder, or task-queue dispatch), never clock resets | Medium | S | Process |
-| 19 | Rebuild/reinstall the BuildFlow binary (`nix build . && nix run .#reinstall`) once the concurrent BuildFlow session settles | Low | S | Cleanup |
-| 20 | Scope `GOEXPERIMENT=jsonv2` to the projects that need it instead of exporting it globally in the login shell | Low | S | Cleanup |
-| 21 | Check upstream go-structure-linter TODO item ("re-scope examples-directory"); nudge or implement if the repo is free | Low | S | Cleanup |
-| 22 | Draft the v1.0 release checklist: MemoryStore removal, migration guide prominence, contract-suite promotion story | High | M | Feature |
-| 23 | Revisit ADR-004 (`Delete` on `Store`): any consumer need surfaced since deferral? | Low | S | Feature |
-| 24 | Keep ADR-002 YAGNI gate on `EventIdempotency`/`QueryIdempotency` (confirm still no consumers) | Low | S | Feature |
-| 25 | Verify `go-error-family` bump (`4540c84`) has a CHANGELOG entry | Low | S | Documentation |
-| 26 | Review current coverage number (CI uploads to Codecov; local number unknown) and record it in TODO_LIST as a baseline | Medium | S | Quality |
-| 27 | Confirm middleware dispatch cancellation semantics: does the context-aware contract suite cover `middleware.NewCommand`, or only stores? Gap-check | Medium | M | Quality |
-| 28 | Property-test generators: confirm empty keys / zero TTL are in the rapid generator space (fuzz covers them; property should too) | Low | S | Quality |
-| 29 | Re-run memory benchmarks and record current bytes/key + %-reclaimed numbers somewhere durable (docs or TODO_LIST baseline) | Low | S | Quality |
-| 30 | pkg.go.dev: after the next tag, verify the README Installation section and doc.go TOC render correctly | Low | S | Documentation |
-| 31 | Confirm RELEASING.md's push-master-and-tag-together advice still matches the lychee CHANGELOG compare-link strategy (unchanged this session, but cheap to re-verify) | Low | S | Documentation |
-| 32 | Add a stale-refs pattern if any new rot-prone phrase was introduced this session (none identified — verify once) | Low | S | Documentation |
-| 33 | Consider `gofmt`/dprint check of `lychee.toml` in the repo's format loop (dprint ran; confirm TOML is in its scope) | Low | S | Quality |
-| 34 | git history hygiene: if descriptive history matters, note a repo policy for pre-staging coherent changesets before the daemon sweeps | Low | S | Process |
-| 35 | Fleet idea for BuildFlow: lychee step could detect CI `--exclude-path` flags vs missing `lychee.toml` (config-drift warning) — the exact split brain fixed here | Medium | M | Feature |
-| 36 | Fleet idea for BuildFlow: surface `-s` result-cache replay in step output ("served from cache, N s old") to prevent false stale readings | Medium | M | Feature |
-| 37 | Record the "read the rule source before fixing" lesson in `crush-config/references/lessons.md` (cross-project) | Medium | S | Process |
-| 38 | Record the "exclusions belong in tool config, not one runner's CLI flags" lesson alongside it | Medium | S | Process |
-| 39 | Verify the daemon committed `lychee.toml` with all three paths intact (spot-check `git show` — status clean but content worth one look) | Low | S | Quality |
-| 40 | Check whether `internal/teststore/context.go` (flagged by govulncheck warnings) is exported-anywhere-safe as-is (module-internal, should be — confirm no accidental promotion) | Low | S | Quality |
-| 41 | govulncheck go1.27 warnings: once the local binary is refreshed (f19), confirm they disappear; if not, investigate for real | Low | S | Quality |
-| 42 | Confirm `.golangci.yml` exhaustruct_v5 config still validates after future golangci-lint bumps (the v2.14.0 bump `1bcbf23` was exactly such a fix) | Low | S | Quality |
-| 43 | Add the strict-timing weekly run's result visibility: does anyone read it? If not, add a failure-notification path | Low | S | Process |
-| 44 | Evaluate pinning `actions/*` SHAs review cadence (all actions are SHA-pinned; confirm a renewal reminder exists) | Low | S | Quality |
-| 45 | README: consider linking `docs/migrating-from-memorystore.md` from the deprecation note in Quick start | Low | S | Documentation |
-| 46 | AGENTS.md: consider a one-line pointer to the contract README's "Extending the suite" workflow for new-invariant PRs | Low | S | Documentation |
-| 47 | Sweep `docs/` for any other CI-vs-local tool-config split brains (same pattern as lychee: gitleaks? codespell? configs) | Medium | M | Quality |
-| 48 | Confirm example_test godoc examples still render (pkg.go.dev) after any future package reshuffle — add to release checklist | Low | S | Documentation |
-| 49 | Consider benchmarking `CheckAndRecord` against a real SQL/SQLite backend once (doc.go claims it is "simpler AND faster" — unbenchmarked claim in this repo) | Medium | M | Quality |
-| 50 | Post-release: verify the new CHANGELOG compare links pass lychee before tagging (RELEASING.md ordering) | Low | S | Documentation |
+| #  | Task                                                                                                                                                                           | Impact | Effort | Category      |
+| -- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ | ------ | ------------- |
+| 1  | HARVEST this report: pull items below into TODO_LIST.md (short-term) and ROADMAP.md (ideas)                                                                                    | High   | S      | Documentation |
+| 2  | Watch next CI run: confirm the Docs job (lychee-action) accepts `lychee.toml` merged with its explicit `--exclude-path` flags                                                  | High   | S      | Quality       |
+| 3  | Add AGENTS.md bullet: `-s <tool>` can replay cached findings after edits; use `BUILDFLOW_NO_RESULT_CACHE=1`                                                                    | Medium | S      | Documentation |
+| 4  | Update FEATURES.md with real drift: doc.go SQLite section, migration guide, lychee.toml, Go 1.27 floor                                                                         | Medium | S      | Documentation |
+| 5  | Decide fleet lychee policy: export GITHUB_TOKEN (authenticate) vs exclude `github.com/larsartmann/.*` (fleet-wide, BuildFlow preflight says undecided)                         | High   | S      | Quality       |
+| 6  | Triage the 20 art-dupl findings in `bench_test.go`/`example/main.go`: extract harmful dupes, annotate accepted ones (repo precedent `96d0d04`)                                 | Medium | M      | Cleanup       |
+| 7  | Split `contract/contract.go` (434 lines) if a natural seam exists (suite vs helpers vs README/docs block)                                                                      | Medium | M      | Cleanup       |
+| 8  | Split `contract/contract_negative_test.go` (483 lines) — likely by suite (main vs context)                                                                                     | Medium | M      | Cleanup       |
+| 9  | Split `store_test.go` (516 lines) by strategy (unit vs concurrency vs edge cases)                                                                                              | Medium | M      | Cleanup       |
+| 10 | Run the strict-timing contract pass locally (`GO_IDEMPOTENCY_CONTRACT_TIMING_SCALE=3 go test ./contract/...`) to confirm local parity with the weekly CI job                   | Medium | S      | Quality       |
+| 11 | Run all four fuzz targets 3m each locally once (`go test -fuzz=... -fuzztime=3m`) for parity with CI                                                                           | Medium | M      | Quality       |
+| 12 | Run `erraudit . --enforce-go-error-family` to re-confirm 0 violations (policy sanity, no error code touched this session)                                                      | Low    | S      | Quality       |
+| 13 | Annotate the `docs/feedback/new/…papdashboard…` snapshot noting the linked repo is gone (annotation, not rewrite — historical snapshot policy)                                 | Low    | S      | Documentation |
+| 14 | Sweep living docs for other links to deleted/renamed repos (papdashboard pattern) before they hit lychee                                                                       | Medium | S      | Documentation |
+| 15 | Verify CODECOV_TOKEN secret is actually set (CI gates the upload on it; silent no-op if absent)                                                                                | Medium | S      | Quality       |
+| 16 | Decide whether this repo wants a minimal `.buildflow.yml` (codify skips/tool-options) or stays zero-config                                                                     | Low    | S      | Quality       |
+| 17 | Consider a `doc-files-age-check` noise policy (7-day threshold vs realistic doc cadence) — config or accepted-warnings note                                                    | Low    | S      | Quality       |
+| 18 | Establish a cadence/mechanism so the AGENTS.md 14-day gate is met by genuine refreshes (calendar, CI reminder, or task-queue dispatch), never clock resets                     | Medium | S      | Process       |
+| 19 | Rebuild/reinstall the BuildFlow binary (`nix build . && nix run .#reinstall`) once the concurrent BuildFlow session settles                                                    | Low    | S      | Cleanup       |
+| 20 | Scope `GOEXPERIMENT=jsonv2` to the projects that need it instead of exporting it globally in the login shell                                                                   | Low    | S      | Cleanup       |
+| 21 | Check upstream go-structure-linter TODO item ("re-scope examples-directory"); nudge or implement if the repo is free                                                           | Low    | S      | Cleanup       |
+| 22 | Draft the v1.0 release checklist: MemoryStore removal, migration guide prominence, contract-suite promotion story                                                              | High   | M      | Feature       |
+| 23 | Revisit ADR-004 (`Delete` on `Store`): any consumer need surfaced since deferral?                                                                                              | Low    | S      | Feature       |
+| 24 | Keep ADR-002 YAGNI gate on `EventIdempotency`/`QueryIdempotency` (confirm still no consumers)                                                                                  | Low    | S      | Feature       |
+| 25 | Verify `go-error-family` bump (`4540c84`) has a CHANGELOG entry                                                                                                                | Low    | S      | Documentation |
+| 26 | Review current coverage number (CI uploads to Codecov; local number unknown) and record it in TODO_LIST as a baseline                                                          | Medium | S      | Quality       |
+| 27 | Confirm middleware dispatch cancellation semantics: does the context-aware contract suite cover `middleware.NewCommand`, or only stores? Gap-check                             | Medium | M      | Quality       |
+| 28 | Property-test generators: confirm empty keys / zero TTL are in the rapid generator space (fuzz covers them; property should too)                                               | Low    | S      | Quality       |
+| 29 | Re-run memory benchmarks and record current bytes/key + %-reclaimed numbers somewhere durable (docs or TODO_LIST baseline)                                                     | Low    | S      | Quality       |
+| 30 | pkg.go.dev: after the next tag, verify the README Installation section and doc.go TOC render correctly                                                                         | Low    | S      | Documentation |
+| 31 | Confirm RELEASING.md's push-master-and-tag-together advice still matches the lychee CHANGELOG compare-link strategy (unchanged this session, but cheap to re-verify)           | Low    | S      | Documentation |
+| 32 | Add a stale-refs pattern if any new rot-prone phrase was introduced this session (none identified — verify once)                                                               | Low    | S      | Documentation |
+| 33 | Consider `gofmt`/dprint check of `lychee.toml` in the repo's format loop (dprint ran; confirm TOML is in its scope)                                                            | Low    | S      | Quality       |
+| 34 | git history hygiene: if descriptive history matters, note a repo policy for pre-staging coherent changesets before the daemon sweeps                                           | Low    | S      | Process       |
+| 35 | Fleet idea for BuildFlow: lychee step could detect CI `--exclude-path` flags vs missing `lychee.toml` (config-drift warning) — the exact split brain fixed here                | Medium | M      | Feature       |
+| 36 | Fleet idea for BuildFlow: surface `-s` result-cache replay in step output ("served from cache, N s old") to prevent false stale readings                                       | Medium | M      | Feature       |
+| 37 | Record the "read the rule source before fixing" lesson in `crush-config/references/lessons.md` (cross-project)                                                                 | Medium | S      | Process       |
+| 38 | Record the "exclusions belong in tool config, not one runner's CLI flags" lesson alongside it                                                                                  | Medium | S      | Process       |
+| 39 | Verify the daemon committed `lychee.toml` with all three paths intact (spot-check `git show` — status clean but content worth one look)                                        | Low    | S      | Quality       |
+| 40 | Check whether `internal/teststore/context.go` (flagged by govulncheck warnings) is exported-anywhere-safe as-is (module-internal, should be — confirm no accidental promotion) | Low    | S      | Quality       |
+| 41 | govulncheck go1.27 warnings: once the local binary is refreshed (f19), confirm they disappear; if not, investigate for real                                                    | Low    | S      | Quality       |
+| 42 | Confirm `.golangci.yml` exhaustruct_v5 config still validates after future golangci-lint bumps (the v2.14.0 bump `1bcbf23` was exactly such a fix)                             | Low    | S      | Quality       |
+| 43 | Add the strict-timing weekly run's result visibility: does anyone read it? If not, add a failure-notification path                                                             | Low    | S      | Process       |
+| 44 | Evaluate pinning `actions/*` SHAs review cadence (all actions are SHA-pinned; confirm a renewal reminder exists)                                                               | Low    | S      | Quality       |
+| 45 | README: consider linking `docs/migrating-from-memorystore.md` from the deprecation note in Quick start                                                                         | Low    | S      | Documentation |
+| 46 | AGENTS.md: consider a one-line pointer to the contract README's "Extending the suite" workflow for new-invariant PRs                                                           | Low    | S      | Documentation |
+| 47 | Sweep `docs/` for any other CI-vs-local tool-config split brains (same pattern as lychee: gitleaks? codespell? configs)                                                        | Medium | M      | Quality       |
+| 48 | Confirm example_test godoc examples still render (pkg.go.dev) after any future package reshuffle — add to release checklist                                                    | Low    | S      | Documentation |
+| 49 | Consider benchmarking `CheckAndRecord` against a real SQL/SQLite backend once (doc.go claims it is "simpler AND faster" — unbenchmarked claim in this repo)                    | Medium | M      | Quality       |
+| 50 | Post-release: verify the new CHANGELOG compare links pass lychee before tagging (RELEASING.md ordering)                                                                        | Low    | S      | Documentation |
 
 ---
 
@@ -177,4 +177,4 @@ Ranked by impact; effort S (<30min) / M (30min–2h) / L (>2h). **This section i
 
 **Next step per protocol:** section (f) is the harvest input — run `docs-health` → HARVEST to land items into TODO_LIST.md/ROADMAP.md rather than entombing them here.
 
-*Waiting for instructions.*
+_Waiting for instructions._
