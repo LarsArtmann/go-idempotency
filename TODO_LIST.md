@@ -24,10 +24,10 @@ Short-term actionable work. Open items only — completed work lives in [CHANGEL
 
 - [ ] **Coverage floor once Codecov is active** — fail CI under ~90% so erosion is loud. Keep the Codecov threshold step drafted as a ready-to-flip diff (plan T10). Blocked on the owner setting `CODECOV_TOKEN`. **Impact: Medium · Effort: S**
 - [ ] **Announce v0.3.x** (owner preference) — channel and timing are the owner's call; the middleware package plus the contract-suite detection proofs are the story. **Impact: Low · Effort: S**
-- [ ] **Watch `release.yml` first live fire** — the tag-triggered release workflow is untested-by-default; watch its first run end-to-end on the next root tag (go-etag's own rule, inherited from the 2026-10-19 learning review). **Impact: Medium · Effort: S**
+- [ ] **Verify the weekly scheduled CI after the GOTOOLCHAIN fix** — the strict-timing step now sets `GOTOOLCHAIN: auto` (matching the race step); the fix is untested by live fire because schedule events cannot be triggered manually. Watch the 2026-11-09 run. **Impact: Medium · Effort: S**
 
 ## Cleanup
 
 - [ ] **ROADMAP demand-gated annotations (plan T12)** — annotate demand-gated items with the 2026-10-19 fleet evidence; re-confirm the YAGNI gates. **Impact: Low · Effort: S**
 
-<!-- The v0.3.0 release train, ADR settling, plan archival, fuzz-budget raise, and post-release stale-refs refresh were executed 2026-09-05 — see CHANGELOG [0.3.0] and the archived pareto plan. The 2026-10-19 plan's head (T1–T4, T6, T11 plus both GitHub-issue doc fixes) was executed 2026-11-03 — see CHANGELOG [Unreleased] and the fate decision in docs/planning/2026-10-19_12-17_release-hardening-and-go-etag-adoption-pareto-plan.md. -->
+<!-- The v0.3.0 release train, ADR settling, plan archival, fuzz-budget raise, and post-release stale-refs refresh were executed 2026-09-05 — see CHANGELOG [0.3.0] and the archived pareto plan. The 2026-10-19 plan's head (T1–T4, T6, T11 plus both GitHub-issue doc fixes) was executed 2026-11-03 — see CHANGELOG [0.3.2] and the fate decision in docs/planning/2026-10-19_12-17_release-hardening-and-go-etag-adoption-pareto-plan.md. v0.3.2 was released 2026-11-03 through the new gate (12/12 green pre- and post-tag) and release.yml (first live fire: success); release-watch retired. -->

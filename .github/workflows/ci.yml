@@ -44,6 +44,11 @@ jobs:
         run: go test ./contract -race -count=1 -run TestRunTestsStrict_ScaledTimings
         env:
           GO_IDEMPOTENCY_CONTRACT_TIMING_SCALE: "3"
+          # Same bootstrap as the race step: setup-go exports GOTOOLCHAIN=local
+          # at job level, which cannot build a go 1.27 module on the oldstable
+          # leg (the 2026-11-02 scheduled run died at
+          # "go.mod requires go >= 1.27" before this pass ever executed).
+          GOTOOLCHAIN: auto
 
       - name: Run tests with coverage
         if: matrix.go-version == 'go.mod'

@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet.
 
+### Fixed
+
+- **Weekly scheduled CI's oldstable leg** — the strict-timing contract pass ran without `GOTOOLCHAIN: auto`, so setup-go's job-level `GOTOOLCHAIN: local` made it fail at `go.mod requires go >= 1.27` before the pass ever executed (visible in the 2026-11-02 scheduled run). The step now bootstraps the pinned toolchain exactly like the race-detector step.
+
 ## [0.3.2] - 2026-11-03
 
 ### Added
