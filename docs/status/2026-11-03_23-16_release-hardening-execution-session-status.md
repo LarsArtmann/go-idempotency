@@ -9,32 +9,32 @@
 
 ## a) FULLY DONE
 
-| # | Item | Evidence |
-| - | ---- | -------- |
-| 1 | Recon: every brutal-self-review claim (F1–F6) re-verified against source before acting | git tags/log/diffs; fetch-tracked push state throughout |
-| 2 | **T2:** retroactive `[0.3.1]` CHANGELOG section, strictly from `git log v0.3.0..v0.3.1`; compare links added; `[Unreleased]` retargeted — the live F2 bug closed | CHANGELOG.md; parity gate PASS |
-| 3 | CHANGELOG `[Unreleased]` records this session AND previously unrecorded post-tag deltas (go-error-family v0.12, go-cqrs-lite DedupStore pointers, SECURITY.md, lychee.toml, golangci config floor) | `git diff v0.3.1..HEAD` per file |
-| 4 | **Issue #12, option 1:** doc.go SQLite pitfall 4 — fixed-width `"2006-01-02T15:04:05.000000000Z07:00"`, the `'Z' > '.'` misordering spelled out | doc.go "SQL adapter notes"; godoc render check |
-| 5 | **Issue #13 checkbox:** doc.go "Client-side vs receiver-side posture" section + Contents entry + README Documentation bullet | `go doc .` shows the section and the 5-entry contents |
-| 6 | README recipe-anchor fix: old fragment never matched (pkg.go.dev maps every non-alphanumeric to `_`, proven from the live page's `id="hdr-Recipe__Dedup___Response_Replay__HTTP_Idempotency_"`) | fetched HTML vs README.md |
-| 7 | FEATURES.md fuzz-budget drift fixed (30s → 3m, matches ci.yml) | FEATURES.md CI row |
-| 8 | `docs/drafts/` trashed — issue #13 owns the content; ADR-005 records the floor-decision fact in-repo (single ownership) | dir gone; ADR-005 |
-| 9 | **T1:** `scripts/pre-release-check.sh` — 12 gates, failure-loud summary, cache-env pinning; **green exit 0**; sabotage-red twice; caught a real erraudit↔ADR-002 conflict on first run, resolved with a site-level `//nolint:erraudit` (staleness-audited by `erraudit nolint-audit`) | /tmp/final-green.log `ALL 12 GATES GREEN` |
-| 10 | **T3:** ADR-005 (single module + anchored `go 1.27` floor, fleet evidence, accepted wise-go cost) + ADR index row + 06:14-report annotation + genuine AGENTS.md refresh (5 substantive edits, no clock-reset) | docs/adr/005-*.md; AGENTS.md diff +8 |
-| 11 | **T4 + T11 (M46–M47):** `release.yml` (tag-triggered, fail-loud CHANGELOG extractor verified hit+miss, idempotent create/edit, actionlint-clean) + RELEASING.md rewritten around the gate script + clean-room proxy verification step | actionlint exit 0; extractor dry-runs |
-| 12 | **T6:** TODO_LIST rebuilt (tail scheduled, standing rule added: plans >2wk with 0 executed get executed or archived); plan carries a dated fate decision; inherited errata closed — mermaid parse-checks clean under mmdc 12, estimate layers reconciled as per-task overhead | TODO_LIST.md; plan appendix |
-| 13 | Issues: #13 checkbox ticked (body edit verified by re-fetch), resolution comments posted on #12 and #13 | issuecomment-6616128580 / 6616128970 |
-| 14 | 19-52 status report + 06:14 report annotated non-destructively | Resolution appendices |
-| 15 | Commit executed under explicit owner authorization ("you are allowed to commit yourself"), including this report | commit follows this file |
+| #  | Item                                                                                                                                                                                                                                                                                  | Evidence                                                |
+| -- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| 1  | Recon: every brutal-self-review claim (F1–F6) re-verified against source before acting                                                                                                                                                                                                | git tags/log/diffs; fetch-tracked push state throughout |
+| 2  | **T2:** retroactive `[0.3.1]` CHANGELOG section, strictly from `git log v0.3.0..v0.3.1`; compare links added; `[Unreleased]` retargeted — the live F2 bug closed                                                                                                                      | CHANGELOG.md; parity gate PASS                          |
+| 3  | CHANGELOG `[Unreleased]` records this session AND previously unrecorded post-tag deltas (go-error-family v0.12, go-cqrs-lite DedupStore pointers, SECURITY.md, lychee.toml, golangci config floor)                                                                                    | `git diff v0.3.1..HEAD` per file                        |
+| 4  | **Issue #12, option 1:** doc.go SQLite pitfall 4 — fixed-width `"2006-01-02T15:04:05.000000000Z07:00"`, the `'Z' > '.'` misordering spelled out                                                                                                                                       | doc.go "SQL adapter notes"; godoc render check          |
+| 5  | **Issue #13 checkbox:** doc.go "Client-side vs receiver-side posture" section + Contents entry + README Documentation bullet                                                                                                                                                          | `go doc .` shows the section and the 5-entry contents   |
+| 6  | README recipe-anchor fix: old fragment never matched (pkg.go.dev maps every non-alphanumeric to `_`, proven from the live page's `id="hdr-Recipe__Dedup___Response_Replay__HTTP_Idempotency_"`)                                                                                       | fetched HTML vs README.md                               |
+| 7  | FEATURES.md fuzz-budget drift fixed (30s → 3m, matches ci.yml)                                                                                                                                                                                                                        | FEATURES.md CI row                                      |
+| 8  | `docs/drafts/` trashed — issue #13 owns the content; ADR-005 records the floor-decision fact in-repo (single ownership)                                                                                                                                                               | dir gone; ADR-005                                       |
+| 9  | **T1:** `scripts/pre-release-check.sh` — 12 gates, failure-loud summary, cache-env pinning; **green exit 0**; sabotage-red twice; caught a real erraudit↔ADR-002 conflict on first run, resolved with a site-level `//nolint:erraudit` (staleness-audited by `erraudit nolint-audit`) | /tmp/final-green.log `ALL 12 GATES GREEN`               |
+| 10 | **T3:** ADR-005 (single module + anchored `go 1.27` floor, fleet evidence, accepted wise-go cost) + ADR index row + 06:14-report annotation + genuine AGENTS.md refresh (5 substantive edits, no clock-reset)                                                                         | docs/adr/005-*.md; AGENTS.md diff +8                    |
+| 11 | **T4 + T11 (M46–M47):** `release.yml` (tag-triggered, fail-loud CHANGELOG extractor verified hit+miss, idempotent create/edit, actionlint-clean) + RELEASING.md rewritten around the gate script + clean-room proxy verification step                                                 | actionlint exit 0; extractor dry-runs                   |
+| 12 | **T6:** TODO_LIST rebuilt (tail scheduled, standing rule added: plans >2wk with 0 executed get executed or archived); plan carries a dated fate decision; inherited errata closed — mermaid parse-checks clean under mmdc 12, estimate layers reconciled as per-task overhead         | TODO_LIST.md; plan appendix                             |
+| 13 | Issues: #13 checkbox ticked (body edit verified by re-fetch), resolution comments posted on #12 and #13                                                                                                                                                                               | issuecomment-6616128580 / 6616128970                    |
+| 14 | 19-52 status report + 06:14 report annotated non-destructively                                                                                                                                                                                                                        | Resolution appendices                                   |
+| 15 | Commit executed under explicit owner authorization ("you are allowed to commit yourself"), including this report                                                                                                                                                                      | commit follows this file                                |
 
 ## b) PARTIALLY DONE
 
-| # | Item | Done | Missing |
-| - | ---- | ---- | ------- |
-| 1 | Issues #12/#13 closure | Comments + tick posted | `gh issue close` withheld until the fix is visible on origin (push not authorized — see g/1) |
-| 2 | release.yml validation | actionlint + extractor dry-run + parity logic shared with the gate | Zero live runs — needs a pushed tag; first-fire watch is deliberately a TODO_LIST item |
-| 3 | AGENTS.md refresh | Real changes recorded (commands, release.yml, ADR-005, erraudit exemption, doc.go bullet) | ADR README's new table row not dprint-checked (cosmetic; dprint not CI-enforced) |
-| 4 | CHANGELOG `[Unreleased]` accuracy | Every session-authored bullet verified at source | SECURITY.md/.config bullets written from stat + AGENTS notes, not full diff reads (d/4) |
+| # | Item                              | Done                                                                                      | Missing                                                                                      |
+| - | --------------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| 1 | Issues #12/#13 closure            | Comments + tick posted                                                                    | `gh issue close` withheld until the fix is visible on origin (push not authorized — see g/1) |
+| 2 | release.yml validation            | actionlint + extractor dry-run + parity logic shared with the gate                        | Zero live runs — needs a pushed tag; first-fire watch is deliberately a TODO_LIST item       |
+| 3 | AGENTS.md refresh                 | Real changes recorded (commands, release.yml, ADR-005, erraudit exemption, doc.go bullet) | ADR README's new table row not dprint-checked (cosmetic; dprint not CI-enforced)             |
+| 4 | CHANGELOG `[Unreleased]` accuracy | Every session-authored bullet verified at source                                          | SECURITY.md/.config bullets written from stat + AGENTS notes, not full diff reads (d/4)      |
 
 ## c) NOT STARTED
 
@@ -63,29 +63,29 @@
 
 ## f) Next tasks (ranked; 1–5 are this session's loose ends)
 
-| # | Task | Impact | Effort | Category |
-| - | ---- | ------ | ------ | -------- |
-| 1 | Push master; watch all 8 CI jobs + docs job go green over the new files | Critical | S | Infrastructure |
-| 2 | Close #12 and #13 (comments already posted; cite the commit sha) | High | S | Documentation |
-| 3 | Decide next release (docs/tooling only → v0.3.2 per RELEASING pre-flight) and run it end-to-end through the new gate + release.yml — the dogfood proof | High | M | Release |
-| 4 | Record the self-commit authorization decision in AGENTS.md (standing rule or one-time — g/3) | Medium | S | Documentation |
-| 5 | Reconcile docs/releases/ notes convention with CHANGELOG extraction (g/2) | Medium | S | Documentation |
-| 6 | FEATURES.md: release-automation row (pre-release-check.sh + release.yml) | Medium | S | Documentation |
-| 7 | Examine `.config/metadata.yaml` post-tag delta; CHANGELOG bullet if user-visible | Low | S | Cleanup |
-| 8 | Inline-annotate the 19-52 report's §f done-rows (docs-health status-items) | Low | S | Documentation |
-| 9 | T7: MemoryStore v1.0 removal mini-staircase + fleet `rg MemoryStore` audit | High | M | Documentation |
-| 10 | T8: bench baselines to `reports/bench/` (`-count=6 -benchmem`) — unblocks lock-strategy work | Medium | M | Quality |
-| 11 | T5: DOMAIN_LANGUAGE upgrades (Where column, bounded contexts, deprecated terms) | Medium | M | Documentation |
-| 12 | T9: spec-citation pass over the 13 contract invariants | Medium | M | Quality |
-| 13 | T12: ROADMAP demand-gated annotations with 2026-10-19 fleet evidence | Low | S | Cleanup |
-| 14 | f/22: visual browser render check of the 19-43 review HTML | Low | S | Quality |
-| 15 | T10: coverage-floor CI step as ready-to-flip diff | Medium | S | Infrastructure |
-| 16 | Owner: set `CODECOV_TOKEN` (unblocks 15) | Medium | S | Infrastructure |
-| 17 | Owner: announce v0.3.x (channel + timing) | Low | S | — |
-| 18 | dprint check of the ADR README table row (cosmetic alignment) | Low | S | Cleanup |
-| 19 | Decision: should the release gate also run govulncheck/fuzz locally, or stay CI-continuous-only? | Low | S | Quality |
-| 20 | Consider `erraudit nolint-audit` (staleness check for the new directive) as a CI or gate step | Low | S | Quality |
-| 21 | After first release through release.yml: prune RELEASING.md's manual-fallback wording if never used | Low | S | Documentation |
+| #  | Task                                                                                                                                                   | Impact   | Effort | Category       |
+| -- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | ------ | -------------- |
+| 1  | Push master; watch all 8 CI jobs + docs job go green over the new files                                                                                | Critical | S      | Infrastructure |
+| 2  | Close #12 and #13 (comments already posted; cite the commit sha)                                                                                       | High     | S      | Documentation  |
+| 3  | Decide next release (docs/tooling only → v0.3.2 per RELEASING pre-flight) and run it end-to-end through the new gate + release.yml — the dogfood proof | High     | M      | Release        |
+| 4  | Record the self-commit authorization decision in AGENTS.md (standing rule or one-time — g/3)                                                           | Medium   | S      | Documentation  |
+| 5  | Reconcile docs/releases/ notes convention with CHANGELOG extraction (g/2)                                                                              | Medium   | S      | Documentation  |
+| 6  | FEATURES.md: release-automation row (pre-release-check.sh + release.yml)                                                                               | Medium   | S      | Documentation  |
+| 7  | Examine `.config/metadata.yaml` post-tag delta; CHANGELOG bullet if user-visible                                                                       | Low      | S      | Cleanup        |
+| 8  | Inline-annotate the 19-52 report's §f done-rows (docs-health status-items)                                                                             | Low      | S      | Documentation  |
+| 9  | T7: MemoryStore v1.0 removal mini-staircase + fleet `rg MemoryStore` audit                                                                             | High     | M      | Documentation  |
+| 10 | T8: bench baselines to `reports/bench/` (`-count=6 -benchmem`) — unblocks lock-strategy work                                                           | Medium   | M      | Quality        |
+| 11 | T5: DOMAIN_LANGUAGE upgrades (Where column, bounded contexts, deprecated terms)                                                                        | Medium   | M      | Documentation  |
+| 12 | T9: spec-citation pass over the 13 contract invariants                                                                                                 | Medium   | M      | Quality        |
+| 13 | T12: ROADMAP demand-gated annotations with 2026-10-19 fleet evidence                                                                                   | Low      | S      | Cleanup        |
+| 14 | f/22: visual browser render check of the 19-43 review HTML                                                                                             | Low      | S      | Quality        |
+| 15 | T10: coverage-floor CI step as ready-to-flip diff                                                                                                      | Medium   | S      | Infrastructure |
+| 16 | Owner: set `CODECOV_TOKEN` (unblocks 15)                                                                                                               | Medium   | S      | Infrastructure |
+| 17 | Owner: announce v0.3.x (channel + timing)                                                                                                              | Low      | S      | —              |
+| 18 | dprint check of the ADR README table row (cosmetic alignment)                                                                                          | Low      | S      | Cleanup        |
+| 19 | Decision: should the release gate also run govulncheck/fuzz locally, or stay CI-continuous-only?                                                       | Low      | S      | Quality        |
+| 20 | Consider `erraudit nolint-audit` (staleness check for the new directive) as a CI or gate step                                                          | Low      | S      | Quality        |
+| 21 | After first release through release.yml: prune RELEASING.md's manual-fallback wording if never used                                                    | Low      | S      | Documentation  |
 
 ## g) Questions I cannot answer myself
 
