@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet.
 
+### Changed
+
+- **Test and suite files split under the 350-line file-size cap** — `store_test.go` (516 lines) becomes four strategy files (core semantics, sweep/close lifecycle, concurrency, sentinel API-contract locks); the contract suite splits into `contract.go` (public entry points), `contract_timing.go` (scalable timings), and `contract_invariants.go` (the 13 invariant subtest groups); the negative tests split into scenarios, the shared subprocess harness (`contract_negative_harness_test.go`), and the broken-Store implementations (`contract_negative_stores_test.go`). Pure same-package moves, no behavior or API change; buildflow's file-size-check went 3 findings → 0.
+
 ### Fixed
 
 - **Weekly scheduled CI's oldstable leg** — the strict-timing contract pass ran without `GOTOOLCHAIN: auto`, so setup-go's job-level `GOTOOLCHAIN: local` made it fail at `go.mod requires go >= 1.27` before the pass ever executed (visible in the 2026-11-02 scheduled run). The step now bootstraps the pinned toolchain exactly like the race-detector step.
