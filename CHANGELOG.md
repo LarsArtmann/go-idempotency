@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Nothing yet.
+
+## [0.3.2] - 2026-11-03
+
+### Added
+
 - **One-command release gate** — `scripts/pre-release-check.sh` encodes every verification gate in one failure-loud invocation: gofmt, vet, build, `go test -race`, golangci-lint (config verify + run), tidy-diff-on-a-copy, `go mod verify`, erraudit (`--enforce-go-error-family`), stale-refs, the anchored `go 1.27` directive, tag↔CHANGELOG parity, and a warn-only clean-tree check. Every gate is smoke-tested green and sabotage-red; the parity gate is the structural fix for the v0.3.1 changelog gap (pareto plan T1).
 - **Tag-triggered release workflow** — `.github/workflows/release.yml` extracts the tag's CHANGELOG section and publishes the GitHub Release as Latest, failing loudly when the section is absent (pareto plan T4; actionlint-clean, extractor dry-run verified for the hit and miss cases).
 - **ADR-005: single module and anchored toolchain floor** — the module stays single (fleet evidence: 0/10 consumers import `middleware/`; revisit triggers recorded), and the `go 1.27` floor is anchored: changing it must update the release gate and the ADR in the same commit. The floor's adoption cost (wise-go pinned to 1.26, issue #13) is documented as accepted.
@@ -172,7 +178,8 @@ Tagged `v0.1.0`: initial release — idempotency store with TTL-based dedup.
 - **Sweep soak test** — 1000-key concurrent load test verifying sweep reclaims all expired entries
 - **Package documentation** (`doc.go`) with quick-start example and design rationale
 
-[Unreleased]: https://github.com/larsartmann/go-idempotency/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/larsartmann/go-idempotency/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/larsartmann/go-idempotency/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/larsartmann/go-idempotency/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/larsartmann/go-idempotency/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/larsartmann/go-idempotency/compare/v0.1.2...v0.2.0
