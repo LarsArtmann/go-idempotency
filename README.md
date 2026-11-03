@@ -223,7 +223,8 @@ Versioning: **v0.x** — the error sentinels are stable, but `MemoryStore` is de
 ## Documentation
 
 - [API reference (pkg.go.dev)](https://pkg.go.dev/github.com/larsartmann/go-idempotency)
-- [Recipe: dedup + response replay](https://pkg.go.dev/github.com/larsartmann/go-idempotency#hdr-Recipe-Dedup_Response_Replay_HTTP_Idempotency) — HTTP idempotency: atomic claim + replaying the original response to retriers
+- [Recipe: dedup + response replay](https://pkg.go.dev/github.com/larsartmann/go-idempotency#hdr-Recipe__Dedup___Response_Replay__HTTP_Idempotency_) — HTTP idempotency: atomic claim + replaying the original response to retriers
+- [Client-side vs receiver-side posture](https://pkg.go.dev/github.com/larsartmann/go-idempotency#hdr-Client_side_vs_receiver_side_posture) — when the API you call already dedupes server-side and replays the resource (Wise, Stripe), the replay recipe is the only correct client-side shape; key-only guards fit the receiving end of a request
 - [Migrating from MemoryStore](docs/migrating-from-memorystore.md) — pick a backend, implement it, validate with the contract suite, swap the type
 - [Runnable example](example/main.go) — end-to-end walkthrough (`go run ./example`)
 - [Features](FEATURES.md) — honest feature inventory with code evidence

@@ -1,0 +1,55 @@
+name: Release
+
+# Tag-triggered release automation (pareto plan 2026-10-19, task T4; pattern
+# ported from go-etag's validated release workflow). The extractor fails
+# loudly when the tag has no CHANGELOG section: that omission is exactly the
+# v0.3.1 gap this workflow exists to prevent. scripts/pre-release-check.sh
+# checks the same parity before tagging; this is the structural backstop.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write # creating the GitHub Release
+
+jobs:
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Extract CHANGELOG section for the tag
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+          notes="$(mktemp)"
+          # Match "## [X.Y.Z] " with the trailing space so [0.3.1] never
+          # prefix-matches a future [0.3.10].
+          awk -v ver="$version" '
+            index($0, "## [" ver "] ") == 1 { infound = 1; next }
+            infound && /^## \[/ { exit }
+            infound { print }
+          ' CHANGELOG.md > "$notes"
+          if [ ! -s "$notes" ]; then
+            echo "::error::CHANGELOG.md has no section for ${tag}. Cut the section before tagging (RELEASING.md steps 5-6); the pre-release parity gate would have caught this."
+            exit 1
+          fi
+          echo "NOTES_FILE=$notes" >> "$GITHUB_ENV"
+          echo "Extracted $(wc -l < "$notes") lines for ${tag}:"
+          head -5 "$notes"
+
+      - name: Create GitHub Release (Latest)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          # Idempotent: a re-run after a botched release edits the existing
+          # release instead of failing on the duplicate.
+          if gh release view "$tag" --json name > /dev/null 2>&1; then
+            echo "Release for ${tag} already exists; updating notes and Latest flag."
+            gh release edit "$tag" --notes-file "$NOTES_FILE" --latest
+          else
+            gh release create "$tag" --title "$tag" --notes-file "$NOTES_FILE" --latest
+          fi

@@ -191,3 +191,13 @@ flowchart TD
 
 - **HARVEST (docs-health):** after approval, T6 folds the actionable items into `TODO_LIST.md`; the deferred register maps to ROADMAP annotations (T12). This plan is a snapshot — the living docs own the items afterward.
 - **ANNOTATE, never rewrite:** when this plan goes stale, correct it via inline annotation or appendix per docs-health.
+
+---
+
+## Fate decision (2026-11-03)
+
+Executed this session (owner-approved): T1 (`scripts/pre-release-check.sh`, every gate smoke-tested green and sabotage-red), T2 (retroactive `[0.3.1]` CHANGELOG section + compare links), T3 (ADR-005 + index + AGENTS.md refresh + the 06:14 report annotation), T4 (`release.yml`, actionlint-clean, extractor dry-run verified for both the hit and the miss case), T6 (TODO_LIST harvest, standing rule added), and T11 (M46–M47: clean-room proxy check in RELEASING.md, gates pointed at the script). The quick-win bundle landed with it: `doc.go` SQLite pitfall 4 (issue #12, option 1 — the doc note, per ADR-001's no-backend-code rule) and the client-side vs receiver-side posture section (issue #13's checkbox); the FEATURES.md fuzz-budget drift was fixed, and `docs/drafts/` was trashed (issue #13 owns that content).
+
+Remaining tail — T5, T7, T8, T9, T10, T12 — is scheduled in TODO_LIST.md; this plan retires and the living docs own the items, per the Post-Plan Obligations above.
+
+Errata closed on execution: the mermaid execution graph parse-checks clean and renders under mmdc 12 (verified 2026-11-03; the 2026-10-19 self-review's unverified-graph worry is disproven), and the T-level 9.5 h vs micro-task 7.3 h estimate gap is per-task review and context-switch overhead, not an arithmetic error.

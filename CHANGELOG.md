@@ -9,11 +9,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Nothing yet.
+- **One-command release gate** — `scripts/pre-release-check.sh` encodes every verification gate in one failure-loud invocation: gofmt, vet, build, `go test -race`, golangci-lint (config verify + run), tidy-diff-on-a-copy, `go mod verify`, erraudit (`--enforce-go-error-family`), stale-refs, the anchored `go 1.27` directive, tag↔CHANGELOG parity, and a warn-only clean-tree check. Every gate is smoke-tested green and sabotage-red; the parity gate is the structural fix for the v0.3.1 changelog gap (pareto plan T1).
+- **Tag-triggered release workflow** — `.github/workflows/release.yml` extracts the tag's CHANGELOG section and publishes the GitHub Release as Latest, failing loudly when the section is absent (pareto plan T4; actionlint-clean, extractor dry-run verified for the hit and miss cases).
+- **ADR-005: single module and anchored toolchain floor** — the module stays single (fleet evidence: 0/10 consumers import `middleware/`; revisit triggers recorded), and the `go 1.27` floor is anchored: changing it must update the release gate and the ADR in the same commit. The floor's adoption cost (wise-go pinned to 1.26, issue #13) is documented as accepted.
+- **SQLite production pitfalls in the docs** — `doc.go` and the migration guide gain a battle-tested SQLite section: per-connection `:memory:`, WAL + busy_timeout DSN pragmas, why `CheckAndRecord` needs no explicit transaction, and the TEXT-expiry format trap (issue #12): `time.RFC3339Nano` trims trailing zeros so lexicographic comparison is not chronological; render expiries with the fixed-width `"2006-01-02T15:04:05.000000000Z07:00"` format.
+- **Client-side vs receiver-side posture section** — `doc.go` (new package-docs section, in the contents list) and a README Documentation entry: when the API you call already dedupes server-side and replays the resource (Wise, Stripe), a local key-only guard degrades the retry to a 409; the response-replay recipe is the only correct client-side shape. Closes issue #13's open checkbox (the wise-go adoption review).
+- **go-cqrs-lite DedupStore pointers** — README, `doc.go`, the migration guide, and an ADR-001 addendum point consumers on the go-cqrs-lite stack at its `metaengine.DedupStore` engine capability (conformance-tested across engines) instead of a hand-written backend. The no-backends stance is unchanged.
+- **Shared lychee config** — `lychee.toml` centralizes the historical-snapshot exclusions for the CI docs job and BuildFlow's lychee step.
+
+### Changed
+
+- **Dependency bumps** — `github.com/larsartmann/go-error-family` v0.11.0 → v0.12.0; `actions/upload-artifact` v7.0.1 → v7.0.2.
+- **golangci-lint config tracks the floor** — `run.go` raised to 1.27; the test-file exclusion renamed `exhaustruct` → `exhaustruct_v5`.
+- **RELEASING.md points at the gate** — the manual verification-gate checklist is replaced by the one-command script (with its coverage listed), the GitHub Release step documents the automatic `release.yml` path with the manual fallback, and step 9 gains a clean-room proxy verification (`.info` served + fresh-module `go get`).
+- **TODO_LIST rebuilt from the 2026-10-19 plan harvest** — the plan's remaining tail (T5, T7–T12) is scheduled there, the plan carries a dated fate decision, and a standing rule enters TODO_LIST: a plan older than two weeks with zero tasks executed gets executed or archived.
+- **SECURITY.md hardened** — the `## Security Practices` section and the 7-day response-time phrasing satisfy the securitymd validator's literal-substring matching.
 
 ### Fixed
 
-- **Post-release doc sync** — the README middleware link points back at its pkg.go.dev page (live since v0.3.0), and `doc.go`'s stale "middleware planned, not yet implemented" paragraph (spotted in the pkg.go.dev v0.3.0 render) now describes the shipped package. The stale-refs checker learned the two new release-status phrases ("staging in CHANGELOG", "goes live with the next").
+- **Retroactive `[0.3.1]` CHANGELOG section** — the live release bug: tag `v0.3.1` existed with no CHANGELOG section (post-release doc-sync work sat under `[Unreleased]`). Reconstructed strictly from `git log v0.3.0..v0.3.1`; compare links added and `[Unreleased]` retargeted (pareto plan T2).
+- **FEATURES.md fuzz-budget drift** — the CI row said 30s/target while `ci.yml` runs 3m/target; the row now matches reality.
+- **README recipe anchor** — the pkg.go.dev fragment `#hdr-Recipe-Dedup_...` never matched the real heading id (pkg.go.dev maps every non-alphanumeric character to `_`, verified against the live page); now `#hdr-Recipe__Dedup___Response_Replay__HTTP_Idempotency_`.
+
+## [0.3.1] - 2026-10-01
+
+### Changed
+
+- **Go toolchain floor raised to 1.27** — `go.mod` moves from `go 1.26.7` to `go 1.27` (the anchored-floor policy: the module tracks the latest stable toolchain; CI pins it via `go-version-file`, and the oldstable matrix leg bootstraps the pinned toolchain via `GOTOOLCHAIN=auto`). Consumers pinned to 1.26 — e.g. wise-go, whose toolchain policy stays one release back (issue #13) — stay on v0.3.0.
+- **Dependency bumps** — `github.com/larsartmann/go-error-family` v0.10.0 → v0.11.0; Dependabot bumps for `actions/setup-go` (v5.6.0 → v7.0.0), `actions/upload-artifact` (v4.6.2 → v7.0.1), `golangci/golangci-lint-action` (v8.0.0 → v9.3.0), and `codecov/codecov-action`.
+
+### Fixed
+
+- **golangci-lint v2.12.2 → v2.14.0** — the older linter rejected the `exhaustruct_v5` config; the two `//nolint:exhaustruct` directives rename to `//nolint:exhaustruct_v5`, and `example/` plus `internal/teststore` initialize their zero-valued mutexes explicitly for the renamed linter's exhaustiveness rule.
+- **Error sentinels declared as the `error` interface type** — `var ErrDuplicate error = …` and `var ErrInvalidTTL error = …`: the sentinel is the contract callers match via `errors.Is`; the classification type stays an implementation detail that can change without breaking consumer compilation.
+- **Post-release doc sync (v0.3.0 follow-ups)** — the README middleware link points at its pkg.go.dev page (live since v0.3.0), and `doc.go`'s stale "middleware planned, not yet implemented" paragraph (spotted in the pkg.go.dev v0.3.0 render) now describes the shipped package. The stale-refs checker learned the two new release-status phrases ("staging in CHANGELOG", "goes live with the next").
+- **`FuzzDispatch` reworked** — the concurrent-burst block is extracted into a `fuzzConcurrentBurst` helper with unchanged assertions (exactly one execution per burst; every other dispatch sees nil or `ErrDuplicate`).
 
 ## [0.3.0] - 2026-09-05
 
@@ -142,7 +172,8 @@ Tagged `v0.1.0`: initial release — idempotency store with TTL-based dedup.
 - **Sweep soak test** — 1000-key concurrent load test verifying sweep reclaims all expired entries
 - **Package documentation** (`doc.go`) with quick-start example and design rationale
 
-[Unreleased]: https://github.com/larsartmann/go-idempotency/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/larsartmann/go-idempotency/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/larsartmann/go-idempotency/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/larsartmann/go-idempotency/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/larsartmann/go-idempotency/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/larsartmann/go-idempotency/compare/v0.1.1...v0.1.2

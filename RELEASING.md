@@ -13,27 +13,15 @@ Worked end-to-end for v0.2.0 (2026-08-29).
 
 ## Verification gates (all must be green)
 
-> Local-env note: if the default Go caches point at an unwritable path, prefix
-> the commands with
-> `GOCACHE=/tmp/go-build-cache GOMODCACHE=/tmp/go-mod-cache GOLANGCI_LINT_CACHE=/tmp/golangci-lint-cache`.
-
-```bash
-gofmt -l .                      # must print nothing
-go vet ./...                    # must be silent
-go test ./... -race -count=1    # must pass; -race is mandatory (concurrency is the product)
-golangci-lint config verify     # config must validate
-golangci-lint run ./...         # must report 0 issues
-```
-
-3. **`go mod tidy` diff check** — run tidy on a _copy_ of the module, never on
-   the live tree (protects uncommitted work):
-
-```bash
-rm -rf /tmp/tidycheck && mkdir -p /tmp/tidycheck
-cp -r go.mod go.sum *.go contract internal middleware example /tmp/tidycheck/
-cd /tmp/tidycheck && go mod tidy
-diff ../go-idempotency/go.mod go.mod && diff ../go-idempotency/go.sum go.sum   # must be identical
-```
+3. **Run the one-command release gate** — `./scripts/pre-release-check.sh`
+   (exit 0 = all gates green). The script pins writable cache paths itself,
+   so the `/mnt/buildcache` login-shell gotcha cannot bite. It encodes:
+   gofmt, `go vet`, `go build`, `go test ./... -race -count=1`, golangci-lint
+   (config verify + run), `go mod tidy` diff on a copy (never the live
+   tree), `go mod verify`, erraudit (`--enforce-go-error-family`),
+   stale-refs, the anchored `go 1.27` directive (ADR-005), tag↔CHANGELOG
+   parity, and a warn-only clean-tree check. The parity gate is the
+   structural fix for the v0.3.1 changelog gap.
 
 4. **Godoc render read-through** — `go doc .`, `go doc . Store`,
    `go doc . MemoryStore`, `go doc . NewMemoryStore`, `go doc . ErrInvalidTTL`,
@@ -64,14 +52,29 @@ git push origin master vX.Y.Z
 go list -m -versions github.com/larsartmann/go-idempotency
 ```
 
-10. Create the GitHub Release from the release notes
-    (`docs/releases/vX.Y.Z-notes.md`), mark it **Latest**:
+    Then verify the proxy serves it and a clean-room consumer can resolve
+    it (no local cache hits; fresh module in a temp dir):
+
+```bash
+curl -s "https://proxy.golang.org/github.com/larsartmann/go-idempotency/@v/vX.Y.Z.info"   # must return Version + Time
+tmp=$(mktemp -d) && cd "$tmp" && go mod init cleanroom && go get github.com/larsartmann/go-idempotency@vX.Y.Z
+grep go-idempotency go.mod   # must pin exactly vX.Y.Z
+```
+
+10. The GitHub Release is created automatically: the tag push triggers
+    [`.github/workflows/release.yml`](.github/workflows/release.yml), which
+    extracts the CHANGELOG section for the tag (failing loudly when it is
+    absent — the same parity rule the pre-release gate checks) and publishes
+    the Release as **Latest**. Manual fallback if the workflow cannot run:
 
 ```bash
 gh release create vX.Y.Z --title "vX.Y.Z" --notes-file docs/releases/vX.Y.Z-notes.md --latest
 ```
 
-11. `gh run list` — CI must be green on the tagged commit.
+11. `gh run list` — CI **and** the Release workflow must be green on the
+    tagged commit. Untested-by-default workflows earn trust only on their
+    first live fire: watch this run end-to-end for the first release after
+    2026-11-03.
 
 ## Post-release
 

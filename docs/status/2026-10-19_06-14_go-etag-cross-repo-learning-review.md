@@ -129,3 +129,7 @@ Sorted by impact, then effort. Impact: C=Critical, H=High, M=Medium, L=Low. Effo
 ---
 
 _Point-in-time snapshot. Do not rewrite; annotate via docs-health ANNOTATE mode when superseded. Section (f) is HARVEST input for TODO_LIST.md / ROADMAP.md._
+
+## Update (2026-11-03)
+
+The module-split question this report raised is settled by [ADR-005](../adr/005-single-module-and-toolchain-floor.md): single module stays, with the fleet evidence and revisit triggers recorded there. The go-directive anchor this report recommended (task 7 below) ships as the `godirective` gate in `scripts/pre-release-check.sh`, together with the `release.yml` workflow this report's tasks 4–5 proposed. This appendix is an annotation; the body above is the unchanged 2026-10-19 snapshot.

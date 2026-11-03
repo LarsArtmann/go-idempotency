@@ -15,6 +15,7 @@
 //   - Design Philosophy: Interface-First, You Implement the Backend
 //   - Implementing a Custom Backend — the Redis adapter example
 //   - Recipe: Dedup + Response Replay (HTTP Idempotency)
+//   - Client-side vs receiver-side posture
 //
 // # Quick Start
 //
@@ -204,8 +205,8 @@
 // # SQL adapter notes — SQLite specifics (battle-tested in production)
 //
 // The PostgreSQL shape above ports directly to SQLite (placeholders become
-// "?"), with three pitfalls that only surface under a real connection pool.
-// All three were found the hard way in a production consumer (KeyHolderAI's
+// "?"), with four pitfalls that only surface in production use. The first
+// three were found the hard way in a production consumer (KeyHolderAI's
 // command-dedup store, 2026-10-03):
 //
 //  1. ":memory:" is PER-CONNECTION: every pooled *sql.DB connection gets its
@@ -234,6 +235,20 @@
 //     This is simpler AND faster than the two-step BEGIN/RETURNING/UPDATE
 //     transaction the PostgreSQL example needs (that one must read the live
 //     expiry back; SQLite's DO NOTHING makes the outcome a single bit).
+//
+//  4. SQLite has no TIMESTAMPTZ: an expiry stored as TEXT must use a
+//     fixed-width fraction. time.RFC3339Nano trims trailing zeros, so
+//     lexicographic TEXT comparison is not chronological order:
+//     "2026-10-11T05:00:00Z" sorts AFTER "2026-10-11T05:00:00.5Z"
+//     (byte 'Z' > '.'), which misorders expired-claim checks by any
+//     sub-second amount, and claim TTLs are routinely milliseconds.
+//     Render expiries with an always-9-digit fraction instead:
+//
+//     expiresAt := t.UTC().Format("2006-01-02T15:04:05.000000000Z07:00")
+//
+//     Fixed width makes lexicographic order chronological order: no schema
+//     change, no driver change (found in sperrmuell-direct's SQLite store,
+//     2026-10-11; issue #12).
 //
 // A lazy purge (DELETE ... WHERE expires_at <= now) on the hot path keeps the
 // table bounded; it is the query that collides with concurrent claims, which
@@ -289,4 +304,18 @@
 //     claimed its slot. If failed attempts should be retryable, model that in
 //     your domain (e.g. save a failure marker as the response) instead of
 //     deleting the claim behind the store's back.
+//
+// # Client-side vs receiver-side posture
+//
+// Everything in this package guards the RECEIVER: the side that would
+// otherwise process the same command twice. When the API you CALL already
+// deduplicates server-side and replays the resource on retry (Wise and
+// Stripe both do), a local key-only guard adds no safety and actively
+// degrades the retry: it turns "here is the transfer you already created"
+// into a 409. Client-side idempotency against such an API is exactly the
+// replay recipe above (stable caller-held key plus the stored response), or
+// nothing at all; a bare CheckAndRecord belongs on the receiving end of a
+// request. This is the posture recorded by the wise-go adoption review
+// (2026-11): non-adoption, because Wise owns the dedup contract server-side
+// and a retry deserves the resource, not a conflict.
 package idempotency
