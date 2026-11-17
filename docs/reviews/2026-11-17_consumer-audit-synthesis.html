@@ -1,0 +1,1583 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Consumer audit synthesis &middot; 2026-11-17</title>
+    <style>
+      /* =========================================================================
+         BAUHAUS LIGHT — Editorial template
+         Design language: form follows function. Primary colors on warm paper.
+         Zero external dependencies: system fonts, no CDN, no build step.
+         Token architecture: see references/bauhaus-tokens.md
+         ========================================================================= */
+
+      :root {
+        /* --- Primitive palette (Bauhaus Light) --- */
+        --color-paper: #f4f4f0;
+        --color-paper-2: #ffffff;
+        --color-paper-3: #e8e8e2;
+        --color-ink: #111111;
+        --color-red: #e63946;
+        --color-blue: #1d3557;
+        --color-yellow: #f4d35e;
+        --color-hairline: rgba(17, 17, 17, 0.14);
+        --color-hairline-strong: rgba(17, 17, 17, 0.3);
+
+        /* --- Semantic layer (shared vocabulary with dark template) --- */
+        --surface: var(--color-paper);
+        --surface-raised: var(--color-paper-2);
+        --surface-sunken: var(--color-paper-3);
+        --text: var(--color-ink);
+        --text-muted: rgba(17, 17, 17, 0.72);
+        --text-faint: rgba(17, 17, 17, 0.5);
+        --border: var(--color-hairline);
+        --border-strong: var(--color-hairline-strong);
+        --accent: var(--color-red);
+        --problem: var(--color-red);
+        --solution: var(--color-blue);
+        --warning: var(--color-yellow);
+
+        /* --- Backward-compatible aliases (do not break consumer skills) --- */
+        --bg: var(--surface);
+        --bg-elevated: var(--surface-raised);
+        --bg-sunken: var(--surface-sunken);
+        --bg-card: var(--surface-raised);
+        --bg-code: var(--surface-sunken);
+        --ink: var(--text);
+        --ink-secondary: var(--text-muted);
+        --ink-muted: var(--text-faint);
+        --rose: var(--problem);
+        --rose-glow: color-mix(in srgb, var(--problem) 15%, transparent);
+        --emerald: var(--solution);
+        --emerald-glow: color-mix(in srgb, var(--solution) 15%, transparent);
+        --amber: var(--warning);
+        --amber-glow: color-mix(in srgb, var(--warning) 15%, transparent);
+        --amber-light: color-mix(in srgb, var(--warning) 22%, transparent);
+        --coral: var(--problem);
+        --coral-light: color-mix(in srgb, var(--problem) 12%, transparent);
+        --teal: var(--solution);
+        --teal-light: color-mix(in srgb, var(--solution) 12%, transparent);
+
+        /* --- Shape --- */
+        --radius: 0px;
+        --radius-sm: 0px;
+
+        /* --- Type stacks (system only — zero external fonts) --- */
+        --font-heading:
+          ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        --font-body:
+          ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        --font-mono:
+          ui-monospace, "Cascadia Code", "Source Code Pro", "JetBrains Mono",
+          Menlo, Consolas, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      section[id],
+      [id] {
+        scroll-margin-top: 60px;
+      }
+
+      body {
+        background: var(--surface);
+        color: var(--text);
+        font-family: var(--font-body);
+        font-size: 16px;
+        line-height: 1.65;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* --- Accessibility: keyboard focus --- */
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      a:focus-visible {
+        outline-offset: -1px;
+      }
+
+      /* --- Full-bleed top bar --- */
+      .top-bar {
+        background: var(--text);
+        color: var(--surface);
+        padding: 0.6rem 2rem;
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      /* --- Layout: optional sticky sidebar TOC --- */
+      .layout {
+        display: flex;
+        gap: 2.5rem;
+        padding: 2rem;
+      }
+      .sidebar {
+        width: 220px;
+        flex-shrink: 0;
+        position: sticky;
+        top: 1rem;
+        align-self: flex-start;
+        height: calc(100vh - 2rem);
+        overflow-y: auto;
+        display: none;
+      }
+      .sidebar nav {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+      .sidebar .label {
+        font-family: var(--font-mono);
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--accent);
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.4rem;
+        border-bottom: 2px solid var(--text);
+      }
+      .sidebar a {
+        font-size: 0.86rem;
+        color: var(--text);
+        text-decoration: none;
+        padding: 0.5rem 0.75rem;
+        border-left: 4px solid transparent;
+        font-weight: 600;
+        transition: all 0.15s ease;
+        line-height: 1.4;
+      }
+      .sidebar a:hover,
+      .sidebar a.active {
+        border-left-color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 8%, transparent);
+        color: var(--accent);
+      }
+      .main {
+        flex: 1;
+        min-width: 0;
+      }
+
+      /* --- Headings --- */
+      h1,
+      h2,
+      h3,
+      h4 {
+        font-family: var(--font-heading);
+        font-weight: 900;
+        letter-spacing: -0.02em;
+        color: var(--text);
+      }
+      h1 {
+        font-size: clamp(1.9rem, 4.5vw, 2.8rem);
+        line-height: 1.05;
+        margin: 0 0 0.6rem;
+      }
+      h2 {
+        font-size: 1.5rem;
+        margin: 2.5rem 0 1rem;
+        padding-bottom: 0.4rem;
+        border-bottom: 3px solid var(--text);
+        display: flex;
+        align-items: baseline;
+        gap: 0.7rem;
+      }
+      h2 .num {
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        color: var(--accent);
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+      h3 {
+        font-size: 1.15rem;
+        margin: 0 0 0.4rem;
+        font-weight: 700;
+      }
+      h4 {
+        font-size: 1rem;
+        margin: 0 0 0.3rem;
+        font-weight: 700;
+      }
+      p {
+        margin: 0 0 1rem;
+      }
+
+      /* --- Hero --- */
+      .hero {
+        padding: 1.5rem 0 2rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 3px solid var(--text);
+      }
+      .eyebrow {
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--accent);
+        margin-bottom: 0.9rem;
+      }
+      .subtitle {
+        font-size: 1.1rem;
+        color: var(--text-muted);
+        max-width: 70ch;
+        margin: 0 0 1rem;
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+      .tag {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        padding: 0.25rem 0.6rem;
+        background: var(--surface-sunken);
+        color: var(--text);
+        border: 1px solid var(--border-strong);
+      }
+      .tag.amber {
+        background: var(--warning);
+        border-color: var(--warning);
+        color: var(--text);
+      }
+      .tag.teal {
+        background: var(--solution);
+        border-color: var(--solution);
+        color: var(--surface);
+      }
+
+      /* Bauhaus signature: geometric shape cluster (optional) */
+      .hero-shapes {
+        position: relative;
+        height: 90px;
+        margin-bottom: 1.2rem;
+      }
+      .hero-shapes .circle {
+        position: absolute;
+        top: 0;
+        right: 180px;
+        width: 64px;
+        height: 64px;
+        background: var(--problem);
+        border-radius: 50%;
+      }
+      .hero-shapes .square {
+        position: absolute;
+        top: 26px;
+        right: 90px;
+        width: 56px;
+        height: 56px;
+        background: var(--solution);
+      }
+      .hero-shapes .tri {
+        position: absolute;
+        top: 8px;
+        right: 0;
+        width: 0;
+        height: 0;
+        border-left: 32px solid transparent;
+        border-right: 32px solid transparent;
+        border-bottom: 56px solid var(--warning);
+      }
+      .hero-shapes .bar {
+        position: absolute;
+        bottom: 0;
+        right: 230px;
+        width: 100px;
+        height: 14px;
+        background: var(--text);
+      }
+
+      /* --- Scorecard / stat cards --- */
+      .scorecard,
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 0;
+        margin: 1.5rem 0 2rem;
+        border: 3px solid var(--text);
+      }
+      .score-card,
+      .stat-card {
+        padding: 1.3rem 1rem;
+        text-align: center;
+        border-right: 3px solid var(--text);
+        background: var(--surface-raised);
+      }
+      .score-card:last-child,
+      .stat-card:last-child {
+        border-right: none;
+      }
+
+      .score,
+      .stat-value {
+        font-family: var(--font-heading);
+        font-size: 2.6rem;
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: -0.04em;
+      }
+      .score-card .label,
+      .stat-label {
+        font-family: var(--font-mono);
+        font-size: 0.62rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        margin-top: 0.5rem;
+      }
+      /* Semantic state classes — no nth-child decoration, no !important */
+      .score-good,
+      .stat-good {
+        background: var(--solution);
+        color: var(--surface);
+      }
+      .score-warn,
+      .stat-warn {
+        background: var(--warning);
+        color: var(--text);
+      }
+      .score-bad,
+      .stat-bad {
+        background: var(--problem);
+        color: var(--surface);
+      }
+
+      /* --- General cards --- */
+      .card {
+        background: var(--surface-raised);
+        border: 2px solid var(--text);
+        padding: 1.2rem 1.4rem;
+        margin-bottom: 1rem;
+        border-left: 8px solid var(--border-strong);
+      }
+      .card-problem {
+        border-left-color: var(--problem);
+      }
+      .card-solution {
+        border-left-color: var(--solution);
+      }
+      .card-warning {
+        border-left-color: var(--warning);
+      }
+
+      /* --- Issue cards --- */
+      .issue {
+        background: var(--surface-raised);
+        border: 2px solid var(--text);
+        padding: 1.2rem 1.4rem;
+        margin-bottom: 1rem;
+        border-left: 8px solid var(--border-strong);
+      }
+      .issue-critical {
+        border-left-color: var(--problem);
+      }
+      .issue-important {
+        border-left-color: var(--warning);
+      }
+      .issue-nice {
+        border-left-color: var(--solution);
+      }
+      .issue h3 {
+        margin-bottom: 0.3rem;
+      }
+      .issue .where {
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        color: var(--text-faint);
+        margin: 0.2rem 0 0.6rem;
+      }
+      .issue p:last-child {
+        margin-bottom: 0;
+      }
+
+      /* --- Severity badges --- */
+      .severity {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 0.22rem 0.6rem;
+        margin-bottom: 0.6rem;
+        color: var(--surface);
+      }
+      .severity-critical {
+        background: var(--problem);
+      }
+      .severity-important {
+        background: var(--warning);
+        color: var(--text);
+      }
+      .severity-nice {
+        background: var(--solution);
+      }
+
+      /* --- Inline badges --- */
+      .badge {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 0.2rem 0.55rem;
+        border: 1px solid var(--text);
+        color: var(--text);
+      }
+      .badge-critical {
+        background: var(--problem);
+        color: var(--surface);
+      }
+      .badge-high {
+        background: var(--warning);
+      }
+      .badge-medium {
+        background: var(--surface-sunken);
+      }
+      .badge-low {
+        background: var(--surface-raised);
+        color: var(--text-muted);
+      }
+      .badge-fixed {
+        background: var(--solution);
+        color: var(--surface);
+      }
+
+      /* --- Callouts --- */
+      .callout {
+        margin: 0.8rem 0 0;
+        padding: 0.8rem 1rem;
+        border: 1px solid var(--border-strong);
+        border-left: 4px solid var(--border-strong);
+        background: var(--surface-sunken);
+        font-size: 0.92rem;
+      }
+      .callout strong {
+        display: inline-block;
+        margin-right: 0.4rem;
+      }
+      .callout-teal,
+      .callout-solution {
+        border-left-color: var(--solution);
+        background: color-mix(
+          in srgb,
+          var(--solution) 10%,
+          var(--surface-raised)
+        );
+      }
+      .callout-amber,
+      .callout-warning {
+        border-left-color: var(--warning);
+        background: color-mix(
+          in srgb,
+          var(--warning) 18%,
+          var(--surface-raised)
+        );
+      }
+
+      /* --- Strengths --- */
+      .strengths {
+        display: grid;
+        gap: 0.5rem;
+        margin: 1rem 0 1.5rem;
+      }
+      .strength {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.9rem;
+        padding: 0.75rem 0;
+        border-bottom: 2px solid var(--border);
+      }
+      .strength .check {
+        font-family: var(--font-mono);
+        font-weight: 900;
+        color: var(--solution);
+        font-size: 1.3rem;
+        line-height: 1.3;
+      }
+      .strength .text strong {
+        display: block;
+        margin-bottom: 0.15rem;
+      }
+      .strength .text span {
+        color: var(--text-muted);
+        font-size: 0.92rem;
+      }
+
+      /* --- Tables --- */
+      .table-wrap {
+        overflow-x: auto;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0 1.5rem;
+        font-size: 0.92rem;
+        border: 2px solid var(--text);
+      }
+      th {
+        text-align: left;
+        padding: 0.6rem 0.9rem;
+        background: var(--text);
+        color: var(--surface);
+        font-family: var(--font-mono);
+        font-size: 0.66rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        border-right: 1px solid var(--border-strong);
+      }
+      th:last-child {
+        border-right: none;
+      }
+      td {
+        padding: 0.6rem 0.9rem;
+        border-top: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+      }
+      td:last-child {
+        border-right: none;
+      }
+      tr:nth-child(even) td {
+        background: var(--surface-sunken);
+      }
+      table.compare td.yes {
+        color: var(--solution);
+        font-weight: 700;
+      }
+      table.compare td.no {
+        color: var(--problem);
+        font-weight: 700;
+      }
+
+      /* --- Code blocks + syntax highlighting --- */
+      pre {
+        background: var(--text);
+        color: var(--surface);
+        padding: 1rem 1.2rem;
+        margin: 1rem 0;
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        line-height: 1.65;
+        overflow-x: auto;
+        border: 2px solid var(--text);
+      }
+      code {
+        font-family: var(--font-mono);
+      }
+      p code,
+      li code,
+      td code {
+        font-size: 0.88em;
+        background: var(--surface-sunken);
+        padding: 0.1rem 0.35rem;
+      }
+      .tok-keyword {
+        color: var(--warning);
+      }
+      .tok-type {
+        color: var(--warning);
+      }
+      .tok-string {
+        color: #95e1d3;
+      }
+      .tok-comment {
+        color: rgba(244, 244, 240, 0.45);
+        font-style: italic;
+      }
+      .tok-func {
+        color: #6eb5ff;
+      }
+      .tok-number {
+        color: var(--warning);
+      }
+      .tok-generic {
+        color: var(--problem);
+      }
+      .tok-builtin {
+        color: #6eb5ff;
+      }
+      .tok-punct {
+        color: rgba(244, 244, 240, 0.7);
+      }
+      .tok-attr {
+        color: var(--warning);
+      }
+
+      /* --- Dependency tree / ASCII diagrams --- */
+      .dep-tree {
+        background: var(--surface-sunken);
+        border: 2px solid var(--text);
+        padding: 1rem 1.2rem;
+        margin: 1rem 0;
+        font-family: var(--font-mono);
+        font-size: 0.82rem;
+        line-height: 1.7;
+        white-space: pre;
+        overflow-x: auto;
+      }
+      .dep-tree .root {
+        color: var(--accent);
+        font-weight: 700;
+      }
+      .dep-tree .ok {
+        color: var(--solution);
+      }
+      .dep-tree .unwanted {
+        color: var(--problem);
+      }
+
+      /* --- Inline node-and-arrow diagrams --- */
+      .diagram {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem;
+        margin: 1rem 0;
+        background: var(--surface-raised);
+        border: 2px solid var(--text);
+      }
+      .node {
+        display: inline-block;
+        padding: 0.4rem 0.75rem;
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        font-weight: 700;
+        background: var(--surface-sunken);
+        border: 1px solid var(--text);
+      }
+      .node-core {
+        background: var(--accent);
+        color: var(--surface);
+      }
+      .node-problem {
+        background: var(--problem);
+        color: var(--surface);
+      }
+      .node-good {
+        background: var(--solution);
+        color: var(--surface);
+      }
+      .arrow {
+        color: var(--text-faint);
+        font-family: var(--font-mono);
+      }
+
+      /* --- Grids --- */
+      .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin: 1rem 0;
+      }
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin: 1rem 0;
+      }
+
+      /* --- Inline TOC --- */
+      .toc {
+        background: var(--surface-raised);
+        border: 2px solid var(--text);
+        border-left: 6px solid var(--accent);
+        padding: 1rem 1.3rem;
+        margin: 1rem 0 1.5rem;
+      }
+      .toc h3 {
+        margin-bottom: 0.5rem;
+      }
+      .toc ul {
+        list-style: none;
+        padding: 0;
+      }
+      .toc li {
+        margin: 0.25rem 0;
+      }
+      .toc a {
+        color: var(--text);
+        text-decoration: none;
+        font-size: 0.92rem;
+        font-weight: 600;
+      }
+      .toc a:hover {
+        color: var(--accent);
+      }
+
+      /* --- Migration / numbered steps --- */
+      .migration-step {
+        display: grid;
+        grid-template-columns: 56px 1fr;
+        gap: 1rem;
+        margin: 1rem 0;
+        padding: 1.1rem;
+        background: var(--surface-raised);
+        border: 2px solid var(--text);
+        border-left: 6px solid var(--accent);
+      }
+      .migration-num {
+        font-family: var(--font-mono);
+        font-weight: 900;
+        font-size: 1.8rem;
+        color: var(--accent);
+        line-height: 1;
+      }
+      .migration-content h4 {
+        margin-bottom: 0.2rem;
+      }
+      .migration-content p {
+        margin-bottom: 0;
+        color: var(--text-muted);
+        font-size: 0.94rem;
+      }
+
+      /* --- Before/After comparison --- */
+      .compare-header {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin: 1rem 0 0.5rem;
+      }
+      .compare-before,
+      .compare-after {
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        padding: 0.4rem 0.7rem;
+        color: var(--surface);
+      }
+      .compare-before {
+        background: var(--problem);
+      }
+      .compare-after {
+        background: var(--solution);
+      }
+      .compare-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+      }
+      .compare-row pre {
+        margin: 0;
+      }
+
+      /* --- Footer --- */
+      .footer {
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 3px solid var(--text);
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        font-family: var(--font-mono);
+      }
+
+      /* --- Responsive --- */
+      @media (min-width: 1024px) {
+        .sidebar {
+          display: block;
+        }
+      }
+      @media (max-width: 768px) {
+        .layout {
+          flex-direction: column;
+          padding: 1rem;
+        }
+        .top-bar {
+          padding: 0.6rem 1rem;
+          flex-wrap: wrap;
+          gap: 0.3rem;
+        }
+        .grid-2,
+        .grid-3 {
+          grid-template-columns: 1fr;
+        }
+        .compare-header,
+        .compare-row {
+          grid-template-columns: 1fr;
+        }
+        .scorecard,
+        .stat-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .score-card:nth-child(2),
+        .stat-card:nth-child(2) {
+          border-right: none;
+        }
+        .score-card:nth-child(1),
+        .stat-card:nth-child(1),
+        .score-card:nth-child(2),
+        .stat-card:nth-child(2) {
+          border-bottom: 3px solid var(--text);
+        }
+        .migration-step {
+          grid-template-columns: 1fr;
+        }
+        .hero-shapes {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Full-bleed top bar (optional — remove for quieter reports) -->
+    <div class="top-bar">
+      <span>CONSUMER AUDIT SYNTHESIS</span>
+      <span>2026-11-17</span>
+      <span>go-idempotency &middot; v0.3.2 + 5</span>
+    </div>
+
+    <div class="layout">
+      <!-- Sidebar TOC (hidden below 1024px; use inline .toc if you prefer) -->
+      <aside class="sidebar" data-nav>
+        <nav>
+          <div class="label">Contents</div>
+          <a href="#summary">Summary</a>
+          <a href="#scorecard">Scorecard</a>
+          <a href="#strengths">Strengths</a>
+          <a href="#findings">Findings</a>
+          <a href="#proposal">Proposal</a>
+          <a href="#appendix">Appendix</a>
+        </nav>
+      </aside>
+
+      <!-- Main content -->
+      <main class="main">
+        <!-- Hero -->
+        <header class="hero">
+          <!-- Optional Bauhaus signature: geometric shape cluster. Remove for quieter hero. -->
+          <div class="hero-shapes">
+            <div class="bar"></div>
+            <div class="circle"></div>
+            <div class="square"></div>
+            <div class="tri"></div>
+          </div>
+          <div class="eyebrow">CONSUMER AUDIT SYNTHESIS &middot; 2026-11-17</div>
+          <h1>What 25 fleet audits say we should fix</h1>
+          <p class="subtitle">
+            Every <code>docs/review/libs/go-idempotency.md</code> in the fleet,
+            read end to end and checked against this repo. The library is not
+            judged as broken; it is judged as <em>under-specified where the
+            fleet now needs it</em>: one missing semantic (permanent claims),
+            one misleading doc claim (the DedupStore redirect), and one ghost
+            package (<code>middleware/</code>).
+          </p>
+          <div class="meta">
+            <span class="tag amber">25 audits across 24 repos</span>
+            <span class="tag">v0.3.2 + 5 commits</span>
+            <span class="tag teal">3 months of fleet evidence</span>
+          </div>
+        </header>
+
+        <!-- Scorecard -->
+        <section id="scorecard" class="scorecard">
+          <div class="score-card score-good">
+            <div class="score">25</div>
+            <div class="label">Consumer audits read</div>
+          </div>
+          <div class="score-card">
+            <div class="score">13</div>
+            <div class="label">Project checkouts importing it</div>
+          </div>
+          <div class="score-card score-good">
+            <div class="score">8</div>
+            <div class="label">Projects running contract/</div>
+          </div>
+          <div class="score-card score-bad">
+            <div class="score">0</div>
+            <div class="label">Projects importing middleware/</div>
+          </div>
+        </section>
+
+        <!-- Summary -->
+        <section id="summary">
+          <h2><span class="num">00</span>Summary</h2>
+          <p>
+            Nobody in the fleet rejects go-idempotency for being badly built.
+            They reject it because <strong>the contract cannot say the thing
+            they need</strong> (permanent claims), because
+            <strong>the docs overstate one redirect</strong> (DedupStore is not
+            a <code>Store</code>), and because the part we actually ship that
+            matters (<code>contract/</code>) is buried while the part nobody
+            imports (<code>middleware/</code>) is presented as the headline.
+            The library&rsquo;s real fleet role is the <em>contract layer</em>
+            of the dedup stack: 13 project checkouts import it, 8 run the
+            contract suite, and 0 import the middleware.
+          </p>
+          <p>
+            The single highest-leverage action is an owner decision on
+            <code>idempotency.Forever</code>. A cross-repo plan written
+            2026-09-16 (<code>cv/docs/planning/2026-09-16_18-52_forever-ttl-ecosystem-execution-plan.md</code>,
+            M1&ndash;M18) has been waiting on that green light for two months,
+            and three consumer domains (CV, taskqueue, DiscordSync) have
+            permanent-dedupe needs the TTL-mandatory contract cannot express.
+            Shipping it (or recording a REJECTED ADR) resolves the biggest
+            recurring objection at once.
+          </p>
+          <div class="callout callout-amber">
+            <strong>The bottom line</strong>
+            Quality is not the problem; specification is. Decide Forever, fix
+            the DedupStore wording, make <code>contract/</code> the front door,
+            and cut a release that reflects the five commits since v0.3.2.
+            Everything else is polish.
+          </div>
+        </section>
+
+        <!-- Strengths -->
+        <section id="strengths">
+          <h2><span class="num">&#9670;</span>What the audits already praise</h2>
+          <p>
+            Recorded so the fixes below do not read as a teardown. These are
+            strengths consumers verified against the code, not marketing.
+          </p>
+
+          <div class="strengths">
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>The contract suite is the adoption vector</strong>
+                <span>Eight fleet projects run <code>contract.RunTests*</code>
+                  against their own store or adapter (index, bank-sync,
+                  webphone, PapDashboard, KeyHolderAI, sperrmuell-direct,
+                  Standup-Killer, Zlota44). webphone calls it &ldquo;13
+                  concurrency/atomicity invariants for ~40 lines of test
+                  glue&rdquo; and landed it the same day it was proposed.</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>Error classification is boringly correct</strong>
+                <span>No audit reports a problem with <code>ErrDuplicate</code>
+                  (Conflict &rarr; 409, non-retryable) or
+                  <code>ErrInvalidTTL</code>. index, browser-history and
+                  webphone pin the <code>errors.Is</code> chain end to end; the
+                  v0.3.1 sentinel-type fix is invisible because it removed a
+                  footgun.</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>The SQLite and TOCTOU docs are copied, not just read</strong>
+                <span>PapDashboard&rsquo;s hand-rolled 182-line store follows
+                  this repo&rsquo;s <code>INSERT &hellip; ON CONFLICT</code> +
+                  <code>RowsAffected</code> recipe verbatim; go-taskqueue calls
+                  the pitfalls section &ldquo;excellent reference material&rdquo;;
+                  invoices cites the fixed-width expiry trap by line.</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>Negative tests make the suite trustworthy</strong>
+                <span>19 deliberately broken stores prove every invariant
+                  fires. No consumer reported a false pass, which is why the
+                  suite can be sold as a test-only dependency to projects that
+                  will not adopt the runtime.</span>
+              </div>
+            </div>
+            <div class="strength">
+              <div class="check">+</div>
+              <div class="text">
+                <strong>The no-backend posture survived fleet review</strong>
+                <span>Every audit that rejects adoption accepts ADR-001&rsquo;s
+                  charter. Nobody asked for a Redis driver; several asked for a
+                  copyable reference implementation and a clearer
+                  DedupStore story instead.</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Findings -->
+        <section id="findings">
+          <h2><span class="num">01</span>Findings</h2>
+          <p>These are the issues that need attention, ordered by impact.</p>
+
+          <!-- Issue 1 -->
+          <div class="issue issue-critical" id="issue-1">
+            <span class="severity severity-critical"
+              >Blocking &middot; High impact</span
+            >
+            <h3>The contract cannot express a permanent claim</h3>
+            <div class="where">
+              README.md:144 &middot; docs/adr/004 &middot; CV plan
+              2026-09-16 (M1&ndash;M18, owner-gated)
+            </div>
+            <p>
+              Every TTL-windowed rejection in the corpus traces to the same
+              shape mismatch. CV needs event dedupe that <em>never</em> expires
+              &mdash; it hand-rolled a forever store after a real corruption bug
+              where a redelivered event folded twice
+              (<code>career-pipeline/eventstore/idempotency.go:41-48</code>).
+              go-taskqueue&rsquo;s permanent <code>DedupKey</code> and
+              invoices&rsquo; KSeF &ldquo;an invoice may only be submitted
+              once&rdquo; guard are the same need. Our README answers with the
+              poisoned-claim argument (a forever claim is a permanent lockout),
+              which is correct <em>for request claims</em>. A cross-repo plan
+              already draws that line &mdash; <code>Forever</code> is for
+              consumer/event dedupe, <code>ttl == 0</code> stays rejected, and
+              request idempotency stays TTL-windowed &mdash; but no ADR in this
+              repo records it, so the fleet has been waiting since 2026-09-16.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Fix: an owner decision, then M1&ndash;M4</strong>
+              If shipped: <code>const Forever = time.Duration(math.MaxInt64)</code>
+              (stored directly, never computed &mdash; UnixNano wraps in 2262),
+              a zero-<code>time.Time</code> entry in MemoryStore, and contract
+              invariants <code>ForeverNeverExpires</code> /
+              <code>Seen/ForeverSurvives</code> with negative stores. If
+              rejected: write the REJECTED ADR citing the plan so consumers stop
+              treating v0.4.0 as imminent and use domain permanence instead.
+            </div>
+          </div>
+
+          <!-- Issue 2 -->
+          <div class="issue issue-critical" id="issue-2">
+            <span class="severity severity-critical"
+              >Blocking &middot; High impact (docs)</span
+            >
+            <h3>&ldquo;You do not need to write a backend&rdquo; is only true if you do not use our Store</h3>
+            <div class="where">
+              README.md:53 &middot; doc.go:60-62 &middot;
+              docs/migrating-from-memorystore.md:20
+            </div>
+            <p>
+              <code>metaengine.DedupStore</code> is not a
+              <code>idempotency.Store</code>: it takes a collection and an
+              injected <code>now</code>, returns <code>(seen bool, err)</code>
+              instead of sentinel errors, and adds <code>DedupSweep</code>.
+              Three fleets independently wrote the adapter bridge &mdash;
+              bank-sync (~110 lines, contract-tested), webphone (~40 lines,
+              contract-tested), and this repo&rsquo;s own consumers cannot use
+              <code>middleware.CommandIdempotency</code> or
+              <code>contract.RunTests</code> without one. The README sentence
+              is accurate for direct capability use and misleading for every
+              other reader, which is most of them.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Fix: document the seam, do not hide it</strong>
+              Add a canonical adapter recipe (collection namespacing,
+              <code>seen &rarr; ErrDuplicate</code>, <code>ttl &lt;= 0 &rarr;
+              ErrInvalidTTL</code>, injected clock) to <code>doc.go</code> and
+              the migration guide, plus a two-row mapping table. Reword
+              README:53 to &ldquo;use <code>system.Dedup()</code> directly, or
+              wrap it with the ~40-line adapter if you want this
+              <code>Store</code> contract.&rdquo;
+            </div>
+          </div>
+
+          <!-- Issue 3 -->
+          <div class="issue issue-important" id="issue-3">
+            <span class="severity severity-important"
+              >Important &middot; Medium impact</span
+            >
+            <h3>No way to record on success &mdash; the retryable-failure posture is inexpressible</h3>
+            <div class="where">store.go:54-111 &middot; ADR-004 (Delete deferred)</div>
+            <p>
+              webphone runs check-first / record-on-success: a failed attempt
+              must stay retryable. With <code>CheckAndRecord</code>, a transport
+              failure after the claim keeps returning 409 until TTL expiry; with
+              <code>Seen</code> + <code>Record</code> you accept the TOCTOU race
+              the README warns against. PapDashboard chose fail-open replay for
+              the same reason. ADR-004 defers <code>Delete</code>/release
+              without naming either consumer as evidence.
+            </p>
+            <p>
+              The gap is legitimate: a released claim weakens at-most-once and
+              needs crash semantics. The problem is that the limitation is
+              undocumented, so each consumer rediscovers it and builds a
+              different workaround.
+            </p>
+          </div>
+
+          <!-- Issue 4 -->
+          <div class="issue issue-important" id="issue-4">
+            <span class="severity severity-important"
+              >Important &middot; Medium impact</span
+            >
+            <h3>The contract suite sleeps on wall-clock time</h3>
+            <div class="where">
+              contract/contract_invariants.go:61,86,101,175 &middot;
+              contract/contract_timing.go
+            </div>
+            <p>
+              Four fixed <code>time.Sleep(tm.waitAfter)</code> calls carry the
+              expiry invariants. webphone sets <code>TimingScale: 5</code> to
+              survive loaded runners and records the durable fix as
+              &ldquo;upstream &mdash; an injectable clock instead of wall
+              sleeps.&rdquo; This is the suite we sell as the library&rsquo;s
+              main value; its flake profile should not be the consumer&rsquo;s
+              problem.
+            </p>
+            <pre><code>// Replace the fixed sleep with a bounded poll:
+eventually(t, tm.waitAfter, func() bool {
+    seen, err := store.Seen(ctx, key)
+    return err == nil &amp;&amp; !seen
+})</code></pre>
+          </div>
+
+          <!-- Issue 5 -->
+          <div class="issue issue-important" id="issue-5">
+            <span class="severity severity-important"
+              >Important &middot; Medium impact</span
+            >
+            <h3><code>middleware/</code> has zero fleet consumers</h3>
+            <div class="where">
+              middleware/ &middot; ADR-005 (records 0/10) &middot; confirmed 0/13
+            </div>
+            <p>
+              The command wrapper duplicates go-cqrs-lite&rsquo;s
+              <code>middleware.CommandIdempotency</code>, which takes the same
+              <code>idempotency.Store</code> with a native command adapter;
+              cqrs-htmx&rsquo;s audit calls it &ldquo;superseded here.&rdquo;
+              The HTTP adapter still has a plausible non-CQRS audience (Cyberdom,
+              nsfw-classifier and media-atlas all name it as the standard answer
+              for a mutating endpoint), but nobody has wired it either. The
+              package is maintained, fuzzed and documented for no fleet
+              consumer.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Fix: make the split explicit</strong>
+              Keep the HTTP adapter. Decide <code>Command</code>&rsquo;s fate at
+              v1.0 (delete, or keep with a &ldquo;non-CQRS stacks only&rdquo;
+              note pointing at the cqrs-lite factory). Refresh ADR-005&rsquo;s
+              evidence from 0/10 to 0/13 and put the pointer in the README next
+              to the middleware section.
+            </div>
+          </div>
+
+          <!-- Issue 6 -->
+          <div class="issue issue-important" id="issue-6">
+            <span class="severity severity-important"
+              >Important &middot; Medium impact</span
+            >
+            <h3>The tree reads as dormant to every auditor</h3>
+            <div class="where">
+              git: v0.3.2 (2026-11-03) + 5 commits, last commit 2026-11-04
+            </div>
+            <p>
+              Six audits record &ldquo;HEAD +5, no tag&rdquo;; CV&rsquo;s
+              2026-11-13 pass says &ldquo;upstream frozen (zero commits since
+              2026-11-04).&rdquo; The five commits are a real improvement (test
+              and suite files split under the 350-line cap, strict-timing CI
+              fix) but ship nothing a consumer can depend on, so no one can cite
+              a version. Dormancy also blocks the Forever decision from looking
+              real.
+            </p>
+            <div class="callout callout-teal">
+              <strong>Fix: cut v0.3.3 now, v0.4.0 when Forever is decided</strong>
+              v0.3.3 is a no-API release: run
+              <code>scripts/pre-release-check.sh</code>, move the
+              <code>[Unreleased]</code> body into the tag, and push master plus
+              tag together (lychee). Then v0.4.0 carries Forever or the
+              REJECTED ADR.
+            </div>
+          </div>
+
+          <!-- Issue 7 -->
+          <div class="issue issue-nice" id="issue-7">
+            <span class="severity severity-nice"
+              >Nice to have &middot; Low impact</span
+            >
+            <h3>Response replay is still only a recipe</h3>
+            <div class="where">doc.go:262-290 &middot; README.md:143</div>
+            <p>
+              PapDashboard built a 182-line store including Stripe-style replay
+              (returns the original status/aggregate/version) and concluded the
+              library &ldquo;has no API for it&rdquo;; go-taskqueue calls the
+              bare 409 a hole. The recipe exists but is invisible from the quick
+              start, and the fleet keeps reimplementing it.
+            </p>
+            <p>
+              Keep replay out of <code>Store</code> &mdash; the derived-key
+              recipe is the right shape. Make it runnable: an
+              <code>example/replay</code> or an extension of
+              <code>example/main.go</code>, linked from the README pitfalls
+              entry.
+            </p>
+          </div>
+
+          <!-- Issue 8 -->
+          <div class="issue issue-nice" id="issue-8">
+            <span class="severity severity-nice"
+              >Nice to have &middot; Low impact</span
+            >
+            <h3>Two cheap docs fixes: constructor semantics and identity</h3>
+            <div class="where">
+              store.go:130 &middot; README &ldquo;what it offers&rdquo; &middot;
+              google-domain-detector audit
+            </div>
+            <p>
+              <code>NewMemoryStore(sweepInterval)</code> takes the sweep
+              interval while the TTL is per call; browser-history&rsquo;s audit
+              initially read the argument as the TTL. One audit
+              (google-domain-detector) invented an entire different library
+              &mdash; <code>Manager</code>/<code>Scenario</code>/fs journal/
+              Prometheus metrics, file <code>idempotency.go</code> &mdash; that
+              does not exist here (verified: zero <code>ScenarioInFlight</code>
+              symbols anywhere in the fleet). That is the reviewer&rsquo;s
+              error, but a short &ldquo;what this is / is not&rdquo; block makes
+              it much harder to repeat.
+            </p>
+          </div>
+        </section>
+
+        <!-- Proposal -->
+        <section id="proposal">
+          <h2><span class="num">02</span>What the solution could look like</h2>
+          <p>
+            Target state: the contract can say &ldquo;forever&rdquo; without
+            weakening request idempotency, the docs describe the DedupStore seam
+            honestly, the conformance suite waits on observable state instead of
+            sleeping, and a tagged release matches the tree.
+          </p>
+          <pre><code>// 1. Permanent claims stay a deliberate, separate semantic.
+const Forever time.Duration = math.MaxInt64 // stored directly; never now.Add(Forever)
+
+// ttl == 0 remains ErrInvalidTTL — a forgotten TTL stays loud.
+// MemoryStore: zero time.Time entry means "never expires".
+// Contract: ForeverNeverExpires, Seen/ForeverSurvives, Forever+Record no-op.
+
+// 2. The DedupStore seam, documented instead of implied.
+func (a *Adapter) CheckAndRecord(ctx context.Context, key string, ttl time.Duration) error {
+    seen, err := a.dedup.DedupCheckAndRecord(ctx, a.collection, key, ttl, a.now().UTC())
+    if err != nil {
+        return err
+    }
+    if seen {
+        return idempotency.ErrDuplicate
+    }
+    return nil
+}
+
+// 3. Contract waits on the store, not on the scheduler.
+eventually(t, tm.waitAfter, func() bool {
+    seen, err := store.Seen(ctx, key)
+    return err == nil &amp;&amp; !seen
+})</code></pre>
+          <div class="callout callout-teal">
+            <strong>This is the target</strong>
+            Every recurring objection in the corpus maps to one of those three
+            changes or to a docs sentence. None of them requires a production
+            backend, a new dependency, or a breaking change to existing
+            implementors &mdash; except Forever, which is additive but needs the
+            owner&rsquo;s semantic decision first.
+          </div>
+        </section>
+
+        <!-- Appendix -->
+        <section id="appendix">
+          <h2><span class="num">03</span>Appendix</h2>
+          <p>
+            <strong>Method.</strong> All 25
+            <code>*/docs/review/libs/go-idempotency.md</code> files under
+            <code>/home/lars/projects</code> were read end to end
+            (<code>cv</code> and <code>CV</code> are the same repo at two
+            snapshots; <code>DiscordSync</code>/<code>discordsync</code> and
+            <code>ci-siblings/*</code> are duplicate checkouts and are excluded
+            from census counts). Every claim about this repo was re-verified
+            against the checkout at <code>9a82577</code> (v0.3.2 + 5), not
+            inherited from the audit.
+          </p>
+
+          <table class="compare">
+            <thead>
+              <tr>
+                <th>Action</th>
+                <th>Evidence</th>
+                <th>Effort</th>
+                <th>Gate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Decide <code>Forever</code>: ship M1&ndash;M4 or record REJECTED</td>
+                <td>CV plan M1&ndash;M18; CV E1 corruption; taskqueue; invoices</td>
+                <td>M</td>
+                <td class="no">Owner</td>
+              </tr>
+              <tr>
+                <td>DedupStore adapter recipe + README reword</td>
+                <td>bank-sync + webphone adapters; 4 audits misled</td>
+                <td>Low</td>
+                <td class="yes">Ready</td>
+              </tr>
+              <tr>
+                <td>Poll instead of sleep in the contract suite</td>
+                <td>webphone <code>TimingScale: 5</code>; 4 fixed sleeps</td>
+                <td>Low</td>
+                <td class="yes">Ready</td>
+              </tr>
+              <tr>
+                <td>Document record-on-success limit; extend ADR-004 triggers</td>
+                <td>webphone, PapDashboard</td>
+                <td>Low</td>
+                <td class="yes">Ready</td>
+              </tr>
+              <tr>
+                <td>Make middleware&rsquo;s scope explicit; refresh ADR-005</td>
+                <td>0/13 fleet imports; cqrs-htmx &ldquo;superseded&rdquo;</td>
+                <td>Low</td>
+                <td class="yes">Ready</td>
+              </tr>
+              <tr>
+                <td>Cut v0.3.3 (no API); v0.4.0 for Forever</td>
+                <td>6 audits &ldquo;HEAD +5&rdquo;; CV &ldquo;frozen&rdquo;</td>
+                <td>Low</td>
+                <td class="yes">Ready</td>
+              </tr>
+              <tr>
+                <td>Runnable replay example + README link</td>
+                <td>PapDashboard 182-line replay; taskqueue 409 hole</td>
+                <td>Low</td>
+                <td class="yes">Ready</td>
+              </tr>
+              <tr>
+                <td>&ldquo;What this is / is not&rdquo; + constructor doc</td>
+                <td>browser-history TTL confusion; fabricated audit</td>
+                <td>Low</td>
+                <td class="yes">Ready</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <table class="compare">
+            <thead>
+              <tr>
+                <th>Repo</th>
+                <th>Stance</th>
+                <th>Signal it contributes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>CV</td>
+                <td class="no">Not used (owner ADR)</td>
+                <td>Permanent event dedupe; cites the owner-gated Forever plan</td>
+              </tr>
+              <tr>
+                <td>cv (snapshot)</td>
+                <td class="no">Not used</td>
+                <td>Earlier copy of the same verdict; confirms drift over time</td>
+              </tr>
+              <tr>
+                <td>invoices</td>
+                <td>Defer</td>
+                <td>Permanent entity guard; copied the SQLite expiry-format fix</td>
+              </tr>
+              <tr>
+                <td>go-aichat</td>
+                <td class="yes">Adopt at v0.2 seam</td>
+                <td>Request-key idempotency is a planned chatstore API</td>
+              </tr>
+              <tr>
+                <td>go-appkit</td>
+                <td>Keep out (opt-in)</td>
+                <td>Wants a README cookbook; caught the v0.3.1 changelog gap</td>
+              </tr>
+              <tr>
+                <td>Cyberdom</td>
+                <td>Keep indirect</td>
+                <td>HTTP adapter when side effects appear; SQLite dead-after-crash</td>
+              </tr>
+              <tr>
+                <td>browser-history</td>
+                <td class="yes">Used indirect, 76/100</td>
+                <td>Deprecated MemoryStore default; sweep-vs-TTL confusion</td>
+              </tr>
+              <tr>
+                <td>audiblesync</td>
+                <td>Hold indirect</td>
+                <td>Domain decider already guards; cqrs alias is why the pin exists</td>
+              </tr>
+              <tr>
+                <td>go-taskqueue</td>
+                <td>Keep out</td>
+                <td>Permanent DedupKey is stronger; names the 409-no-replay hole</td>
+              </tr>
+              <tr>
+                <td>journal</td>
+                <td class="yes">Used indirect</td>
+                <td>cqrs-htmx seam unused; structural idempotency wins</td>
+              </tr>
+              <tr>
+                <td>nsfw-classifier</td>
+                <td>Correct non-adoption</td>
+                <td>Retried telemetry/watch batches are unguarded</td>
+              </tr>
+              <tr>
+                <td>io-surface</td>
+                <td>Reject</td>
+                <td>No delivery, no commands, no store</td>
+              </tr>
+              <tr>
+                <td>pbx-lens</td>
+                <td>Reject</td>
+                <td>Natural keys; platform dedup already in graph</td>
+              </tr>
+              <tr>
+                <td>ChastityAPI</td>
+                <td>Reject</td>
+                <td>Bespoke token dedupe + OCC; no client key</td>
+              </tr>
+              <tr>
+                <td>media-atlas</td>
+                <td>Correctly absent</td>
+                <td>All HTTP surfaces are GET</td>
+              </tr>
+              <tr>
+                <td>Code-To-CV-Agent</td>
+                <td>Indirect (alias)</td>
+                <td>Pin exists only through a deprecated cqrs-htmx alias</td>
+              </tr>
+              <tr>
+                <td>business-networking</td>
+                <td>Skip</td>
+                <td>Client-only CLI; go 1.27 floor friction noted</td>
+              </tr>
+              <tr>
+                <td>dnsblockd</td>
+                <td>Should not adopt</td>
+                <td>Every writer is idempotent by construction</td>
+              </tr>
+              <tr>
+                <td>google-domain-detector</td>
+                <td>Reject</td>
+                <td class="no">Describes a library that does not exist here</td>
+              </tr>
+              <tr>
+                <td>PapDashboard</td>
+                <td>Indirect, 10/100</td>
+                <td>182-line replay store; contract suite is the only ask</td>
+              </tr>
+              <tr>
+                <td>cqrs-htmx</td>
+                <td class="yes">Used, 88/100</td>
+                <td>Alias winds down at v5; dispatch seam is the right layer</td>
+              </tr>
+              <tr>
+                <td>quotaboard</td>
+                <td>Indirect, 25/100</td>
+                <td>Single command is naturally idempotent</td>
+              </tr>
+              <tr>
+                <td>webphone</td>
+                <td class="yes">Direct, test-only</td>
+                <td>Contract suite on DedupStore; wants injectable clock</td>
+              </tr>
+              <tr>
+                <td>index</td>
+                <td class="yes">Direct, 80/100</td>
+                <td>Custom store + contract suite; durability is the residual gap</td>
+              </tr>
+              <tr>
+                <td>profileagent</td>
+                <td>Reject</td>
+                <td class="no">&ldquo;Superseded&rdquo; premise is wrong; decision may still hold</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p>
+            <strong>Verification notes.</strong>
+            (1) &ldquo;47 projects import it&rdquo; (business-networking audit)
+            over-counts <code>go.mod</code> transitives; the real census is 13
+            project checkouts with direct imports and 8 with
+            <code>contract/</code> imports.
+            (2) <code>middleware/</code> has zero importers outside this repo
+            &mdash; the strongest single fact in this report.
+            (3) google-domain-detector&rsquo;s <code>Manager</code>/
+            <code>Scenario</code> description has no referent:
+            <code>rg ScenarioInFlight</code> returns nothing across the fleet.
+            (4) The prior self-review&rsquo;s F2&ndash;F4 (changelog gap, issue
+            fixes, fuzz split brain) are closed; F5 (middleware zero consumers)
+            stands and is now quantified; F1&rsquo;s plan-rot rule still has
+            T5/T7&ndash;T12 open in TODO_LIST.
+          </p>
+
+          <pre><code># Census (excluded: vendor/, ci-siblings/, duplicate checkouts)
+rg -l '"github.com/larsartmann/go-idempotency"' --glob '*.go' --glob '!**/vendor/**' .
+rg -l 'go-idempotency/contract'  --glob '*.go' --glob '!**/vendor/**' .
+rg -l 'go-idempotency/middleware' --glob '*.go' --glob '!**/vendor/**' .
+git -C /home/lars/projects/go-idempotency describe --tags   # v0.3.2-5-g9a82577</code></pre>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+          <p>
+            Generated 2026-11-17 &middot; Reviewed against v0.3.2 + 5 commits
+            (<code>9a82577</code>) &middot; Repo claims re-verified against
+            source; consumer claims cited from their own audit files
+          </p>
+        </footer>
+      </main>
+    </div>
+
+    <!-- Progressive-enhancement scrollspy. Nav still works without JS via anchor links. -->
+    <script>
+      (function () {
+        if (!("IntersectionObserver" in window)) return;
+        var nav = document.querySelector("[data-nav]");
+        if (!nav) return;
+        var links = nav.querySelectorAll('a[href^="#"]');
+        var ids = Array.from(links).map(function (l) {
+          return l.getAttribute("href").slice(1);
+        });
+        var sections = ids
+          .map(function (id) {
+            return document.getElementById(id);
+          })
+          .filter(Boolean);
+        if (!sections.length) return;
+        var observer = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (entry) {
+              if (entry.isIntersecting) {
+                links.forEach(function (link) {
+                  link.classList.toggle(
+                    "active",
+                    link.getAttribute("href") === "#" + entry.target.id,
+                  );
+                });
+              }
+            });
+          },
+          { rootMargin: "-80px 0px -60% 0px", threshold: 0 },
+        );
+        sections.forEach(function (s) {
+          observer.observe(s);
+        });
+      })();
+    </script>
+  </body>
+</html>
