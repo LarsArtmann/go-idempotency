@@ -67,3 +67,22 @@ func ExampleMemoryStore() {
 	// seen: true
 	// seen: false
 }
+
+// ExampleForever shows a permanent claim: the duplicate window is the lifetime
+// of the store, which is the correct shape for event/consumer dedupe. Request
+// idempotency keys should stay TTL-windowed (ADR-006).
+func ExampleForever() {
+	store := idempotency.NewMemoryStore(0)
+	defer store.Close()
+
+	ctx := context.Background()
+	eventKey := "event:evt-42"
+
+	_ = store.CheckAndRecord(ctx, eventKey, idempotency.Forever)
+
+	err := store.CheckAndRecord(ctx, eventKey, idempotency.Forever)
+	fmt.Println("duplicate:", errors.Is(err, idempotency.ErrDuplicate))
+
+	// Output:
+	// duplicate: true
+}

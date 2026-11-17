@@ -145,6 +145,54 @@ var negativeScenarios = []negativeScenario{
 		invariant: "EmptyKey",
 		reason:    "empty key should be seen after Record",
 	},
+	{
+		name: "ForeverExpiresAsShortTTL",
+		sabotage: func(s *teststore.Store) idempotency.Store {
+			return foreverExpires{Store: s}
+		},
+		invariant: "SeenSurvives",
+		reason:    "want seen=true, got false",
+	},
+	{
+		name: "ForeverExpiresBeforeCheck",
+		sabotage: func(s *teststore.Store) idempotency.Store {
+			return foreverExpires{Store: s}
+		},
+		invariant: "RecordNeverExpires",
+		reason:    "after wait: want ErrDuplicate",
+	},
+	{
+		name: "ForeverRejectedAsInvalidTTL",
+		sabotage: func(s *teststore.Store) idempotency.Store {
+			return foreverRejected{Store: s}
+		},
+		invariant: "CheckAndRecord",
+		reason:    "want nil, got",
+	},
+	{
+		name: "ForeverDuplicateReturnsNil",
+		sabotage: func(s *teststore.Store) idempotency.Store {
+			return newForeverDuplicateSwallowed(s)
+		},
+		invariant: "CheckAndRecord",
+		reason:    "want ErrDuplicate, got",
+	},
+	{
+		name: "ForeverUpgradesLiveClaim",
+		sabotage: func(s *teststore.Store) idempotency.Store {
+			return foreverUpgrades{Store: s}
+		},
+		invariant: "RecordNoopOnExistingKey",
+		reason:    "should have expired under the original short TTL",
+	},
+	{
+		name: "ForeverDowngradedByShortRecord",
+		sabotage: func(s *teststore.Store) idempotency.Store {
+			return ttlExtendingRecord{Store: s}
+		},
+		invariant: "RecordNotDowngraded",
+		reason:    "should still be seen",
+	},
 }
 
 // TestRunTestsDetectsBrokenStores re-executes the test binary once per

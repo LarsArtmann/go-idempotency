@@ -62,6 +62,19 @@ func New() *Store {
 	return &Store{entries: make(map[string]time.Time)}
 }
 
+// isLive treats zero time as the in-process representation of Forever.
+func isLive(exp, now time.Time) bool {
+	return exp.IsZero() || now.Before(exp)
+}
+
+// expiryFor never computes now.Add(Forever).
+func expiryFor(now time.Time, ttl time.Duration) time.Time {
+	if ttl == idempotency.Forever {
+		return time.Time{}
+	}
+	return now.Add(ttl)
+}
+
 func (s *Store) Seen(_ context.Context, key string) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -70,7 +83,7 @@ func (s *Store) Seen(_ context.Context, key string) (bool, error) {
 	if !ok {
 		return false, nil
 	}
-	if time.Now().Before(exp) {
+	if isLive(exp, time.Now()) {
 		return true, nil
 	}
 	delete(s.entries, key) // lazy expiry
@@ -86,8 +99,8 @@ func (s *Store) Record(_ context.Context, key string, ttl time.Duration) error {
 	defer s.mu.Unlock()
 
 	now := time.Now()
-	if exp, ok := s.entries[key]; !ok || !now.Before(exp) {
-		s.entries[key] = now.Add(ttl) // live keys are NOT extended
+	if exp, ok := s.entries[key]; !ok || !isLive(exp, now) {
+		s.entries[key] = expiryFor(now, ttl) // live keys are NOT extended
 	}
 	return nil
 }
@@ -101,10 +114,10 @@ func (s *Store) CheckAndRecord(_ context.Context, key string, ttl time.Duration)
 	defer s.mu.Unlock()
 
 	now := time.Now()
-	if exp, ok := s.entries[key]; ok && now.Before(exp) {
+	if exp, ok := s.entries[key]; ok && isLive(exp, now) {
 		return idempotency.ErrDuplicate
 	}
-	s.entries[key] = now.Add(ttl)
+	s.entries[key] = expiryFor(now, ttl)
 	return nil
 }
 
@@ -134,6 +147,14 @@ func New(client *redis.Client) *Store {
 	return &Store{client: client, prefix: "idem:"}
 }
 
+// redisExpiry maps Forever to no expiry (0 seconds).
+func redisExpiry(ttl time.Duration) time.Duration {
+	if ttl == idempotency.Forever {
+		return 0
+	}
+	return ttl
+}
+
 func (s *Store) Seen(ctx context.Context, key string) (bool, error) {
 	n, err := s.client.Exists(ctx, s.prefix+key).Result()
 	if err != nil {
@@ -147,14 +168,14 @@ func (s *Store) Record(ctx context.Context, key string, ttl time.Duration) error
 		return idempotency.ErrInvalidTTL
 	}
 	// NX leaves an existing live key alone: Record never extends a TTL.
-	return s.client.SetNX(ctx, s.prefix+key, "1", ttl).Err()
+	return s.client.SetNX(ctx, s.prefix+key, "1", redisExpiry(ttl)).Err()
 }
 
 func (s *Store) CheckAndRecord(ctx context.Context, key string, ttl time.Duration) error {
 	if ttl <= 0 {
 		return idempotency.ErrInvalidTTL
 	}
-	ok, err := s.client.SetNX(ctx, s.prefix+key, "1", ttl).Result()
+	ok, err := s.client.SetNX(ctx, s.prefix+key, "1", redisExpiry(ttl)).Result()
 	if err != nil {
 		return err
 	}
@@ -172,6 +193,15 @@ operation.** A separate `Seen` call followed by `Record` re-introduces the
 TOCTOU race where two concurrent first-attempts both win. Use your backend's
 native check-and-set (`SET NX`, `INSERT ... ON CONFLICT DO NOTHING`,
 conditional `PutItem`), not two round-trips.
+
+### Permanent claims (`Forever`)
+
+`Record` and `CheckAndRecord` accept `idempotency.Forever`. Map the sentinel at
+the backend boundary; never compute `now.Add(Forever)` (`UnixNano` overflows in
+2262). Redis uses no `EX` (`SetNX`, expiry `0`), SQL uses `NULL` or infinity,
+SQLite stores `NULL`, and DynamoDB omits the TTL attribute. Keep request-facing
+claims TTL-windowed: a permanent claim on a crashed request is a permanent
+lockout (ADR-006).
 
 ### SQLite pitfalls (found in production)
 
@@ -202,7 +232,8 @@ that only ever ran on a single connection:
 Do not trust your implementation — prove it. The
 [`contract`](https://pkg.go.dev/github.com/larsartmann/go-idempotency/contract)
 package runs the full invariant set (atomicity, TTL expiry, duplicate
-detection, 200-goroutine concurrency, error semantics) against any `Store`:
+detection, permanent claims, 200-goroutine concurrency, error semantics)
+against any `Store`:
 
 ```go
 // redistore_contract_test.go

@@ -8,6 +8,7 @@ Short-term actionable work. Open items only — completed work lives in [CHANGEL
 
 - [ ] **Extend middleware package** — `CommandIdempotency` (command wrapper) and the `net/http` `Idempotency-Key` adapter shipped in v0.3.0 per [ADR-002](docs/adr/002-middleware-module-boundary.md). Remaining: `EventIdempotency`/`QueryIdempotency` — implement only when a consumer needs them (YAGNI). **Impact: Low · Effort: M (when triggered)**
 - [ ] **Revisit `Delete(ctx, key)` on `Store`** — manual claim invalidation for operational recovery of poisoned claims. **Deferred per [ADR-004](docs/adr/004-store-interface-evolution.md)**: the owner confirmed the deferral 2026-09-05; revisit on a demonstrated poisoned-claim need that TTL tuning cannot absorb. **Impact: Medium · Effort: S (when triggered)**
+- [ ] **Propagate `Forever` to go-cqrs-lite** — `metaengine.DedupStore`/`claimkit` and `MapDedupStore` must map the sentinel (store MaxInt64/NULL, never `now.Add`), and `adttest.AssertDedupStore` must pin the mapped semantics; consume after the next go-idempotency tag. **Impact: High · Effort: M**
 
 ## Documentation
 
@@ -17,13 +18,14 @@ Short-term actionable work. Open items only — completed work lives in [CHANGEL
 ## Quality
 
 - [ ] **Benchmark baselines (plan T8)** — capture `-count=6 -benchmem` timing and memory baselines to `reports/bench/<date>_<name>.txt`; unblocks the ROADMAP lock-strategy work, which is meaningless without baselines. **Impact: Medium · Effort: M**
-- [ ] **Spec-citation pass over the 13 contract invariants (plan T9)** — each invariant cites its authority (TOCTOU, claim semantics, ADR); verify the negative-test README rows stay 1:1. **Impact: Medium · Effort: M**
+- [ ] **Spec-citation pass over the 18 contract invariants (plan T9)** — each invariant cites its authority (TOCTOU, claim semantics, ADR); verify the negative-test README rows stay 1:1. **Impact: Medium · Effort: M**
 - [ ] **Visual browser render check of the 2026-11-03 review HTML** — anchors and tag balance were validated programmatically; one human render pass confirms the Bauhaus layout renders as intended. **Impact: Low · Effort: S**
 
 ## Infrastructure
 
 - [ ] **Coverage floor once Codecov is active** — fail CI under ~90% so erosion is loud. Keep the Codecov threshold step drafted as a ready-to-flip diff (plan T10). Blocked on the owner setting `CODECOV_TOKEN`. **Impact: Medium · Effort: S**
-- [ ] **Announce v0.3.x** (owner preference) — channel and timing are the owner's call; the middleware package plus the contract-suite detection proofs are the story. **Impact: Low · Effort: S**
+- [ ] **Cut v0.4.0** — run `scripts/pre-release-check.sh`, tag, push master and tag together, then verify the proxy and pkg.go.dev. The CHANGELOG section is staged in `[Unreleased]`; tagging is an owner release action. **Impact: Medium · Effort: S**
+- [ ] **Announce v0.4.x** (owner preference) — channel and timing are the owner's call; permanent claims plus the 18-invariant contract suite are the story. **Impact: Low · Effort: S**
 - [ ] **Verify the weekly scheduled CI after the GOTOOLCHAIN fix** — the strict-timing step now sets `GOTOOLCHAIN: auto` (matching the race step); the fix is untested by live fire because schedule events cannot be triggered manually. Watch the 2026-11-09 run. **Impact: Medium · Effort: S**
 
 ## Cleanup

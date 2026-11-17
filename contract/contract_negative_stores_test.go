@@ -82,6 +82,17 @@ func (s invertedSeen) Seen(ctx context.Context, key string) (bool, error) {
 // entries recorded through this wrapper never expire during a suite run.
 const neverExpireMultiplier = 1000
 
+// stretchedTTL keeps the Forever sentinel intact: multiplying it overflows
+// int64, which would turn the permanent-claim tests into TTL-validation
+// failures for the wrong reason.
+func stretchedTTL(ttl time.Duration) time.Duration {
+	if ttl == idempotency.Forever {
+		return ttl
+	}
+
+	return ttl * neverExpireMultiplier
+}
+
 // neverExpires ignores TTL expiry entirely: nothing it records ever expires.
 // It models a backend that stores keys without honoring the requested expiry.
 type neverExpires struct {
@@ -89,11 +100,11 @@ type neverExpires struct {
 }
 
 func (s neverExpires) Record(ctx context.Context, key string, ttl time.Duration) error {
-	return s.Store.Record(ctx, key, ttl*neverExpireMultiplier)
+	return s.Store.Record(ctx, key, stretchedTTL(ttl))
 }
 
 func (s neverExpires) CheckAndRecord(ctx context.Context, key string, ttl time.Duration) error {
-	return s.Store.CheckAndRecord(ctx, key, ttl*neverExpireMultiplier)
+	return s.Store.CheckAndRecord(ctx, key, stretchedTTL(ttl))
 }
 
 // ttlExtendingRecord extends a live entry's TTL on every Record, violating the

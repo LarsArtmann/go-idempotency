@@ -31,6 +31,21 @@ func New() *Store {
 	}
 }
 
+// isLive reports whether exp is an unexpired claim. A zero time is the
+// in-process representation of a Forever claim.
+func isLive(exp, now time.Time) bool {
+	return exp.IsZero() || now.Before(exp)
+}
+
+// expiryFor stores Forever as the zero time, never as now.Add(Forever).
+func expiryFor(now time.Time, ttl time.Duration) time.Time {
+	if ttl == idempotency.Forever {
+		return time.Time{}
+	}
+
+	return now.Add(ttl)
+}
+
 // Seen reports whether the key is currently recorded and not expired.
 // Expired entries are lazily deleted on read.
 func (s *Store) Seen(_ context.Context, key string) (bool, error) {
@@ -42,7 +57,7 @@ func (s *Store) Seen(_ context.Context, key string) (bool, error) {
 		return false, nil
 	}
 
-	if time.Now().Before(exp) {
+	if isLive(exp, time.Now()) {
 		return true, nil
 	}
 
@@ -65,8 +80,8 @@ func (s *Store) Record(_ context.Context, key string, ttl time.Duration) error {
 	defer s.mu.Unlock()
 
 	now := time.Now()
-	if exp, ok := s.entries[key]; !ok || !now.Before(exp) {
-		s.entries[key] = now.Add(ttl)
+	if exp, ok := s.entries[key]; !ok || !isLive(exp, now) {
+		s.entries[key] = expiryFor(now, ttl)
 	}
 
 	return nil
@@ -84,7 +99,7 @@ func (s *Store) ForceRecord(_ context.Context, key string, ttl time.Duration) er
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.entries[key] = time.Now().Add(ttl)
+	s.entries[key] = expiryFor(time.Now(), ttl)
 
 	return nil
 }
@@ -104,11 +119,11 @@ func (s *Store) CheckAndRecord(_ context.Context, key string, ttl time.Duration)
 	defer s.mu.Unlock()
 
 	now := time.Now()
-	if exp, ok := s.entries[key]; ok && now.Before(exp) {
+	if exp, ok := s.entries[key]; ok && isLive(exp, now) {
 		return idempotency.ErrDuplicate
 	}
 
-	s.entries[key] = now.Add(ttl)
+	s.entries[key] = expiryFor(now, ttl)
 
 	return nil
 }

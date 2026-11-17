@@ -35,13 +35,27 @@ func newDemoStore() *demoStore {
 	return &demoStore{mu: sync.Mutex{}, expires: make(map[string]time.Time)}
 }
 
+// demoLive reports whether exp is unexpired. Zero time means Forever.
+func demoLive(exp, now time.Time) bool {
+	return exp.IsZero() || now.Before(exp)
+}
+
+// demoExpiry stores Forever as zero time, never now.Add(Forever).
+func demoExpiry(now time.Time, ttl time.Duration) time.Time {
+	if ttl == idempotency.Forever {
+		return time.Time{}
+	}
+
+	return now.Add(ttl)
+}
+
 func (s *demoStore) Seen(_ context.Context, key string) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	exp, ok := s.expires[key]
 
-	return ok && time.Now().Before(exp), nil
+	return ok && demoLive(exp, time.Now()), nil
 }
 
 func (s *demoStore) Record(_ context.Context, key string, ttl time.Duration) error {
@@ -53,13 +67,10 @@ func (s *demoStore) Record(_ context.Context, key string, ttl time.Duration) err
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if exp, ok := s.expires[key]; !ok || time.Now().Before(exp) {
-		if ok {
-			return nil // live key: never extend
-		}
+	now := time.Now()
+	if exp, ok := s.expires[key]; !ok || !demoLive(exp, now) {
+		s.expires[key] = demoExpiry(now, ttl)
 	}
-
-	s.expires[key] = time.Now().Add(ttl)
 
 	return nil
 }
@@ -73,11 +84,12 @@ func (s *demoStore) CheckAndRecord(_ context.Context, key string, ttl time.Durat
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if exp, ok := s.expires[key]; ok && time.Now().Before(exp) {
+	now := time.Now()
+	if exp, ok := s.expires[key]; ok && demoLive(exp, now) {
 		return idempotency.ErrDuplicate
 	}
 
-	s.expires[key] = time.Now().Add(ttl)
+	s.expires[key] = demoExpiry(now, ttl)
 
 	return nil
 }
@@ -102,6 +114,22 @@ func main() {
 			fmt.Printf("attempt %d: duplicate -> dropped (already processed)\n", attempt)
 		default:
 			fmt.Printf("attempt %d: store failure -> fail the request, do NOT process: %v\n", attempt, err)
+		}
+	}
+
+	// A permanent claim: event/consumer dedupe, where the duplicate window is
+	// the lifetime of the store, not a request-retry horizon.
+	eventKey := "event:evt-42"
+
+	for attempt := 1; attempt <= 2; attempt++ {
+		err := store.CheckAndRecord(ctx, eventKey, idempotency.Forever)
+		switch {
+		case err == nil:
+			fmt.Printf("event attempt %d: claimed permanently -> apply the event\n", attempt)
+		case errors.Is(err, idempotency.ErrDuplicate):
+			fmt.Printf("event attempt %d: duplicate -> already applied (the claim never expires)\n", attempt)
+		default:
+			fmt.Printf("event attempt %d: store failure: %v\n", attempt, err)
 		}
 	}
 }

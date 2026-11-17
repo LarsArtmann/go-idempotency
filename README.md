@@ -141,11 +141,12 @@ Errors are classified by [go-error-family](https://github.com/larsartmann/go-err
 - **Namespace your keys when sharing a backend.** Prefix with `idem:` (or a dedicated table/hash) so idempotency keys cannot collide with other data in the same store, and so operational cleanup cannot sweep them by accident.
 - **Watch the clock.** Expiry is judged by whoever owns the clock. Redis evaluates TTL server-side (app clock irrelevant); SQL/DynamoDB columns compare against the backend's clock; in-process maps use the instance's clock. With multiple instances writing absolute timestamps, sync matters; server-side TTLs avoid the whole class.
 - **A claimed key that never finishes stays claimed until TTL.** If your process crashes between `CheckAndRecord` winning and the effect completing, retries get `ErrDuplicate` until expiry. Plan for it: keep TTLs tunable per key, store a failure marker as the response (see the response-replay recipe), or invalidate the claim manually once your backend exposes a way to.
-- **"Isn't idempotency supposed to be forever?"** No — claims are TTL-windowed by design. The window must cover the retry horizon (redelivery, outbox replay, client backoff); after expiry, the same logical operation is deliberately treated as a new one. Keeping claims forever would turn any poisoned claim into a permanent lockout for that key; the TTL bounds the damage and keeps recovery operational. See [ADR-004](docs/adr/004-store-interface-evolution.md).
+- **"Isn't idempotency supposed to be forever?"** It depends on the claim's scope. Request-facing claims are TTL-windowed by design: the window must cover the retry horizon (redelivery, outbox replay, client backoff), and a permanent claim on a crashed request would be a permanent lockout for that key. For consumer/event dedupe and permanent domain invariants, pass `idempotency.Forever`: the claim never expires, which is the correct semantic when re-processing a duplicate corrupts state. See [ADR-006](docs/adr/006-forever-permanent-claims.md).
 
 ## Features
 
 - **`Store` interface** — three-method contract (`Seen`, `Record`, `CheckAndRecord`) with well-defined error semantics and atomicity requirements
+- **Permanent claims** — `idempotency.Forever` records a claim that never expires, for event/consumer dedupe and permanent domain invariants; request-facing keys stay TTL-windowed (ADR-006)
 - **Contract test suite** — `contract.RunTests` verifies any `Store` implementation against the full invariant set (atomicity, TTL expiry, concurrency safety, error handling)
 - **`MemoryStore`** _(deprecated)_ — in-memory store for development and testing, with TTL-based expiration (background sweep + lazy deletion), configurable sweep interval, and graceful shutdown; will be removed in a future major version
 - **Conflict-classified errors** — `ErrDuplicate` is HTTP 409, non-retryable; `ErrInvalidTTL` is HTTP 400
@@ -165,13 +166,15 @@ The `Store` interface is three methods. Each maps to a single round-trip on a ty
 | DynamoDB       | `PutItem` with `attribute_not_exists(key)` | TTL attribute is best-effort (deletion can lag hours) — always check expiry on read | Conditional writes are extra cost on duplicate retries                                       |
 | SQLite / bbolt | `INSERT OR IGNORE` in a transaction        | `expires_at` column                                                                 | Single-writer; local to one process — dead after a crash by definition                       |
 
+**If you accept `Forever`, map the sentinel at the boundary and never compute `now.Add(Forever)`.** `time.Time.Add` reaches about year 2318, but `UnixNano` overflows in 2262. Use no expiry at all (Redis `SET key 1` without `EX`), a NULL/SQL-infinity expiry column, or a max sentinel stored as-is. The package docs carry the per-backend detail.
+
 | Method           | What it does                           | Typical backend primitive                                      |
 | ---------------- | -------------------------------------- | -------------------------------------------------------------- |
 | `Seen`           | Check if key exists and is not expired | `EXISTS` (Redis), `SELECT COUNT(*)` (SQL)                      |
 | `Record`         | Store key with TTL (no-op if exists)   | `SET NX` (Redis), `INSERT ... ON CONFLICT DO NOTHING` (SQL)    |
 | `CheckAndRecord` | Atomic check-and-set                   | `SET NX EX` (Redis), `INSERT ... ON CONFLICT DO NOTHING` (SQL) |
 
-**Error mapping:** when the key already exists, return `idempotency.ErrDuplicate`. When `ttl <= 0`, return `idempotency.ErrInvalidTTL`. These are sentinel errors from `go-error-family` with stable HTTP status mappings.
+**Error mapping:** when the key already exists, return `idempotency.ErrDuplicate`. When `ttl <= 0`, return `idempotency.ErrInvalidTTL`. When the TTL is exactly `idempotency.Forever`, store the backend's permanent representation (no expiry or NULL). These are sentinel errors from `go-error-family` with stable HTTP status mappings.
 
 **Verify your implementation:** import the contract package and run the test suite:
 
@@ -190,7 +193,7 @@ See the [package docs](https://pkg.go.dev/github.com/larsartmann/go-idempotency)
 
 The suite is self-tested: this repository runs `RunTests` against its own internal in-memory Store (`internal/teststore/`, test-only) in CI, so the suite is exercised on every commit — it is not untested code you are asked to trust.
 
-**What `RunTests` checks** — the thirteen invariants, each a named subtest:
+**What `RunTests` checks** — the eighteen invariants, each a named subtest:
 
 | Method           | Invariant (subtest)            | Requirement                                                                                     |
 | ---------------- | ------------------------------ | ----------------------------------------------------------------------------------------------- |
@@ -204,6 +207,11 @@ The suite is self-tested: this repository runs `RunTests` against its own intern
 | `CheckAndRecord` | `DuplicateReturnsErrDuplicate` | A second claim inside the TTL returns `ErrDuplicate` (`errors.Is`-compatible).                  |
 | `CheckAndRecord` | `AllowsAfterExpiry`            | After expiry the key can be claimed again.                                                      |
 | `CheckAndRecord` | `RejectsNonPositiveTTL`        | `ttl <= 0` returns `ErrInvalidTTL`; nothing is recorded.                                        |
+| `Forever`        | `SeenSurvives`                 | A claim recorded with `Forever` is still seen after the sleep window.                           |
+| `Forever`        | `RecordNeverExpires`           | A `Forever` claim remains a duplicate for `CheckAndRecord` after the sleep window.              |
+| `Forever`        | `RecordNoopOnExistingKey`      | A live short-TTL claim is not upgraded to `Forever`.                                            |
+| `Forever`        | `RecordNotDowngraded`          | A live `Forever` claim is not shortened by a later short TTL.                                   |
+| `Forever`        | `CheckAndRecord`               | The first `Forever` claim returns nil; later claims return `ErrDuplicate`.                      |
 | Concurrency      | `AtomicUnderConcurrency`       | 200 goroutines racing one key: exactly one nil win, all others `ErrDuplicate`, no other errors. |
 | Cross-cutting    | `KeysAreIndependent`           | Operations on one key never affect another.                                                     |
 | Cross-cutting    | `EmptyKey`                     | The empty string is a valid key across all methods.                                             |

@@ -12,6 +12,7 @@
 // # Contents
 //
 //   - Quick Start — the three calls and the two error sentinels
+//   - Permanent Claims (Forever) — never-expiring claims and backend encodings
 //   - Design Philosophy: Interface-First, You Implement the Backend
 //   - Implementing a Custom Backend — the Redis adapter example
 //   - Recipe: Dedup + Response Replay (HTTP Idempotency)
@@ -37,6 +38,42 @@
 //	if err != nil {
 //	    return err // store failure — do not process
 //	}
+//
+// # Permanent Claims (Forever)
+//
+// Pass [Forever] to [Store.Record] or [Store.CheckAndRecord] when the
+// duplicate window is the lifetime of the system: event and consumer dedupe,
+// projection replay, or a permanent domain invariant (for example, "an
+// invoice may only be submitted once"). TTL-windowed claims remain the default
+// for request-facing idempotency keys; a permanent claim on a crashed request
+// becomes a permanent lockout (ADR-004, ADR-006).
+//
+//	// A redelivered event must never fold twice.
+//	err := store.CheckAndRecord(ctx, "event:"+eventID, idempotency.Forever)
+//	if errors.Is(err, idempotency.ErrDuplicate) {
+//	    return nil // already applied
+//	}
+//	if err != nil {
+//	    return err // store failure: do not process
+//	}
+//
+// Do not compute now.Add(Forever). time.Time can represent that instant
+// (about year 2318), but UnixNano overflows in 2262. Map the sentinel at the
+// backend boundary instead:
+//
+//   - Redis: SET key 1 (no EX); Seen is EXISTS; Record is SET NX;
+//     CheckAndRecord is SET NX.
+//   - PostgreSQL/MySQL: expires_at IS NULL means forever; a claim is live when
+//     expires_at IS NULL OR expires_at > now().
+//   - SQLite: store NULL for forever; never render now.Add(Forever) into the
+//     TEXT expiry column.
+//   - DynamoDB: omit the TTL attribute; Seen must still check the expiry
+//     because TTL deletion is best-effort.
+//
+// ttl == 0 stays ErrInvalidTTL. Forever is the explicit opt-in, so a forgotten
+// TTL cannot silently become a permanent claim. The in-process stores use the
+// zero time.Time as the permanent representation and their sweeper never
+// removes it.
 //
 // # Design Philosophy: Interface-First, You Implement the Backend
 //
@@ -76,6 +113,10 @@
 // typical backend. The critical requirement is that [Store.CheckAndRecord] is
 // atomic — use your backend's native check-and-set primitive, not a separate
 // check followed by a record.
+//
+// The Redis and SQL examples below are TTL-only. If your backend accepts
+// [Forever], add the permanent-claim branch described in "Permanent Claims
+// (Forever)" above; never compute now.Add(Forever).
 //
 // Example — Redis adapter using github.com/redis/go-redis/v9 (illustrative:
 // that client is intentionally NOT a dependency of this module):

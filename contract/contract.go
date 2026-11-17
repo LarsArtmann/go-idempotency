@@ -98,6 +98,7 @@ func RunTestsStrict(t *testing.T, factory StoreFactory, opts Options) {
 	t.Run("Seen", func(t *testing.T) { runSeenTests(t, ctx, factory, tm) })
 	t.Run("Record", func(t *testing.T) { runRecordTests(t, ctx, factory, tm) })
 	t.Run("CheckAndRecord", func(t *testing.T) { runCheckAndRecordTests(t, ctx, factory, tm) })
+	t.Run("Forever", func(t *testing.T) { runForeverTests(t, ctx, factory, tm) })
 	t.Run("Concurrency", func(t *testing.T) { runConcurrencyTests(t, ctx, factory, tm) })
 	t.Run("Cross-cutting", func(t *testing.T) { runCrossCuttingTests(t, ctx, factory, tm) })
 }

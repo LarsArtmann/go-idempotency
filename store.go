@@ -29,6 +29,9 @@ var ErrDuplicate error = errorfamily.NewConflict(
 // library's purpose. Rejecting the value up front makes the misuse a loud,
 // fixable error instead of a silent correctness hole.
 //
+// [Forever] is a positive duration and is therefore accepted. Zero is not a
+// shorthand for forever.
+//
 // It is classified as a Rejection (HTTP 400, non-retryable): the caller passed
 // bad input. Check with errors.Is(err, idempotency.ErrInvalidTTL).
 //
@@ -39,10 +42,28 @@ var ErrInvalidTTL error = errorfamily.NewRejection(
 	"ttl must be positive",
 )
 
+// Forever is a TTL sentinel meaning "never expires". Pass it to [Store.Record]
+// or [Store.CheckAndRecord] to create a permanent claim.
+//
+// Scope: permanent claims are for consumer and event deduplication, and for
+// permanent domain invariants (for example, "an invoice may only be submitted
+// once"). Request-facing idempotency keys should stay TTL-windowed: a
+// permanent claim on a crashed request becomes a permanent lockout (ADR-004).
+//
+// Implementations must store the sentinel directly and must not compute
+// now.Add(Forever). time.Time can represent that instant (about year 2318),
+// but UnixNano overflows in 2262, so backends that persist epoch nanoseconds
+// need an explicit encoding: no Redis expiry, a NULL SQL expiry column, or a
+// max sentinel stored as-is. See ADR-006 and the package documentation.
+//
+// Forever is a positive duration, so the ttl <= 0 validation still applies:
+// zero is NOT a shorthand for forever.
+const Forever time.Duration = 1<<63 - 1
+
 // Store tracks opaque keys (typically command idempotency keys) to prevent
 // duplicate processing. When a key is seen for the first time, the store
 // records it with a TTL. Subsequent lookups for the same key report it as seen
-// until the TTL expires.
+// until the TTL expires, or never if the key was recorded with [Forever].
 //
 // This is essential for at-least-once delivery: if a client submits a command,
 // loses the acknowledgement, and retries, the store prevents the command from
@@ -58,8 +79,8 @@ type Store interface {
 	//
 	// Verified by the contract test suite
 	// (github.com/larsartmann/go-idempotency/contract), subtests
-	// Seen/UnseenKeyReturnsFalse, Seen/AfterRecordReturnsTrue, and
-	// Seen/LazilyDeletesExpired.
+	// Seen/UnseenKeyReturnsFalse, Seen/AfterRecordReturnsTrue,
+	// Seen/LazilyDeletesExpired, and Seen/ForeverSurvives.
 	Seen(ctx context.Context, key string) (bool, error)
 
 	// Record marks the key as seen with the given TTL. If the key is already
@@ -67,14 +88,23 @@ type Store interface {
 	// original expiry stands). An expired key is re-recorded with a fresh
 	// TTL. Returns [ErrInvalidTTL] if ttl is not positive.
 	//
+	// Pass [Forever] for a permanent claim. The no-op rule applies in both
+	// directions: a live short-TTL claim is not upgraded to permanent, and a
+	// live permanent claim is not downgraded to a short TTL.
+	//
 	// Verified by the contract test suite subtests Record/NoopOnExistingKey,
-	// Record/ReRecordsAfterExpiry, and Record/RejectsNonPositiveTTL.
+	// Record/ReRecordsAfterExpiry, Record/RejectsNonPositiveTTL,
+	// Record/ForeverNeverExpires, Record/ForeverNoopOnExistingKey, and
+	// Record/ForeverNotDowngraded.
 	Record(ctx context.Context, key string, ttl time.Duration) error
 
 	// CheckAndRecord atomically reports whether the key was already seen and,
 	// if not, records it. Returns [ErrDuplicate] if the key was already
 	// recorded and not expired. Returns [ErrInvalidTTL] if ttl is not
 	// positive.
+	//
+	// Pass [Forever] for a permanent claim. A live permanent claim is a
+	// duplicate for every later caller.
 	//
 	// Implementations MUST make this atomic (single lock or single round-trip)
 	// to prevent the TOCTOU race that a separate Seen + Record pair would
@@ -87,6 +117,7 @@ type Store interface {
 	// CheckAndRecord/DuplicateReturnsErrDuplicate,
 	// CheckAndRecord/AllowsAfterExpiry,
 	// CheckAndRecord/RejectsNonPositiveTTL,
+	// CheckAndRecord/Forever,
 	// Concurrency/AtomicUnderConcurrency (200-goroutine race, exactly one
 	// winner), and Cross-cutting/KeysAreIndependent and
 	// Cross-cutting/EmptyKey.
@@ -99,6 +130,9 @@ type Store interface {
 //
 // Expired entries are also deleted lazily on read, so the map cannot grow
 // unboundedly even when the sweep goroutine is disabled (sweepInterval == 0).
+//
+// Entries recorded with [Forever] are stored as the zero time.Time and are
+// never expired, lazily deleted, or swept.
 //
 // MemoryStore ignores the context.Context parameter on all methods. The
 // parameter exists on the [Store] interface so that custom backend
@@ -140,7 +174,8 @@ func NewMemoryStore(sweepInterval time.Duration) *MemoryStore {
 }
 
 // Seen reports whether the key is currently recorded and not expired.
-// Expired entries are lazily deleted on read.
+// Expired entries are lazily deleted on read; [Forever] entries are never
+// expired or deleted.
 func (s *MemoryStore) Seen(_ context.Context, key string) (bool, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -150,7 +185,7 @@ func (s *MemoryStore) Seen(_ context.Context, key string) (bool, error) {
 		return false, nil
 	}
 
-	if time.Now().Before(exp) {
+	if isLive(exp, time.Now()) {
 		return true, nil
 	}
 
@@ -159,10 +194,30 @@ func (s *MemoryStore) Seen(_ context.Context, key string) (bool, error) {
 	return false, nil
 }
 
+// isLive reports whether exp represents a claim that has not expired. A zero
+// time is the in-process representation of a [Forever] claim.
+func isLive(exp, now time.Time) bool {
+	return exp.IsZero() || now.Before(exp)
+}
+
+// expiryFor converts a TTL into the stored expiry. [Forever] is stored as the
+// zero time so no caller ever performs now.Add(Forever) arithmetic.
+func expiryFor(now time.Time, ttl time.Duration) time.Time {
+	if ttl == Forever {
+		return time.Time{}
+	}
+
+	return now.Add(ttl)
+}
+
 // Record marks the key as seen with the given TTL. If the key is already
 // recorded and not expired, it is a no-op (the existing expiry is not extended).
 // If the key is expired (even if still in the map before sweep), Record sets a
 // fresh TTL. Returns [ErrInvalidTTL] if ttl is not positive.
+//
+// Pass [Forever] for a permanent claim. The no-op rule applies in both
+// directions: a live short-TTL claim is not upgraded, and a live [Forever]
+// claim is not downgraded.
 func (s *MemoryStore) Record(_ context.Context, key string, ttl time.Duration) error {
 	if ttl <= 0 {
 		return ErrInvalidTTL
@@ -172,8 +227,8 @@ func (s *MemoryStore) Record(_ context.Context, key string, ttl time.Duration) e
 	defer s.mu.Unlock()
 
 	now := time.Now()
-	if exp, ok := s.entries[key]; !ok || !now.Before(exp) {
-		s.entries[key] = now.Add(ttl)
+	if exp, ok := s.entries[key]; !ok || !isLive(exp, now) {
+		s.entries[key] = expiryFor(now, ttl)
 	}
 
 	return nil
@@ -183,6 +238,8 @@ func (s *MemoryStore) Record(_ context.Context, key string, ttl time.Duration) e
 // already recorded and not expired, or [ErrInvalidTTL] if ttl is not positive.
 // The check and the record happen under a single write lock, so concurrent
 // callers with the same key are serialized: exactly one wins.
+//
+// Pass [Forever] for a permanent claim; the stored expiry is the zero time.
 func (s *MemoryStore) CheckAndRecord(_ context.Context, key string, ttl time.Duration) error {
 	if ttl <= 0 {
 		return ErrInvalidTTL
@@ -192,11 +249,11 @@ func (s *MemoryStore) CheckAndRecord(_ context.Context, key string, ttl time.Dur
 	defer s.mu.Unlock()
 
 	now := time.Now()
-	if exp, ok := s.entries[key]; ok && now.Before(exp) {
+	if exp, ok := s.entries[key]; ok && isLive(exp, now) {
 		return ErrDuplicate
 	}
 
-	s.entries[key] = now.Add(ttl)
+	s.entries[key] = expiryFor(now, ttl)
 
 	return nil
 }
@@ -219,6 +276,10 @@ func (s *MemoryStore) sweep(interval time.Duration) {
 
 			s.mu.Lock()
 			for key, exp := range s.entries {
+				if exp.IsZero() {
+					continue // Forever: never expires, never swept
+				}
+
 				if now.After(exp) {
 					delete(s.entries, key)
 				}

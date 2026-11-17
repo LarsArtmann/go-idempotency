@@ -31,7 +31,7 @@ the release notes unless you prefer otherwise.
   implements. The only runtime dependency is `go-error-family`.
 - **Continuous verification.** CI runs `govulncheck` on every push, fuzzes
   all four fuzz targets for 3 minutes each, and gates every change behind
-  the race detector and the 13-invariant contract suite.
+  the race detector and the 18-invariant contract suite.
 - **Fail-closed dispatch.** The middleware executes a command only when
   `CheckAndRecord` confirms the key is new; a store failure never degrades
   into "not a duplicate", because executing twice is the unrecoverable

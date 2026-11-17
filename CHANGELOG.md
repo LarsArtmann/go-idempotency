@@ -9,11 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Nothing yet.
+- **Permanent claims (`Forever`)** — `idempotency.Forever` (`math.MaxInt64`) creates a claim that never expires: MemoryStore stores the zero `time.Time`, the sweeper skips it, and a live claim is neither upgraded nor downgraded by a later `Record`. Five new contract invariants and six negative scenarios pin the semantics; `ttl == 0` stays `ErrInvalidTTL`. Scoped to consumer/event dedupe and permanent domain invariants (ADR-006); adapters store the sentinel directly and never compute `now.Add(Forever)`.
 
 ### Changed
 
-- **Test and suite files split under the 350-line file-size cap** — `store_test.go` (516 lines) becomes four strategy files (core semantics, sweep/close lifecycle, concurrency, sentinel API-contract locks); the contract suite splits into `contract.go` (public entry points), `contract_timing.go` (scalable timings), and `contract_invariants.go` (the 13 invariant subtest groups); the negative tests split into scenarios, the shared subprocess harness (`contract_negative_harness_test.go`), and the broken-Store implementations (`contract_negative_stores_test.go`). Pure same-package moves, no behavior or API change; buildflow's file-size-check went 3 findings → 0.
+- **Test and suite files split under the 350-line file-size cap** — `store_test.go` (516 lines) becomes four strategy files (core semantics, sweep/close lifecycle, concurrency, sentinel API-contract locks); the contract suite splits into `contract.go` (public entry points), `contract_timing.go` (scalable timings), and `contract_invariants.go` (the TTL invariant subtest groups, with `contract_forever.go` holding the permanent-claim invariants); the negative tests split into scenarios, the shared subprocess harness (`contract_negative_harness_test.go`), and the broken-Store implementations (`contract_negative_stores_test.go` + `contract_forever_stores_test.go`). Pure same-package moves, no behavior or API change; buildflow's file-size-check went 3 findings → 0.
 
 ### Fixed
 
