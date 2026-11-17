@@ -172,7 +172,8 @@ func BenchmarkMemoryUsage_AfterSweep(b *testing.B) {
 	b.ResetTimer()
 
 	for b.Loop() {
-		store := idempotency.NewMemoryStore(5 * time.Millisecond)
+		clock := newFakeClock(time.Unix(0, 0))
+		store := idempotency.NewMemoryStore(5*time.Millisecond, idempotency.WithClock(clock.Now))
 
 		for i := range keyCount {
 			_ = store.Record(ctx, keys[i], 2*time.Millisecond)
@@ -181,8 +182,13 @@ func BenchmarkMemoryUsage_AfterSweep(b *testing.B) {
 		var peak runtime.MemStats
 		runtime.ReadMemStats(&peak)
 
-		// Wait for the sweeper to run multiple cycles past the TTL.
-		time.Sleep(30 * time.Millisecond)
+		// Expire every key on the pinned clock, then wait for one wall-clock
+		// sweep tick past the advance so the measurement reflects swept state.
+		clock.Advance(5 * time.Millisecond)
+
+		if !clock.awaitCallAfter(clock.Calls(), 2*time.Second) {
+			b.Fatal("sweeper did not tick after the clock was advanced")
+		}
 
 		// Force GC so ReadMemStats reflects the swept entries. The reported
 		// %-reclaimed stays well below 100% even after a full sweep: Go maps

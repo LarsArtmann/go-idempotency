@@ -68,13 +68,14 @@ func TestMemoryStore_Seen_AfterRecord(t *testing.T) {
 func TestMemoryStore_Seen_LazilyDeletesExpired(t *testing.T) {
 	t.Parallel()
 
-	store := idempotency.NewMemoryStore(0) // no sweep goroutine
+	clock := newFakeClock(time.Unix(0, 0))
+	store := idempotency.NewMemoryStore(0, idempotency.WithClock(clock.Now)) // no sweep goroutine
 	defer store.Close()
 
 	ctx := context.Background()
 	_ = store.Record(ctx, "cmd-3", 20*time.Millisecond)
 
-	time.Sleep(40 * time.Millisecond)
+	clock.Advance(40 * time.Millisecond)
 
 	seen, err := store.Seen(ctx, "cmd-3")
 	if err != nil || seen {
@@ -110,14 +111,15 @@ func TestMemoryStore_Record_NoopOnExistingKey(t *testing.T) {
 func TestMemoryStore_Record_AfterExpiry_ReRecordsWithNewTTL(t *testing.T) {
 	t.Parallel()
 
-	store := idempotency.NewMemoryStore(0) // no sweep: expired key stays in map
+	clock := newFakeClock(time.Unix(0, 0))
+	store := idempotency.NewMemoryStore(0, idempotency.WithClock(clock.Now)) // no sweep: expired key stays in map
 	defer store.Close()
 
 	ctx := context.Background()
 
 	_ = store.Record(ctx, "cmd-record-expiry", 20*time.Millisecond)
 
-	time.Sleep(40 * time.Millisecond)
+	clock.Advance(40 * time.Millisecond)
 
 	// The key is expired but still in the map (no sweep, no intervening Seen to
 	// lazily delete it). Record must treat it as expired and set a fresh TTL.
@@ -214,7 +216,8 @@ func TestMemoryStore_NonPositiveTTLRejected(t *testing.T) {
 func TestMemoryStore_CheckAndRecord_AllowsAfterExpiry(t *testing.T) {
 	t.Parallel()
 
-	store := idempotency.NewMemoryStore(0)
+	clock := newFakeClock(time.Unix(0, 0))
+	store := idempotency.NewMemoryStore(0, idempotency.WithClock(clock.Now))
 	defer store.Close()
 
 	ctx := context.Background()
@@ -232,7 +235,7 @@ func TestMemoryStore_CheckAndRecord_AllowsAfterExpiry(t *testing.T) {
 		t.Fatalf("within TTL: want ErrDuplicate, got %v", err)
 	}
 
-	time.Sleep(40 * time.Millisecond)
+	clock.Advance(40 * time.Millisecond)
 
 	// After expiry: a fresh recording is allowed.
 	if err := store.CheckAndRecord(ctx, "cmd-6", time.Minute); err != nil {

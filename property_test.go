@@ -127,22 +127,25 @@ func TestProperty_KeysAreIndependent(t *testing.T) {
 }
 
 // TestProperty_TTLExpiry: After TTL expires, Seen returns false and
-// CheckAndRecord succeeds again.
+// CheckAndRecord succeeds again. TTLs are drawn at second scale (up to an
+// hour) and elapse instantly on the pinned clock — arbitrary magnitudes are
+// exactly what the wall clock made untestable before WithClock.
 func TestProperty_TTLExpiry(t *testing.T) {
 	t.Parallel()
 
 	rapid.Check(t, func(t *rapid.T) {
-		store := idempotency.NewMemoryStore(0)
+		clock := newFakeClock(time.Unix(0, 0))
+		store := idempotency.NewMemoryStore(0, idempotency.WithClock(clock.Now))
 		defer store.Close()
 
 		key := rapid.String().Draw(t, "key")
-		ttl := 50 * time.Millisecond
+		ttl := time.Duration(rapid.IntRange(1, 3600).Draw(t, "ttl_seconds")) * time.Second
 
 		if err := store.CheckAndRecord(context.Background(), key, ttl); err != nil {
 			t.Fatalf("CheckAndRecord (first): %v", err)
 		}
 
-		time.Sleep(ttl + 20*time.Millisecond)
+		clock.Advance(ttl)
 
 		seen, err := store.Seen(context.Background(), key)
 		if err != nil {

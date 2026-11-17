@@ -130,8 +130,13 @@ func TestMemoryStore_CloseDuringConcurrentOps(t *testing.T) {
 		}()
 	}
 
-	// Let goroutines run, then Close mid-flight.
-	time.Sleep(20 * time.Millisecond)
+	// Let the goroutines land at least one operation, then Close mid-flight —
+	// a bounded poll instead of a guessed sleep.
+	deadline := time.Now().Add(time.Second)
+
+	for ops.Load() == 0 && time.Now().Before(deadline) {
+		time.Sleep(time.Millisecond)
+	}
 
 	store.Close()
 	close(stop)

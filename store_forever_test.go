@@ -31,7 +31,8 @@ func TestMemoryStore_CheckAndRecord_ForeverIsDuplicate(t *testing.T) {
 func TestMemoryStore_Record_ForeverSurvivesAndIsNotDowngraded(t *testing.T) {
 	t.Parallel()
 
-	store := idempotency.NewMemoryStore(0)
+	clock := newFakeClock(time.Unix(0, 0))
+	store := idempotency.NewMemoryStore(0, idempotency.WithClock(clock.Now))
 	defer store.Close()
 
 	ctx := context.Background()
@@ -45,7 +46,9 @@ func TestMemoryStore_Record_ForeverSurvivesAndIsNotDowngraded(t *testing.T) {
 		t.Fatalf("Record(short) after Forever: %v", err)
 	}
 
-	time.Sleep(40 * time.Millisecond)
+	// Long enough that the claim would have expired had the short Record
+	// downgraded it.
+	clock.Advance(40 * time.Millisecond)
 
 	seen, err := store.Seen(ctx, "forever-record")
 	if err != nil || !seen {
@@ -56,7 +59,8 @@ func TestMemoryStore_Record_ForeverSurvivesAndIsNotDowngraded(t *testing.T) {
 func TestMemoryStore_Record_ForeverDoesNotUpgradeLiveClaim(t *testing.T) {
 	t.Parallel()
 
-	store := idempotency.NewMemoryStore(0)
+	clock := newFakeClock(time.Unix(0, 0))
+	store := idempotency.NewMemoryStore(0, idempotency.WithClock(clock.Now))
 	defer store.Close()
 
 	ctx := context.Background()
@@ -70,7 +74,9 @@ func TestMemoryStore_Record_ForeverDoesNotUpgradeLiveClaim(t *testing.T) {
 		t.Fatalf("Record(Forever) after short: %v", err)
 	}
 
-	time.Sleep(40 * time.Millisecond)
+	// Past the original short expiry: Seen=false proves the claim really
+	// expired, i.e. Forever never took effect.
+	clock.Advance(40 * time.Millisecond)
 
 	seen, err := store.Seen(ctx, "short-then-forever")
 	if err != nil || seen {
@@ -81,7 +87,8 @@ func TestMemoryStore_Record_ForeverDoesNotUpgradeLiveClaim(t *testing.T) {
 func TestMemoryStore_CheckAndRecord_ForeverReclaimsExpiredClaim(t *testing.T) {
 	t.Parallel()
 
-	store := idempotency.NewMemoryStore(0)
+	clock := newFakeClock(time.Unix(0, 0))
+	store := idempotency.NewMemoryStore(0, idempotency.WithClock(clock.Now))
 	defer store.Close()
 
 	ctx := context.Background()
@@ -90,7 +97,7 @@ func TestMemoryStore_CheckAndRecord_ForeverReclaimsExpiredClaim(t *testing.T) {
 		t.Fatalf("Record(short): %v", err)
 	}
 
-	time.Sleep(40 * time.Millisecond)
+	clock.Advance(40 * time.Millisecond)
 
 	if err := store.CheckAndRecord(ctx, "expired-to-forever", idempotency.Forever); err != nil {
 		t.Fatalf("CheckAndRecord(Forever) after expiry: want nil, got %v", err)
@@ -105,7 +112,8 @@ func TestMemoryStore_CheckAndRecord_ForeverReclaimsExpiredClaim(t *testing.T) {
 func TestMemoryStore_Sweep_PreservesForeverEntries(t *testing.T) {
 	t.Parallel()
 
-	store := idempotency.NewMemoryStore(10 * time.Millisecond)
+	clock := newFakeClock(time.Unix(0, 0))
+	store := idempotency.NewMemoryStore(10*time.Millisecond, idempotency.WithClock(clock.Now))
 	defer store.Close()
 
 	ctx := context.Background()
@@ -118,8 +126,15 @@ func TestMemoryStore_Sweep_PreservesForeverEntries(t *testing.T) {
 		t.Fatalf("Record(short): %v", err)
 	}
 
-	// Let the sweeper run several cycles.
-	time.Sleep(60 * time.Millisecond)
+	// Expire the short claim on the pinned clock, then wait for one
+	// wall-clock sweep tick past the advance: the tick must reclaim the
+	// short claim but never touch the Forever entry.
+	clock.Advance(10 * time.Millisecond)
+
+	baseline := clock.Calls()
+	if !clock.awaitCallAfter(baseline, 2*time.Second) {
+		t.Fatal("sweeper did not tick after the clock was advanced")
+	}
 
 	seen, err := store.Seen(ctx, "forever-sweep")
 	if err != nil || !seen {

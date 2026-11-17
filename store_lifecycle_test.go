@@ -17,14 +17,23 @@ import (
 func TestMemoryStore_Sweep_RemovesExpiredEntries(t *testing.T) {
 	t.Parallel()
 
-	store := idempotency.NewMemoryStore(15 * time.Millisecond)
+	clock := newFakeClock(time.Unix(0, 0))
+	store := idempotency.NewMemoryStore(15*time.Millisecond, idempotency.WithClock(clock.Now))
 	defer store.Close()
 
 	ctx := context.Background()
 	_ = store.Record(ctx, "cmd-5", 10*time.Millisecond)
 
-	// Wait beyond the sweep interval so the background goroutine runs at least once.
-	time.Sleep(60 * time.Millisecond)
+	// Expire the claim on the pinned clock, then wait for one wall-clock
+	// sweep tick past the advance: the tick's expiry comparison reads the
+	// pinned clock and reclaims the entry without any intervening read, so
+	// the final Seen proves the sweep (not lazy deletion) removed it.
+	clock.Advance(20 * time.Millisecond)
+
+	baseline := clock.Calls()
+	if !clock.awaitCallAfter(baseline, 2*time.Second) {
+		t.Fatal("sweeper did not tick after the clock was advanced")
+	}
 
 	seen, _ := store.Seen(ctx, "cmd-5")
 	if seen {
@@ -80,7 +89,8 @@ func TestMemoryStore_Sweep_ReclaimsAllKeysUnderLoad(t *testing.T) {
 
 	ctx := context.Background()
 
-	store := idempotency.NewMemoryStore(10 * time.Millisecond)
+	clock := newFakeClock(time.Unix(0, 0))
+	store := idempotency.NewMemoryStore(10*time.Millisecond, idempotency.WithClock(clock.Now))
 	defer store.Close()
 
 	const n = 1000
@@ -98,8 +108,14 @@ func TestMemoryStore_Sweep_ReclaimsAllKeysUnderLoad(t *testing.T) {
 
 	wg.Wait()
 
-	// Wait well beyond the sweep interval so the sweeper runs multiple cycles.
-	time.Sleep(120 * time.Millisecond)
+	// Expire every claim on the pinned clock, then wait for one wall-clock
+	// sweep tick past the advance: the tick reclaims the whole batch.
+	clock.Advance(10 * time.Millisecond)
+
+	baseline := clock.Calls()
+	if !clock.awaitCallAfter(baseline, 2*time.Second) {
+		t.Fatal("sweeper did not tick after the clock was advanced")
+	}
 
 	// Every sampled key must be reclaimed (unseen) after expiry.
 	for i := 0; i < n; i += 50 {
