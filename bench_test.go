@@ -173,6 +173,7 @@ func BenchmarkMemoryUsage_AfterSweep(b *testing.B) {
 
 	for b.Loop() {
 		clock := newFakeClock(time.Unix(0, 0))
+
 		store := idempotency.NewMemoryStore(5*time.Millisecond, idempotency.WithClock(clock.Now))
 
 		for i := range keyCount {
@@ -186,7 +187,7 @@ func BenchmarkMemoryUsage_AfterSweep(b *testing.B) {
 		// sweep tick past the advance so the measurement reflects swept state.
 		clock.Advance(5 * time.Millisecond)
 
-		if !clock.awaitCallAfter(clock.Calls(), 2*time.Second) {
+		if !clock.awaitCallAfter(clock.Calls()) {
 			b.Fatal("sweeper did not tick after the clock was advanced")
 		}
 

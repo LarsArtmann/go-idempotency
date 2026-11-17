@@ -17,6 +17,7 @@ func TestProperty_ForeverClaimNeverExpires(t *testing.T) {
 
 	rapid.Check(t, func(t *rapid.T) {
 		clock := newFakeClock(time.Unix(0, 0))
+
 		store := idempotency.NewMemoryStore(0, idempotency.WithClock(clock.Now))
 		defer store.Close()
 

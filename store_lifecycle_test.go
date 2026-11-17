@@ -18,6 +18,7 @@ func TestMemoryStore_Sweep_RemovesExpiredEntries(t *testing.T) {
 	t.Parallel()
 
 	clock := newFakeClock(time.Unix(0, 0))
+
 	store := idempotency.NewMemoryStore(15*time.Millisecond, idempotency.WithClock(clock.Now))
 	defer store.Close()
 
@@ -31,7 +32,7 @@ func TestMemoryStore_Sweep_RemovesExpiredEntries(t *testing.T) {
 	clock.Advance(20 * time.Millisecond)
 
 	baseline := clock.Calls()
-	if !clock.awaitCallAfter(baseline, 2*time.Second) {
+	if !clock.awaitCallAfter(baseline) {
 		t.Fatal("sweeper did not tick after the clock was advanced")
 	}
 
@@ -90,6 +91,7 @@ func TestMemoryStore_Sweep_ReclaimsAllKeysUnderLoad(t *testing.T) {
 	ctx := context.Background()
 
 	clock := newFakeClock(time.Unix(0, 0))
+
 	store := idempotency.NewMemoryStore(10*time.Millisecond, idempotency.WithClock(clock.Now))
 	defer store.Close()
 
@@ -113,7 +115,7 @@ func TestMemoryStore_Sweep_ReclaimsAllKeysUnderLoad(t *testing.T) {
 	clock.Advance(10 * time.Millisecond)
 
 	baseline := clock.Calls()
-	if !clock.awaitCallAfter(baseline, 2*time.Second) {
+	if !clock.awaitCallAfter(baseline) {
 		t.Fatal("sweeper did not tick after the clock was advanced")
 	}
 

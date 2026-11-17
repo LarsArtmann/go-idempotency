@@ -69,6 +69,7 @@ func TestMemoryStore_Seen_LazilyDeletesExpired(t *testing.T) {
 	t.Parallel()
 
 	clock := newFakeClock(time.Unix(0, 0))
+
 	store := idempotency.NewMemoryStore(0, idempotency.WithClock(clock.Now)) // no sweep goroutine
 	defer store.Close()
 
@@ -112,6 +113,7 @@ func TestMemoryStore_Record_AfterExpiry_ReRecordsWithNewTTL(t *testing.T) {
 	t.Parallel()
 
 	clock := newFakeClock(time.Unix(0, 0))
+
 	store := idempotency.NewMemoryStore(0, idempotency.WithClock(clock.Now)) // no sweep: expired key stays in map
 	defer store.Close()
 
@@ -217,6 +219,7 @@ func TestMemoryStore_CheckAndRecord_AllowsAfterExpiry(t *testing.T) {
 	t.Parallel()
 
 	clock := newFakeClock(time.Unix(0, 0))
+
 	store := idempotency.NewMemoryStore(0, idempotency.WithClock(clock.Now))
 	defer store.Close()
 

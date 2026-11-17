@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Nothing yet.
+- **Injectable `MemoryStore` clock (`WithClock`)** — `NewMemoryStore` accepts variadic options and `idempotency.WithClock(func() time.Time)` overrides the clock behind every expiry decision: lazy deletion in `Seen`, re-recording in `Record`, claiming in `CheckAndRecord`, and the sweep's expiry comparison. The default stays `time.Now`, so existing call sites compile unchanged; options apply before the sweeper goroutine starts. The suite's ten expiry-path sleeps become deterministic clock advances — including hour-scale TTLs, which a real sleep made untestable — and the sweep tests wait for a proven wall-clock tick instead of a fixed sleep.
 
 ### Changed
 

@@ -149,7 +149,7 @@ Errors are classified by [go-error-family](https://github.com/larsartmann/go-err
 - **Permanent claims** — `idempotency.Forever` records a claim that never expires, for event/consumer dedupe and permanent domain invariants; request-facing keys stay TTL-windowed (ADR-006)
 - **Contract test suite** — `contract.RunTests` verifies any `Store` implementation against the full invariant set (atomicity, TTL expiry, concurrency safety, error handling)
 - **Consumer test kit** — `idemtest` (ADR-007): a contract-certified test store, failure injection, a store spy, and sabotage-proven drills for retry storms, one-winner races, fail-closed behavior, TTL windows, and the HTTP adapter's 409/400/503 contract
-- **`MemoryStore`** _(deprecated)_ — in-memory store for development and testing, with TTL-based expiration (background sweep + lazy deletion), configurable sweep interval, and graceful shutdown; will be removed in a future major version
+- **`MemoryStore`** _(deprecated)_ — in-memory store for development and testing, with TTL-based expiration (background sweep + lazy deletion), configurable sweep interval, an injectable clock (`WithClock`) for deterministic expiry tests, and graceful shutdown; will be removed in a future major version
 - **Conflict-classified errors** — `ErrDuplicate` is HTTP 409, non-retryable; `ErrInvalidTTL` is HTTP 400
 - **Concurrency-safe** — exactly-one-winner verified with 200 goroutines, property-based tests, and fuzz tests
 

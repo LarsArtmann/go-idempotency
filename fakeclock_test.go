@@ -50,11 +50,11 @@ func (c *fakeClock) Calls() int {
 
 // awaitCallAfter polls until the store reads the clock again beyond baseline
 // — for the sweep tests: the background ticker fired after the clock was
-// advanced — or the timeout elapses. The wait uses real time because the
-// sweep ticker is deliberately wall-clock, but it is bounded, never a bare
-// sleep of a guessed duration.
-func (c *fakeClock) awaitCallAfter(baseline int, timeout time.Duration) bool {
-	deadline := time.Now().Add(timeout)
+// advanced — or the two-second timeout elapses. The wait uses real time
+// because the sweep ticker is deliberately wall-clock, but it is bounded,
+// never a bare sleep of a guessed duration.
+func (c *fakeClock) awaitCallAfter(baseline int) bool {
+	deadline := time.Now().Add(2 * time.Second)
 
 	for time.Now().Before(deadline) {
 		if c.Calls() > baseline {

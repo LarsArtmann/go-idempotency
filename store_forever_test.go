@@ -32,6 +32,7 @@ func TestMemoryStore_Record_ForeverSurvivesAndIsNotDowngraded(t *testing.T) {
 	t.Parallel()
 
 	clock := newFakeClock(time.Unix(0, 0))
+
 	store := idempotency.NewMemoryStore(0, idempotency.WithClock(clock.Now))
 	defer store.Close()
 
@@ -60,6 +61,7 @@ func TestMemoryStore_Record_ForeverDoesNotUpgradeLiveClaim(t *testing.T) {
 	t.Parallel()
 
 	clock := newFakeClock(time.Unix(0, 0))
+
 	store := idempotency.NewMemoryStore(0, idempotency.WithClock(clock.Now))
 	defer store.Close()
 
@@ -88,6 +90,7 @@ func TestMemoryStore_CheckAndRecord_ForeverReclaimsExpiredClaim(t *testing.T) {
 	t.Parallel()
 
 	clock := newFakeClock(time.Unix(0, 0))
+
 	store := idempotency.NewMemoryStore(0, idempotency.WithClock(clock.Now))
 	defer store.Close()
 
@@ -113,6 +116,7 @@ func TestMemoryStore_Sweep_PreservesForeverEntries(t *testing.T) {
 	t.Parallel()
 
 	clock := newFakeClock(time.Unix(0, 0))
+
 	store := idempotency.NewMemoryStore(10*time.Millisecond, idempotency.WithClock(clock.Now))
 	defer store.Close()
 
@@ -132,7 +136,7 @@ func TestMemoryStore_Sweep_PreservesForeverEntries(t *testing.T) {
 	clock.Advance(10 * time.Millisecond)
 
 	baseline := clock.Calls()
-	if !clock.awaitCallAfter(baseline, 2*time.Second) {
+	if !clock.awaitCallAfter(baseline) {
 		t.Fatal("sweeper did not tick after the clock was advanced")
 	}
 
