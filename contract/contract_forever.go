@@ -38,7 +38,7 @@ func runForeverTests(t *testing.T, ctx context.Context, factory StoreFactory, tm
 // claim on key, after sleeping tm.waitAfter — long enough for a short-TTL
 // claim to expire, so a key still seen is held by Forever alone. Fatals if
 // the claim cannot be recorded.
-func claimedForever(t *testing.T, ctx context.Context, factory StoreFactory, tm timings, key string) idempotency.Store {
+func claimedForever(t *testing.T, ctx context.Context, factory StoreFactory, tm timings, key string) idempotency.Store { //nolint:ireturn // every Store handout in this suite is the interface; a setup helper is no exception
 	t.Helper()
 	t.Parallel()
 
@@ -54,6 +54,8 @@ func claimedForever(t *testing.T, ctx context.Context, factory StoreFactory, tm 
 }
 
 func foreverSeenSurvives(t *testing.T, ctx context.Context, factory StoreFactory, tm timings) {
+	t.Helper()
+
 	store := claimedForever(t, ctx, factory, tm, "forever-seen")
 
 	if !mustSeen(t, store, ctx, "forever-seen") {
@@ -62,6 +64,8 @@ func foreverSeenSurvives(t *testing.T, ctx context.Context, factory StoreFactory
 }
 
 func foreverRecordNeverExpires(t *testing.T, ctx context.Context, factory StoreFactory, tm timings) {
+	t.Helper()
+
 	store := claimedForever(t, ctx, factory, tm, "forever-check")
 
 	err := store.CheckAndRecord(ctx, "forever-check", idempotency.Forever)

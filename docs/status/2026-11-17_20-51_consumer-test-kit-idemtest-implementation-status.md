@@ -28,15 +28,15 @@
 
 ### 3. The package (`idemtest/`, 7 files, all under the 350-line cap)
 
-| File | Surface |
-| --- | --- |
-| `doc.go` | ssetest-style package doc: the three problems it solves, quick starts, composition with `contract` |
-| `store.go` | `NewStore()` — blessed test double delegating to `internal/teststore` (one implementation, no split brain); `Reset()` for phase isolation |
-| `failing.go` | `Fail(next, err)` + `Failing` — failure injection; `Err = nil` mid-test models the store healing |
-| `recorder.go` | `NewRecorder(next)` spy, `Call{Op,Key,TTL,Err}`, `Calls()` copy, `RequireClaimed` |
-| `executions.go` | `Executions` counter: `Fn`/`Wrap` (command adapters), `Counting` (HTTP adapter), `RequireExecutions` |
-| `drill.go` | `Dispatch` (type **alias** — see lessons), `RequireExactlyOnce` (retry storm), `RequireOneWinner` (barrier race / TOCTOU detector), `RequireFailClosed`, `RequireAllowsAfterExpiry` (bounded poll, 2ms step / 100ms grace — never a bare sleep) |
-| `http.go` | `Send` (recorder-based, in-process, no sockets), `SendConcurrently` (barrier storm), `WithMethod`/`WithBody`/`WithHeader`, `RequireStatus`, `RequireDuplicate` (409), `RequireMissingKeyRejected` (400), `RequireStoreUnavailable` (503) |
+| File            | Surface                                                                                                                                                                                                                                         |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `doc.go`        | ssetest-style package doc: the three problems it solves, quick starts, composition with `contract`                                                                                                                                              |
+| `store.go`      | `NewStore()` — blessed test double delegating to `internal/teststore` (one implementation, no split brain); `Reset()` for phase isolation                                                                                                       |
+| `failing.go`    | `Fail(next, err)` + `Failing` — failure injection; `Err = nil` mid-test models the store healing                                                                                                                                                |
+| `recorder.go`   | `NewRecorder(next)` spy, `Call{Op,Key,TTL,Err}`, `Calls()` copy, `RequireClaimed`                                                                                                                                                               |
+| `executions.go` | `Executions` counter: `Fn`/`Wrap` (command adapters), `Counting` (HTTP adapter), `RequireExecutions`                                                                                                                                            |
+| `drill.go`      | `Dispatch` (type **alias** — see lessons), `RequireExactlyOnce` (retry storm), `RequireOneWinner` (barrier race / TOCTOU detector), `RequireFailClosed`, `RequireAllowsAfterExpiry` (bounded poll, 2ms step / 100ms grace — never a bare sleep) |
+| `http.go`       | `Send` (recorder-based, in-process, no sockets), `SendConcurrently` (barrier storm), `WithMethod`/`WithBody`/`WithHeader`, `RequireStatus`, `RequireDuplicate` (409), `RequireMissingKeyRejected` (400), `RequireStoreUnavailable` (503)        |
 
 ### 4. Tests — 43 tests, 87.9% statement coverage
 
@@ -98,7 +98,7 @@ Nothing user-visible. Two design/compile mistakes (named-type assignability, the
 
 ## What we should improve (consolidated)
 
-1. **`RequireAllowsAfterExpiry` cannot detect a too-short claim** — if the store freed the key instantly, the first poll retry succeeds and the drill passes. A stronger drill asserts a duplicate *inside* the window before polling for the reclaim.
+1. **`RequireAllowsAfterExpiry` cannot detect a too-short claim** — if the store freed the key instantly, the first poll retry succeeds and the drill passes. A stronger drill asserts a duplicate _inside_ the window before polling for the reclaim.
 2. **No TimingScale escape hatch on the expiry drill** — fixed 100ms grace; a pathological CI runner could flake. The contract suite solved this with `Options.TimingScale`.
 3. **`SendConcurrently` ignores `RequestOption`s** — inconsistent with `Send`; a body-carrying concurrent storm is currently impossible.
 4. **Negative harness asserts only the failed flag** — `captureTB.msg` is captured but never asserted; messages could rot while the flag stays green.
@@ -108,6 +108,7 @@ Nothing user-visible. Two design/compile mistakes (named-type assignability, the
 ## Next work (ranked, up to 50 — realistically 24 solid items)
 
 **Kit hardening**
+
 1. Strengthen `RequireAllowsAfterExpiry` (assert duplicate within window first).
 2. Add a timing-scale option (or env knob) to the expiry drill for slow runners.
 3. Accept `RequestOption`s in `SendConcurrently`.
