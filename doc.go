@@ -114,9 +114,8 @@
 // atomic — use your backend's native check-and-set primitive, not a separate
 // check followed by a record.
 //
-// The Redis and SQL examples below are TTL-only. If your backend accepts
-// [Forever], add the permanent-claim branch described in "Permanent Claims
-// (Forever)" above; never compute now.Add(Forever).
+// Both examples below handle [Forever] explicitly: Redis omits the expiry and
+// SQL stores NULL, so no adapter ever computes now.Add(Forever).
 //
 // Example — Redis adapter using github.com/redis/go-redis/v9 (illustrative:
 // that client is intentionally NOT a dependency of this module):
@@ -134,19 +133,29 @@
 //	    return n > 0, nil
 //	}
 //
+//	// redisExpiry maps Forever to 0 seconds, which go-redis sends as a SET
+//	// with no EX argument: the key never expires.
+//	func redisExpiry(ttl time.Duration) time.Duration {
+//	    if ttl == idempotency.Forever {
+//	        return 0
+//	    }
+//	    return ttl
+//	}
+//
 //	func (s *RedisStore) Record(ctx context.Context, key string, ttl time.Duration) error {
 //	    if ttl <= 0 {
 //	        return idempotency.ErrInvalidTTL
 //	    }
-//	    // SET NX: if the key already exists, leave it (no-op, TTL not extended).
-//	    return s.client.SetNX(ctx, s.prefix+key, "1", ttl).Err()
+//	    // SET NX: if the key already exists, leave it (no-op: the TTL is not
+//	    // extended and a permanent claim is never downgraded).
+//	    return s.client.SetNX(ctx, s.prefix+key, "1", redisExpiry(ttl)).Err()
 //	}
 //
 //	func (s *RedisStore) CheckAndRecord(ctx context.Context, key string, ttl time.Duration) error {
 //	    if ttl <= 0 {
 //	        return idempotency.ErrInvalidTTL
 //	    }
-//	    ok, err := s.client.SetNX(ctx, s.prefix+key, "1", ttl).Result()
+//	    ok, err := s.client.SetNX(ctx, s.prefix+key, "1", redisExpiry(ttl)).Result()
 //	    if err != nil {
 //	        return err
 //	    }
@@ -156,30 +165,47 @@
 //	    return nil
 //	}
 //
-// The same pattern works for SQL (INSERT ... ON CONFLICT DO NOTHING), DynamoDB
-// (PutItem with ConditionExpression), or any backend that supports an atomic
-// conditional write. See the contract test suite (package contract) to verify
-// your implementation against the same invariants as MemoryStore.
+// The same pattern works for SQL (a conditional INSERT ... ON CONFLICT DO
+// UPDATE), DynamoDB (PutItem with ConditionExpression), or any backend that
+// supports an atomic conditional write. See the contract test suite (package
+// contract) to verify your implementation against the same invariants as
+// MemoryStore.
 //
 // Example — SQL adapter (PostgreSQL; database/sql is stdlib, but drivers are
 // intentionally NOT dependencies of this module). Schema:
 //
 //	CREATE TABLE idempotency_keys (
 //	    key        TEXT PRIMARY KEY,
-//	    expires_at TIMESTAMPTZ NOT NULL
+//	    expires_at TIMESTAMPTZ  -- NULL means the claim is permanent (Forever)
 //	);
 //
 // The expiry is computed by the application clock in this example; filter on
-// expires_at (or add a scheduled purge) to reclaim expired rows:
+// expires_at (or add a scheduled purge) to reclaim expired rows, treating NULL
+// as live forever:
 //
 //	type SQLStore struct {
 //	    db *sql.DB
 //	}
 //
+//	// expiryArg maps the Forever sentinel to SQL NULL (never expires) and
+//	// rejects a non-positive TTL, so no adapter ever computes
+//	// now.Add(Forever).
+//	func expiryArg(ttl time.Duration) (*time.Time, error) {
+//	    if ttl <= 0 {
+//	        return nil, idempotency.ErrInvalidTTL
+//	    }
+//	    if ttl == idempotency.Forever {
+//	        return nil, nil // NULL: permanent claim
+//	    }
+//	    exp := time.Now().Add(ttl)
+//	    return &exp, nil
+//	}
+//
 //	func (s *SQLStore) Seen(ctx context.Context, key string) (bool, error) {
 //	    var live bool
 //	    err := s.db.QueryRowContext(ctx,
-//	        `SELECT EXISTS (SELECT 1 FROM idempotency_keys WHERE key = $1 AND expires_at > now())`,
+//	        `SELECT EXISTS (SELECT 1 FROM idempotency_keys WHERE key = $1
+//	         AND (expires_at IS NULL OR expires_at > now()))`,
 //	        key,
 //	    ).Scan(&live)
 //
@@ -187,61 +213,63 @@
 //	}
 //
 //	func (s *SQLStore) Record(ctx context.Context, key string, ttl time.Duration) error {
-//	    if ttl <= 0 {
-//	        return idempotency.ErrInvalidTTL
+//	    expiresAt, err := expiryArg(ttl)
+//	    if err != nil {
+//	        return err
 //	    }
-//	    // Set the expiry only when the row is absent or already expired; a
-//	    // live row is left untouched (Record never extends a TTL).
-//	    _, err := s.db.ExecContext(ctx,
+//	    // Set the expiry only when the row is absent or already expired. A
+//	    // live row is left untouched (Record never extends, upgrades, or
+//	    // downgrades a claim); the NULL guard makes that explicit for a
+//	    // permanent claim, whose own predicate would evaluate to NULL.
+//	    _, err = s.db.ExecContext(ctx,
 //	        `INSERT INTO idempotency_keys (key, expires_at) VALUES ($1, $2)
 //	         ON CONFLICT (key) DO UPDATE SET expires_at = EXCLUDED.expires_at
-//	         WHERE idempotency_keys.expires_at <= now()`,
-//	        key, time.Now().Add(ttl),
+//	         WHERE idempotency_keys.expires_at IS NOT NULL
+//	           AND idempotency_keys.expires_at <= now()`,
+//	        key, expiresAt,
 //	    )
 //
 //	    return err
 //	}
 //
 //	func (s *SQLStore) CheckAndRecord(ctx context.Context, key string, ttl time.Duration) error {
-//	    if ttl <= 0 {
-//	        return idempotency.ErrInvalidTTL
-//	    }
-//
-//	    // Single transaction: the INSERT ... ON CONFLICT DO UPDATE locks the
-//	    // row (or creates it), so concurrent claims of the same key serialize
-//	    // and the check-and-record is atomic.
-//	    tx, err := s.db.BeginTx(ctx, nil)
+//	    expiresAt, err := expiryArg(ttl)
 //	    if err != nil {
 //	        return err
 //	    }
-//	    defer func() { _ = tx.Rollback() }()
 //
-//	    var expiresAt time.Time
-//	    err = tx.QueryRowContext(ctx,
+//	    // One atomic statement does the whole job. The INSERT claims a new
+//	    // key; the ON CONFLICT branch takes over only a row that has expired.
+//	    // A live row (future expires_at) or a permanent claim (NULL) leaves
+//	    // RowsAffected at 0, which is the duplicate. Concurrent claims serialize
+//	    // on the row lock and re-evaluate the WHERE clause after the winner
+//	    // commits, so exactly one of them sees RowsAffected 1.
+//	    res, err := s.db.ExecContext(ctx,
 //	        `INSERT INTO idempotency_keys (key, expires_at) VALUES ($1, $2)
-//	         ON CONFLICT (key) DO UPDATE SET expires_at = idempotency_keys.expires_at
-//	         RETURNING expires_at`,
-//	        key, time.Now().Add(ttl),
-//	    ).Scan(&expiresAt)
+//	         ON CONFLICT (key) DO UPDATE SET expires_at = EXCLUDED.expires_at
+//	         WHERE idempotency_keys.expires_at IS NOT NULL
+//	           AND idempotency_keys.expires_at <= now()`,
+//	        key, expiresAt,
+//	    )
 //	    if err != nil {
 //	        return err
 //	    }
 //
-//	    if time.Now().Before(expiresAt) {
-//	        return idempotency.ErrDuplicate // live claim exists
-//	    }
-//
-//	    if _, err := tx.ExecContext(ctx,
-//	        `UPDATE idempotency_keys SET expires_at = $2 WHERE key = $1`,
-//	        key, time.Now().Add(ttl),
-//	    ); err != nil {
+//	    claimed, err := res.RowsAffected()
+//	    if err != nil {
 //	        return err
 //	    }
+//	    if claimed == 0 {
+//	        return idempotency.ErrDuplicate
+//	    }
 //
-//	    return tx.Commit()
+//	    return nil
 //	}
 //
 //	func (s *SQLStore) Close() error { return s.db.Close() }
+//
+// Record and CheckAndRecord run the same statement. Only the return differs:
+// Record swallows the duplicate (a no-op), CheckAndRecord reports it.
 //
 // # SQL adapter notes — SQLite specifics (battle-tested in production)
 //
@@ -263,19 +291,13 @@
 //     DSN pragmas apply to every pooled connection; a PRAGMA via db.Exec
 //     configures only one.
 //
-//  3. CheckAndRecord needs NO explicit transaction on SQLite: the PRIMARY KEY
-//     makes a single INSERT the atomic claim, and ON CONFLICT(key) DO NOTHING
-//     plus RowsAffected() detects the duplicate in one statement:
-//
-//     res, err := db.ExecContext(ctx,
-//     `INSERT INTO idempotency_keys (key, expires_at) VALUES (?, ?)
-//     ON CONFLICT(key) DO NOTHING`,
-//     key, time.Now().Add(ttl))
-//     // claimed==0 => idempotency.ErrDuplicate
-//
-//     This is simpler AND faster than the two-step BEGIN/RETURNING/UPDATE
-//     transaction the PostgreSQL example needs (that one must read the live
-//     expiry back; SQLite's DO NOTHING makes the outcome a single bit).
+//  3. CheckAndRecord needs NO explicit transaction: the PRIMARY KEY makes a
+//     single INSERT the atomic claim, and RowsAffected() detects the duplicate
+//     in one statement. Reuse the PostgreSQL statement above with "?" in place
+//     of "$n", binding the expiry from expiryArg (NULL for Forever) and the
+//     current instant rendered as in (4). A plain ON CONFLICT(key) DO NOTHING
+//     is wrong here: it refuses the takeover of an expired row too, so that
+//     claim could never be reclaimed and the key would stay blocked forever.
 //
 //  4. SQLite has no TIMESTAMPTZ: an expiry stored as TEXT must use a
 //     fixed-width fraction. time.RFC3339Nano trims trailing zeros, so
@@ -287,12 +309,16 @@
 //
 //     expiresAt := t.UTC().Format("2006-01-02T15:04:05.000000000Z07:00")
 //
+//     A permanent claim stores NULL instead of a rendered instant, and the
+//     live predicate becomes expires_at IS NULL OR expires_at > ?.
+//
 //     Fixed width makes lexicographic order chronological order: no schema
 //     change, no driver change (found in sperrmuell-direct's SQLite store,
 //     2026-10-11; issue #12).
 //
-// A lazy purge (DELETE ... WHERE expires_at <= now) on the hot path keeps the
-// table bounded; it is the query that collides with concurrent claims, which
+// A lazy purge (DELETE ... WHERE expires_at IS NOT NULL AND expires_at <= now)
+// on the hot path keeps the table bounded; NULL rows are permanent claims and
+// are never purged. It is the query that collides with concurrent claims, which
 // is why (2) matters.
 //
 // Example scope: Redis and SQL adapters are documented because they cover the
