@@ -14,6 +14,7 @@
 //   - Quick Start — the three calls and the two error sentinels
 //   - Permanent Claims (Forever) — never-expiring claims and backend encodings
 //   - Design Philosophy: Interface-First, You Implement the Backend
+//   - Testing Your Integration — the idemtest kit (doubles and drills)
 //   - Implementing a Custom Backend — the Redis adapter example
 //   - Recipe: Dedup + Response Replay (HTTP Idempotency)
 //   - Client-side vs receiver-side posture
@@ -108,7 +109,9 @@
 // helpers wait for a consumer that needs them. For custom integrations
 // (transport hooks, manual checks), use the [Store] interface directly.
 //
-// To test the integration above the store, the test kit subpackage
+// # Testing Your Integration
+//
+// To test the integration above the store, the test kit
 // (github.com/larsartmann/go-idempotency/idemtest, ADR-007) provides a
 // contract-certified in-memory double (idemtest.NewStore), failure injection,
 // a store spy, and one-liner drills for the scenarios that matter: a retry

@@ -10,6 +10,22 @@ Short-term actionable work. Open items only — completed work lives in [CHANGEL
 - [ ] **Revisit `Delete(ctx, key)` on `Store`** — manual claim invalidation for operational recovery of poisoned claims. **Deferred per [ADR-004](docs/adr/004-store-interface-evolution.md)**: the owner confirmed the deferral 2026-09-05; revisit on a demonstrated poisoned-claim need that TTL tuning cannot absorb. **Impact: Medium · Effort: S (when triggered)**
 - [ ] **Propagate `Forever` to go-cqrs-lite** — `metaengine.DedupStore`/`claimkit` and `MapDedupStore` must map the sentinel (store MaxInt64/NULL, never `now.Add`), and `adttest.AssertDedupStore` must pin the mapped semantics; consume `github.com/larsartmann/go-idempotency@v0.4.0`, which carries `Forever`. **Impact: High · Effort: M**
 
+## Consumer test kit (`idemtest`) follow-ups
+
+_Backlog from the kit's 2026-11-17 status report and the v0.5.0 release verification._
+
+- [ ] **Decide drill counter semantics** — each drill asserts its `Executions` counter from zero (`Total() == 1`), and the v0.5.0 README quick start initially shared one counter across drills (caught by the clean-room smoke test, fixed in the README). Either document "one counter per drill" in `idemtest/doc.go` explicitly, or snapshot the baseline inside each drill so shared counters work (behavior change → `idemtest/v0.1.1`). **Impact: Medium · Effort: S**
+- [ ] **Strengthen `RequireAllowsAfterExpiry`** — assert a duplicate inside the TTL window before polling for reclaim, so a too-short claim (instantly freed key) fails the drill instead of passing. **Impact: High · Effort: S**
+- [ ] **Timing-scale option for the expiry drill** — the fixed 100ms poll grace is a CI flake risk on loaded runners; mirror the contract suite's `TimingScale`. **Impact: Medium · Effort: S**
+- [ ] **`SendConcurrently` `RequestOption` support** — `idemtest/http.go` currently pins request defaults for the concurrent burst. **Impact: Low · Effort: S**
+- [ ] **Assert failure-message fragments in the sabotage harness** — `idemtest/negative_test.go`'s `captureTB` captures `msg` but never asserts on it; asserting the violation name makes the proofs stronger. **Impact: Medium · Effort: S**
+- [ ] **Point `docs/migrating-from-memorystore.md` at `idemtest.NewStore`** — consumers who used `MemoryStore` in tests need the blessed double, not a hand-rolled map. **Impact: Medium · Effort: S**
+- [ ] **Add an `idemtest` demo to `example/`** — one runnable drill walkthrough next to the contract-suite demo. **Impact: Low · Effort: S**
+- [ ] **Nested-module coverage + Codecov in CI** — the race/vet/lint/tidy/govulncheck legs cover `idemtest/` since v0.5.0; the coverage steps and Codecov upload still run root-only. **Impact: Medium · Effort: S**
+- [ ] **erraudit policy for the nested module** — the enforced `--enforce-go-error-family` run gates the root only; decide whether `idemtest` joins it. **Impact: Low · Effort: S**
+- [ ] **Migrate middleware self-tests onto kit doubles** — pending the owner question from the 2026-11-17 20:51 report: may `middleware`'s own tests import `idemtest` (dedup of `failingStore`/barrier harness), or stay self-contained? **Impact: Low · Effort: M**
+- [ ] **Harvest the dedup-session backlog** — route `docs/status/2026-11-17_21-20_dedup-all-session-status.md` section (f) through docs-health HARVEST into TODO_LIST/ROADMAP. **Impact: Medium · Effort: S**
+
 ## Documentation
 
 - [ ] **DOMAIN_LANGUAGE.md upgrades (plan T5)** — Where-citation column for every term, Bounded contexts section (Store / middleware / contract vocabulary), Deprecated terms section (MemoryStore); the go-etag glossary pattern. **Impact: Medium · Effort: M**
@@ -24,7 +40,7 @@ Short-term actionable work. Open items only — completed work lives in [CHANGEL
 ## Infrastructure
 
 - [ ] **Coverage floor once Codecov is active** — fail CI under ~90% so erosion is loud. Keep the Codecov threshold step drafted as a ready-to-flip diff (plan T10). Blocked on the owner setting `CODECOV_TOKEN`. **Impact: Medium · Effort: S**
-- [ ] **Announce v0.4.0** (owner preference) — channel and timing are the owner's call; permanent claims plus the 18-invariant contract suite are the story. **Impact: Low · Effort: S**
+- [ ] **Announce v0.5.0** (owner preference) — channel and timing are the owner's call; the consumer test kit (`idemtest`, its own module) plus the 18-invariant contract suite are the story. Supersedes the un-executed v0.4.0 announcement row (permanent claims are part of the same narrative). **Impact: Low · Effort: S**
 - [ ] **Confirm the next weekly scheduled CI run is fully green** — the 2026-11-16 scheduled run proved the `GOTOOLCHAIN` fix live: `Test (oldstable)` passed with `GO_IDEMPOTENCY_CONTRACT_TIMING_SCALE: 3`. That run's Docs job still failed, but only on the private-upstream issue links in `AGENTS.md`, which `44077357195` removed; no scheduled run has executed since. Watch the 2026-11-23 run. **Impact: Medium · Effort: S**
 
 ## Cleanup

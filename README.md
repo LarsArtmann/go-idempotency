@@ -221,7 +221,7 @@ Slow or heavily loaded CI runners can stretch the suite's wall-clock timings wit
 
 ## Testing your integration
 
-The contract suite verifies a backend. To test everything **above** it — your command wiring, your HTTP adapter — the [`idemtest`](idemtest/) kit ships the drills and doubles every consumer otherwise hand-rolls ([ADR-007](docs/adr/007-consumer-test-kit.md)). Import it from `_test.go` files only.
+The contract suite verifies a backend. To test everything **above** it — your command wiring, your HTTP adapter — the [`idemtest`](https://pkg.go.dev/github.com/larsartmann/go-idempotency/idemtest) kit ships the drills and doubles every consumer otherwise hand-rolls ([ADR-007](docs/adr/007-consumer-test-kit.md); its own module, tagged `idemtest/v*`). Import it from `_test.go` files only.
 
 A contract-certified store for tests (no deprecated `MemoryStore`, no hand-rolled map):
 
@@ -229,16 +229,24 @@ A contract-certified store for tests (no deprecated `MemoryStore`, no hand-rolle
 store := idemtest.NewStore()
 ```
 
-Prove at-most-once through your own dispatch, in one line each:
+Prove at-most-once through your own dispatch. Each drill asserts its `Executions` counter from zero, so give every drill a counter of its own:
 
 ```go
-exec := idemtest.NewExecutions()
-place := middleware.NewCommand(store, time.Minute, exec.Fn())
+stormExec := idemtest.NewExecutions()
+storm := middleware.NewCommand(store, time.Minute, stormExec.Fn())
+idemtest.RequireExactlyOnce(t, storm, "order-42:place", 5, stormExec) // retry storm: 5 attempts, 1 execution
 
-idemtest.RequireExactlyOnce(t, place, "order-42:place", 5, exec)  // retry storm: 5 attempts, 1 execution
-idemtest.RequireOneWinner(t, place, "contended-key", 50, exec)   // concurrent race: exactly one winner
-idemtest.RequireFailClosed(t, place, "key", exec)                 // pair with idemtest.Fail(store, err)
-idemtest.RequireAllowsAfterExpiry(t, place, "key", 5*time.Millisecond, exec) // the TTL window frees
+raceExec := idemtest.NewExecutions()
+race := middleware.NewCommand(store, time.Minute, raceExec.Fn())
+idemtest.RequireOneWinner(t, race, "contended-key", 50, raceExec) // concurrent race: exactly one winner
+
+failExec := idemtest.NewExecutions()
+failing := idemtest.Fail(idemtest.NewStore(), errors.New("store down"))
+idemtest.RequireFailClosed(t, middleware.NewCommand(failing, time.Minute, failExec.Fn()), "key", failExec) // fails closed, never executes
+
+ttlExec := idemtest.NewExecutions()
+ttl := middleware.NewCommand(store, time.Minute, ttlExec.Fn())
+idemtest.RequireAllowsAfterExpiry(t, ttl, "key", 5*time.Millisecond, ttlExec) // the TTL window frees
 ```
 
 `RequireOneWinner` is the TOCTOU detector: a pipeline built on separate `Seen` + `Record` calls fails it loudly. The drills accept any `func(ctx, key) error` dispatch — a `middleware.Command` passes as-is, and so does a raw `CheckAndRecord` closure.
