@@ -7,6 +7,13 @@ plan, which specified this ADR's content; the provisional owner-veto window
 closed with that approval. Records two related structural decisions: the
 module stays single, and the `go` directive stays anchored.
 
+**Addendum (2026-11-17):** the root module remains single; `idemtest` now
+ships as a separate nested module per
+[ADR-008](008-idemtest-separate-module.md) — a scoped exception driven by
+the library-policy detection rule, not one of the revisit triggers below.
+The anchored floor now covers both go.mod files:
+`scripts/pre-release-check.sh` checks each.
+
 ## Context
 
 The go-etag cross-repo learning review (docs/status/

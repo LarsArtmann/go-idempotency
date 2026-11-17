@@ -7,6 +7,12 @@ driven test kit for apps and libraries that leverage us, like go-sse
 provides"), which is the demand-side evidence ADR-002/ADR-005 style decisions
 ask for.
 
+**Addendum (2026-11-17, same day):** the kit's packaging moved from "a
+package of the single module" to "a separate nested module" — see
+[ADR-008](008-idemtest-separate-module.md), mirroring go-sse's own `ssetest`.
+Everything else here (surface, sabotage convention, delegation to
+`internal/teststore`, plain-dispatch drills) is unchanged.
+
 ## Context
 
 go-sse ships [`ssetest`](https://github.com/LarsArtmann/go-sse/tree/master/ssetest)

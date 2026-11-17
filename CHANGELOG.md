@@ -9,8 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Consumer test kit (`idemtest`)** — a domain-driven test kit for apps and libraries that use go-idempotency, in the spirit of go-sse's `ssetest` (ADR-007): a contract-certified in-memory test store (`NewStore`), failure injection (`Fail`) for fail-closed drills, a store spy (`NewRecorder` + `RequireClaimed`) that catches key/TTL wiring bugs, an execution counter (`Executions`, `Counting`, `RequireExecutions`), dispatch drills over any `func(ctx, key) error` (`RequireExactlyOnce` retry storm, `RequireOneWinner` TOCTOU detector, `RequireFailClosed`, `RequireAllowsAfterExpiry` bounded-poll TTL drill), and in-process HTTP drills (`Send`, `SendConcurrently`, `RequireDuplicate`/`RequireMissingKeyRejected`/`RequireStoreUnavailable`). Every drill assertion ships a sabotage proof (`idemtest/negative_test.go`), the blessed store is continuously certified by `contract.RunTests` in CI, and the package imports only the standard library, the root package, and `middleware` — the module stays single per ADR-005.
-- **ADR-007** — records the kit's decision set: a package of the single module, test stores are infrastructure (the httptest precedent) not backends, drills take plain dispatch functions so raw `CheckAndRecord` integrations need no `middleware` import, and the sabotage-proof convention extends from the contract suite to the kit.
+- Nothing yet.
+
+### Changed
+
+- Nothing yet.
+
+### Fixed
+
+- Nothing yet.
+
+## [0.5.0] - 2026-11-17
+
+### Added
+
+- **Consumer test kit (`idemtest`)** — a domain-driven test kit for apps and libraries that use go-idempotency, in the spirit of go-sse's `ssetest` (ADR-007): a contract-certified in-memory test store (`NewStore`), failure injection (`Fail`) for fail-closed drills, a store spy (`NewRecorder` + `RequireClaimed`) that catches key/TTL wiring bugs, an execution counter (`Executions`, `Counting`, `RequireExecutions`), dispatch drills over any `func(ctx, key) error` (`RequireExactlyOnce` retry storm, `RequireOneWinner` TOCTOU detector, `RequireFailClosed`, `RequireAllowsAfterExpiry` bounded-poll TTL drill), and in-process HTTP drills (`Send`, `SendConcurrently`, `RequireDuplicate`/`RequireMissingKeyRejected`/`RequireStoreUnavailable`). Every drill assertion ships a sabotage proof (`idemtest/negative_test.go`), the blessed store is continuously certified by `contract.RunTests` in CI, and the package imports only the standard library, the root package, and `middleware`.
+- **ADR-007** — records the kit's decision set: test stores are infrastructure (the httptest precedent) not backends, drills take plain dispatch functions so raw `CheckAndRecord` integrations need no `middleware` import, and the sabotage-proof convention extends from the contract suite to the kit.
+- **Separate `idemtest` module (`idemtest/v*` tags)** — the kit ships as its own nested Go module: `idemtest/go.mod` declares `github.com/larsartmann/go-idempotency/idemtest` and requires the root at `v0.4.0` (whose API surface the kit builds against unchanged), mirroring go-sse's `ssetest` (ADR-008). Consumers add it with `go get github.com/larsartmann/go-idempotency/idemtest`; the import path is unchanged — only the module boundary moved, making the test-only posture structural (production files import `testing`) and the fleet library-policy companion rule ("uses go-idempotency → must have `idemtest`") detectable as a distinct require line. Released as `idemtest/v0.1.0`, tagged together with `v0.5.0`; Dependabot tracks `/idemtest` as its own gomod ecosystem.
+
+### Changed
+
+- **CI and the release gate cover the nested module** — `./...` from the root cannot reach a nested module's packages, so the CI test/vet/lint/tidy/govulncheck jobs and `scripts/pre-release-check.sh` (vet/build/test/lint/tidy/modverify/godirective) now also run inside `idemtest/`, and the anchored `go 1.27` floor is checked in both go.mod files. Without this the kit would have shipped without CI coverage.
+- **`contract_forever.go` duplicate setup extracted** — the two identical claim setups (`foreverSeenSurvives`/`foreverRecordNeverExpires`) collapse into one `claimedForever` helper (the suite's `mustSeen` precedent applied to setup), and `art-dupl:accept` markers record the deliberately mirrored `expiryFor` sites in `internal/teststore` and `example`. No behavior change; `art-dupl -t 5` reports zero actionable groups.
+- **`pre-release-check.sh` refuses unknown `--only` gate names** — a mistyped name previously skipped every gate and reported success, the worst failure a release gate can have; it now fails loudly with the known-gate list.
+- **Release workflow serialized per ref** — `release.yml` gains the fleet-required `concurrency` block (`release-<ref>`, no cancel-in-progress): a second tag push for the same ref waits instead of racing an in-flight publish.
 
 ## [0.4.0] - 2026-11-17
 
@@ -197,7 +219,8 @@ Tagged `v0.1.0`: initial release — idempotency store with TTL-based dedup.
 - **Sweep soak test** — 1000-key concurrent load test verifying sweep reclaims all expired entries
 - **Package documentation** (`doc.go`) with quick-start example and design rationale
 
-[Unreleased]: https://github.com/larsartmann/go-idempotency/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/larsartmann/go-idempotency/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/larsartmann/go-idempotency/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/larsartmann/go-idempotency/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/larsartmann/go-idempotency/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/larsartmann/go-idempotency/compare/v0.3.0...v0.3.1
