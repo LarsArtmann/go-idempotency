@@ -34,17 +34,27 @@ func runForeverTests(t *testing.T, ctx context.Context, factory StoreFactory, tm
 	})
 }
 
-func foreverSeenSurvives(t *testing.T, ctx context.Context, factory StoreFactory, tm timings) {
+// claimedForever returns a fresh store that already holds a live permanent
+// claim on key, after sleeping tm.waitAfter — long enough for a short-TTL
+// claim to expire, so a key still seen is held by Forever alone. Fatals if
+// the claim cannot be recorded.
+func claimedForever(t *testing.T, ctx context.Context, factory StoreFactory, tm timings, key string) idempotency.Store {
 	t.Helper()
 	t.Parallel()
 
 	store := factory(t)
 
-	if err := store.Record(ctx, "forever-seen", idempotency.Forever); err != nil {
+	if err := store.Record(ctx, key, idempotency.Forever); err != nil {
 		t.Fatalf("Record(Forever): %v", err)
 	}
 
 	time.Sleep(tm.waitAfter)
+
+	return store
+}
+
+func foreverSeenSurvives(t *testing.T, ctx context.Context, factory StoreFactory, tm timings) {
+	store := claimedForever(t, ctx, factory, tm, "forever-seen")
 
 	if !mustSeen(t, store, ctx, "forever-seen") {
 		t.Fatal("Forever claim expired: want seen=true, got false")
@@ -52,16 +62,7 @@ func foreverSeenSurvives(t *testing.T, ctx context.Context, factory StoreFactory
 }
 
 func foreverRecordNeverExpires(t *testing.T, ctx context.Context, factory StoreFactory, tm timings) {
-	t.Helper()
-	t.Parallel()
-
-	store := factory(t)
-
-	if err := store.Record(ctx, "forever-check", idempotency.Forever); err != nil {
-		t.Fatalf("Record(Forever): %v", err)
-	}
-
-	time.Sleep(tm.waitAfter)
+	store := claimedForever(t, ctx, factory, tm, "forever-check")
 
 	err := store.CheckAndRecord(ctx, "forever-check", idempotency.Forever)
 	if !errors.Is(err, idempotency.ErrDuplicate) {
