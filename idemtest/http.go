@@ -1,6 +1,7 @@
 package idemtest
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -158,7 +159,12 @@ func RequireStoreUnavailable(tb testing.TB, rec *httptest.ResponseRecorder) {
 }
 
 func send(handler http.Handler, key string, cfg requestConfig) *httptest.ResponseRecorder {
-	req := httptest.NewRequest(cfg.method, "/", strings.NewReader(cfg.body))
+	req := httptest.NewRequestWithContext(
+		context.Background(),
+		cfg.method,
+		"/",
+		strings.NewReader(cfg.body),
+	)
 
 	if key != "" {
 		req.Header.Set(middleware.HeaderKey, key)

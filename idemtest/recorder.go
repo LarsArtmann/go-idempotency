@@ -2,6 +2,7 @@ package idemtest
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -80,10 +81,7 @@ func (r *Recorder) Calls() []Call {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	calls := make([]Call, len(r.calls))
-	copy(calls, r.calls)
-
-	return calls
+	return slices.Clone(r.calls)
 }
 
 // RequireClaimed fails tb unless the spied pipeline issued at least one
@@ -116,7 +114,7 @@ func formatCalls(calls []Call) string {
 		return "(none — the pipeline never touched the store)"
 	}
 
-	parts := make([]string, len(calls))
+	parts := make([]string, 0, len(calls))
 	for i, call := range calls {
 		parts[i] = string(call.Op) + "(" + call.Key + ", " + call.TTL.String() + ")"
 	}

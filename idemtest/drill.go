@@ -15,7 +15,10 @@ import (
 // middleware.Command satisfies it without conversion, and so does any closure
 // over [idempotency.Store.CheckAndRecord] or a message-consumer handler. The
 // drills exercise whatever wiring the caller is holding, never a rebuilt one.
-type Dispatch func(ctx context.Context, key string) error
+//
+// It is deliberately a type alias: two named function types are not mutually
+// assignable in Go, and the drills must accept middleware.Command values as-is.
+type Dispatch = func(ctx context.Context, key string) error
 
 // The expiry drill polls instead of sleeping a fixed margin, so a slow
 // scheduler widens the wait instead of flaking (the shape the 2026-11-17
