@@ -2,6 +2,7 @@ package idemtest_test
 
 import (
 	"errors"
+	"io"
 	"net/http"
 	"testing"
 	"time"
@@ -84,8 +85,11 @@ func TestSend_RequestOptions(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		seenMethod = r.Method
 
-		body := make([]byte, r.ContentLength)
-		_, _ = r.Body.Read(body)
+		body, readErr := io.ReadAll(r.Body)
+		if readErr != nil {
+			t.Errorf("read body: %v", readErr)
+		}
+
 		seenBody = string(body)
 		seenHeader = r.Header.Get("X-Trace")
 

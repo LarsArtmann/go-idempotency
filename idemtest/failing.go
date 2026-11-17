@@ -34,7 +34,7 @@ func (f *Failing) Seen(ctx context.Context, key string) (bool, error) {
 		return false, f.Err
 	}
 
-	return f.Next.Seen(ctx, key)
+	return f.Next.Seen(ctx, key) //nolint:wrapcheck // transparent delegation is the double's contract
 }
 
 // Record returns Err when set; otherwise it delegates to Next.
@@ -43,7 +43,7 @@ func (f *Failing) Record(ctx context.Context, key string, ttl time.Duration) err
 		return f.Err
 	}
 
-	return f.Next.Record(ctx, key, ttl)
+	return f.Next.Record(ctx, key, ttl) //nolint:wrapcheck // transparent delegation is the double's contract
 }
 
 // CheckAndRecord returns Err when set; otherwise it delegates to Next.
@@ -52,5 +52,5 @@ func (f *Failing) CheckAndRecord(ctx context.Context, key string, ttl time.Durat
 		return f.Err
 	}
 
-	return f.Next.CheckAndRecord(ctx, key, ttl)
+	return f.Next.CheckAndRecord(ctx, key, ttl) //nolint:wrapcheck // transparent delegation is the double's contract
 }

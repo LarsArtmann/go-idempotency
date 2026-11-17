@@ -114,7 +114,14 @@ func TestForeverClaimNeverFrees(t *testing.T) {
 		t.Fatalf("forever claim: %v", err)
 	}
 
-	if err := store.CheckAndRecord(ctx, "event-7:apply", idempotency.Forever); !errors.Is(err, idempotency.ErrDuplicate) {
+	if err := store.CheckAndRecord(
+		ctx,
+		"event-7:apply",
+		idempotency.Forever,
+	); !errors.Is(
+		err,
+		idempotency.ErrDuplicate,
+	) {
 		t.Fatalf("forever duplicate: want ErrDuplicate, got %v", err)
 	}
 }

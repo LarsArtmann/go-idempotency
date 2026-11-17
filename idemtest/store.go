@@ -34,18 +34,18 @@ func NewStore() *Store {
 
 // Seen reports whether the key is currently recorded and not expired.
 func (s *Store) Seen(ctx context.Context, key string) (bool, error) {
-	return s.inner.Seen(ctx, key)
+	return s.inner.Seen(ctx, key) //nolint:wrapcheck // transparent delegation is the double's contract
 }
 
 // Record marks the key as seen with the given TTL; a no-op on a live claim.
 func (s *Store) Record(ctx context.Context, key string, ttl time.Duration) error {
-	return s.inner.Record(ctx, key, ttl)
+	return s.inner.Record(ctx, key, ttl) //nolint:wrapcheck // transparent delegation is the double's contract
 }
 
 // CheckAndRecord atomically claims the key: nil on the first claim,
 // [idempotency.ErrDuplicate] while the claim is live.
 func (s *Store) CheckAndRecord(ctx context.Context, key string, ttl time.Duration) error {
-	return s.inner.CheckAndRecord(ctx, key, ttl)
+	return s.inner.CheckAndRecord(ctx, key, ttl) //nolint:wrapcheck // transparent delegation is the double's contract
 }
 
 // Reset empties the store. Phase-isolation helper for tests that reuse one

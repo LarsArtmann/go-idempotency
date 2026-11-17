@@ -34,7 +34,7 @@ func ExampleNewStore() {
 // wrapped dispatch must fail closed (middleware.NewCommand refuses to execute)
 // because the duplicate state is unknown.
 func ExampleFail() {
-	store := idemtest.Fail(idemtest.NewStore(), errors.New("redis down"))
+	store := idemtest.Fail(idemtest.NewStore(), errors.New("redis down")) //nolint:err113 // example sentinel
 
 	err := store.CheckAndRecord(context.Background(), "order-42:place", time.Minute)
 

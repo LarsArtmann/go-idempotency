@@ -63,7 +63,10 @@ func RequireExactlyOnce(tb testing.TB, dispatch Dispatch, key string, attempts i
 	if duplicates != attempts-1 || exec.Total() != 1 {
 		tb.Fatalf(
 			"retry storm of %d attempts: duplicates = %d (want %d), executions = %d (want 1) — the side effect ran more than once",
-			attempts, duplicates, attempts-1, exec.Total(),
+			attempts,
+			duplicates,
+			attempts-1,
+			exec.Total(),
 		)
 	}
 }
@@ -109,9 +112,7 @@ func RequireOneWinner(tb testing.TB, dispatch Dispatch, key string, goroutines i
 			case errors.Is(err, idempotency.ErrDuplicate):
 				duplicates.Add(1)
 			default:
-				failMu.Lock()
-				failures = append(failures, err)
-				failMu.Unlock()
+				appendFailure(&failMu, &failures, err)
 			}
 		}()
 	}
@@ -130,7 +131,12 @@ func RequireOneWinner(tb testing.TB, dispatch Dispatch, key string, goroutines i
 
 		tb.Fatalf(
 			"race of %d concurrent dispatches: duplicates = %d (want %d), executions = %d (want 1), unexpected errors = %d (first: %v) — more than one dispatch executed",
-			goroutines, duplicates.Load(), goroutines-1, exec.Total(), len(failures), firstUnexpected,
+			goroutines,
+			duplicates.Load(),
+			goroutines-1,
+			exec.Total(),
+			len(failures),
+			firstUnexpected,
 		)
 	}
 }
@@ -212,4 +218,11 @@ func RequireAllowsAfterExpiry(tb testing.TB, dispatch Dispatch, key string, ttl 
 	}
 
 	RequireExecutions(tb, exec, 2)
+}
+
+func appendFailure(mu *sync.Mutex, failures *[]error, err error) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	*failures = append(*failures, err)
 }

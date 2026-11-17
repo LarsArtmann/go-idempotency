@@ -55,7 +55,7 @@ func (r *Recorder) Seen(ctx context.Context, key string) (bool, error) {
 
 	r.record(Call{Op: OpSeen, Key: key, TTL: 0, Err: err})
 
-	return seen, err
+	return seen, err //nolint:wrapcheck // transparent delegation is the double's contract
 }
 
 // Record delegates to Next and records the call.
@@ -64,7 +64,7 @@ func (r *Recorder) Record(ctx context.Context, key string, ttl time.Duration) er
 
 	r.record(Call{Op: OpRecord, Key: key, TTL: ttl, Err: err})
 
-	return err
+	return err //nolint:wrapcheck // transparent delegation is the double's contract
 }
 
 // CheckAndRecord delegates to Next and records the call.
@@ -73,7 +73,7 @@ func (r *Recorder) CheckAndRecord(ctx context.Context, key string, ttl time.Dura
 
 	r.record(Call{Op: OpCheckAndRecord, Key: key, TTL: ttl, Err: err})
 
-	return err
+	return err //nolint:wrapcheck // transparent delegation is the double's contract
 }
 
 // Calls returns a copy of the recorded calls, in call order.
@@ -115,8 +115,8 @@ func formatCalls(calls []Call) string {
 	}
 
 	parts := make([]string, 0, len(calls))
-	for i, call := range calls {
-		parts[i] = string(call.Op) + "(" + call.Key + ", " + call.TTL.String() + ")"
+	for _, call := range calls {
+		parts = append(parts, string(call.Op)+"("+call.Key+", "+call.TTL.String()+")")
 	}
 
 	return strings.Join(parts, ", ")

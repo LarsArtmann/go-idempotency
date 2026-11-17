@@ -99,9 +99,7 @@ func SendConcurrently(
 
 			rec := send(handler, key, cfg)
 
-			mu.Lock()
-			recs = append(recs, rec)
-			mu.Unlock()
+			appendRecording(&mu, &recs, rec)
 		}()
 	}
 
@@ -109,6 +107,17 @@ func SendConcurrently(
 	wg.Wait()
 
 	return recs
+}
+
+func appendRecording(
+	mu *sync.Mutex,
+	recs *[]*httptest.ResponseRecorder,
+	rec *httptest.ResponseRecorder,
+) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	*recs = append(*recs, rec)
 }
 
 // RequireStatus fails tb unless the recorded response carries the want status.
