@@ -9,14 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Nothing yet.
+
+## [0.4.0] - 2026-11-17
+
+### Added
+
 - **Permanent claims (`Forever`)** — `idempotency.Forever` (`math.MaxInt64`) creates a claim that never expires: MemoryStore stores the zero `time.Time`, the sweeper skips it, and a live claim is neither upgraded nor downgraded by a later `Record`. Five new contract invariants and six negative scenarios pin the semantics; `ttl == 0` stays `ErrInvalidTTL`. Scoped to consumer/event dedupe and permanent domain invariants (ADR-006); adapters store the sentinel directly and never compute `now.Add(Forever)`.
+- **`Forever` overflow regression test** — pins the sentinel to `math.MaxInt64` and `now.Add(Forever)` past 2262, the boundary past which `UnixNano` is undefined, so the "store a permanent representation, never the computed instant" rule cannot silently regress.
 
 ### Changed
 
+- **Backend examples can represent a permanent claim** — the Redis adapter in the package docs maps `Forever` to `SET` with no `EX`, and the PostgreSQL/SQLite adapters store a NULL `expires_at` with an `IS NULL OR expires_at > now()` liveness predicate (plus a purge that skips NULL). Previously every documented adapter computed `now.Add(ttl)`, so a consumer copying one silently shortened a permanent claim.
 - **Test and suite files split under the 350-line file-size cap** — `store_test.go` (516 lines) becomes four strategy files (core semantics, sweep/close lifecycle, concurrency, sentinel API-contract locks); the contract suite splits into `contract.go` (public entry points), `contract_timing.go` (scalable timings), and `contract_invariants.go` (the TTL invariant subtest groups, with `contract_forever.go` holding the permanent-claim invariants); the negative tests split into scenarios, the shared subprocess harness (`contract_negative_harness_test.go`), and the broken-Store implementations (`contract_negative_stores_test.go` + `contract_forever_stores_test.go`). Pure same-package moves, no behavior or API change; buildflow's file-size-check went 3 findings → 0.
 
 ### Fixed
 
+- **Documented PostgreSQL `CheckAndRecord` reported a duplicate on the first claim** — the example inserted with `ON CONFLICT ... DO UPDATE ... RETURNING expires_at` and then tested the returned expiry, which cannot distinguish a fresh insert from an existing live row, so every first claim came back `ErrDuplicate`. It now runs one conditional upsert (`DO UPDATE ... WHERE expired`) and reads `RowsAffected()`; the SQLite notes carry the same shape and record that a bare `ON CONFLICT ... DO NOTHING` can never reclaim an expired key.
 - **Weekly scheduled CI's oldstable leg** — the strict-timing contract pass ran without `GOTOOLCHAIN: auto`, so setup-go's job-level `GOTOOLCHAIN: local` made it fail at `go.mod requires go >= 1.27` before the pass ever executed (visible in the 2026-11-02 scheduled run). The step now bootstraps the pinned toolchain exactly like the race-detector step.
 
 ## [0.3.2] - 2026-11-03
@@ -186,7 +195,8 @@ Tagged `v0.1.0`: initial release — idempotency store with TTL-based dedup.
 - **Sweep soak test** — 1000-key concurrent load test verifying sweep reclaims all expired entries
 - **Package documentation** (`doc.go`) with quick-start example and design rationale
 
-[Unreleased]: https://github.com/larsartmann/go-idempotency/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/larsartmann/go-idempotency/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/larsartmann/go-idempotency/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/larsartmann/go-idempotency/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/larsartmann/go-idempotency/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/larsartmann/go-idempotency/compare/v0.2.0...v0.3.0

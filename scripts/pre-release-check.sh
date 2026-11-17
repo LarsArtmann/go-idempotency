@@ -133,25 +133,39 @@ gate_godirective() {
 gate_parity() {
 	# The v0.3.1 release shipped without a CHANGELOG section because the
 	# checklist was run manually and a step was skipped. This gate makes the
-	# omission mechanically impossible: the latest tag must have a section,
-	# and the [Unreleased] compare link must target it.
-	local latest version
+	# omission mechanically impossible in BOTH release states, so a cut-and-not-
+	# yet-tagged tree does not read as a failure and teach people to ignore it:
+	#
+	#   staged   - the newest CHANGELOG section is not tagged yet (pre-tag run)
+	#   released - the newest CHANGELOG section carries a tag (post-tag run)
+	#
+	# Invariants: the newest tag must have a section, and [Unreleased] must
+	# compare from the newest CHANGELOG version (the release at the top).
+	local latest newest
 	latest="$(git tag -l 'v*' | sort -V | tail -1)"
 	if [ -z "$latest" ]; then
 		echo "  no version tags found; nothing to check parity against"
 		return 1
 	fi
-	version="${latest#v}"
-	if ! grep -q "^## \[${version}\] " CHANGELOG.md; then
-		echo "  latest tag ${latest} has no '## [${version}]' section in CHANGELOG.md."
+	newest="$(grep -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md | head -1 | sed -E 's/^## \[(.*)\]/\1/')"
+	if [ -z "$newest" ]; then
+		echo "  CHANGELOG.md has no '## [X.Y.Z]' section."
+		return 1
+	fi
+	if ! grep -q "^## \[${latest#v}\] " CHANGELOG.md; then
+		echo "  latest tag ${latest} has no '## [${latest#v}]' section in CHANGELOG.md."
 		echo "  Cut the section before tagging (RELEASING.md steps 5-6)."
 		return 1
 	fi
-	if ! grep -q "^\[Unreleased\]: .*compare/${latest}\.\.\.HEAD$" CHANGELOG.md; then
-		echo "  [Unreleased] compare link does not target ${latest}...HEAD."
+	if ! grep -q "^\[Unreleased\]: .*compare/v${newest}\.\.\.HEAD$" CHANGELOG.md; then
+		echo "  [Unreleased] compare link does not target v${newest}...HEAD."
 		return 1
 	fi
-	echo "  tag ${latest} has a CHANGELOG section; [Unreleased] targets it"
+	if git rev-parse -q --verify "refs/tags/v${newest}" >/dev/null; then
+		echo "  tag v${newest} has a CHANGELOG section; [Unreleased] targets it"
+	else
+		echo "  v${newest} is staged (untagged); ${latest} has a section and [Unreleased] targets v${newest}"
+	fi
 }
 
 gate_cleantree() {
