@@ -13,6 +13,13 @@ on:
 permissions:
   contents: write # creating the GitHub Release
 
+# One publish at a time per ref; a second tag push for the same ref waits
+# instead of racing an in-flight publish (fleet release policy, cue-policy
+# release_workflow.cue).
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
     name: Create GitHub Release

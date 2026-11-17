@@ -42,6 +42,7 @@ func demoLive(exp, now time.Time) bool {
 
 // demoExpiry stores Forever as zero time, never now.Add(Forever).
 func demoExpiry(now time.Time, ttl time.Duration) time.Time {
+	// art-dupl:accept example intentionally re-implements the store to demonstrate the contract standalone
 	if ttl == idempotency.Forever {
 		return time.Time{}
 	}

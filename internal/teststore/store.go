@@ -39,6 +39,7 @@ func isLive(exp, now time.Time) bool {
 
 // expiryFor stores Forever as the zero time, never as now.Add(Forever).
 func expiryFor(now time.Time, ttl time.Duration) time.Time {
+	// art-dupl:accept Forever guard deliberately mirrors the example's demo store; the double stays independent of the deprecated MemoryStore
 	if ttl == idempotency.Forever {
 		return time.Time{}
 	}
