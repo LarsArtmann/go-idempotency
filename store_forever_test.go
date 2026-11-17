@@ -3,6 +3,7 @@ package idempotency_test
 import (
 	"context"
 	"errors"
+	"math"
 	"testing"
 	"time"
 
@@ -129,4 +130,28 @@ func TestMemoryStore_Sweep_PreservesForeverEntries(t *testing.T) {
 	if err != nil || seen {
 		t.Fatalf("sweep did not remove an expired claim: want seen=false, got %v, %v", seen, err)
 	}
+}
+
+func TestForever_ValueIsRepresentableInProcessButNotAsUnixNano(t *testing.T) {
+	t.Parallel()
+
+	if idempotency.Forever != math.MaxInt64 {
+		t.Fatalf("Forever: want math.MaxInt64, got %d", idempotency.Forever)
+	}
+
+	// A time.Time can carry now+Forever (about year 2318), so the sentinel is a
+	// legal in-process duration and the ttl <= 0 guard accepts it.
+	expiry := time.Now().Add(idempotency.Forever)
+	if expiry.IsZero() || !expiry.After(time.Now()) {
+		t.Fatalf("now.Add(Forever): want a future instant, got %v", expiry)
+	}
+
+	if expiry.Year() < 2262 {
+		t.Fatalf("now.Add(Forever): want an instant past 2262, got %v", expiry)
+	}
+
+	// UnixNano is only defined for instants between 1678 and 2262, so a backend
+	// persisting epoch nanoseconds would overflow. That is why adapters store a
+	// permanent representation (no Redis expiry, NULL SQL column) and never
+	// compute now.Add(Forever).
 }

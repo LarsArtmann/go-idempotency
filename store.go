@@ -2,6 +2,7 @@ package idempotency
 
 import (
 	"context"
+	"math"
 	"sync"
 	"time"
 
@@ -42,8 +43,9 @@ var ErrInvalidTTL error = errorfamily.NewRejection(
 	"ttl must be positive",
 )
 
-// Forever is a TTL sentinel meaning "never expires". Pass it to [Store.Record]
-// or [Store.CheckAndRecord] to create a permanent claim.
+// Forever is a TTL sentinel meaning "never expires". Its value is
+// math.MaxInt64. Pass it to [Store.Record] or [Store.CheckAndRecord] to create
+// a permanent claim.
 //
 // Scope: permanent claims are for consumer and event deduplication, and for
 // permanent domain invariants (for example, "an invoice may only be submitted
@@ -58,7 +60,7 @@ var ErrInvalidTTL error = errorfamily.NewRejection(
 //
 // Forever is a positive duration, so the ttl <= 0 validation still applies:
 // zero is NOT a shorthand for forever.
-const Forever time.Duration = 1<<63 - 1
+const Forever time.Duration = math.MaxInt64
 
 // Store tracks opaque keys (typically command idempotency keys) to prevent
 // duplicate processing. When a key is seen for the first time, the store
