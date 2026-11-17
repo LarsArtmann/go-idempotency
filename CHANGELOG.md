@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Documented PostgreSQL `CheckAndRecord` reported a duplicate on the first claim** — the example inserted with `ON CONFLICT ... DO UPDATE ... RETURNING expires_at` and then tested the returned expiry, which cannot distinguish a fresh insert from an existing live row, so every first claim came back `ErrDuplicate`. It now runs one conditional upsert (`DO UPDATE ... WHERE expired`) and reads `RowsAffected()`; the SQLite notes carry the same shape and record that a bare `ON CONFLICT ... DO NOTHING` can never reclaim an expired key.
+- **Every backend-primitive table now teaches a reclaimable claim** — `README`, `ROADMAP`, ADR-001, the migration guide, `doc.go`, and the `CheckAndRecord` comment recommended a bare `INSERT ... ON CONFLICT DO NOTHING` (or MySQL `INSERT IGNORE`) as the atomic primitive. Those forms only free the key once the expired row is purged, so a TTL-windowed claim outlives its TTL; the guidance now names a conditional upsert whose `DO UPDATE` only fires for an expired row.
 - **Weekly scheduled CI's oldstable leg** — the strict-timing contract pass ran without `GOTOOLCHAIN: auto`, so setup-go's job-level `GOTOOLCHAIN: local` made it fail at `go.mod requires go >= 1.27` before the pass ever executed (visible in the 2026-11-02 scheduled run). The step now bootstraps the pinned toolchain exactly like the race-detector step.
 
 ## [0.3.2] - 2026-11-03

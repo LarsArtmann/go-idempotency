@@ -112,7 +112,9 @@ type Store interface {
 	// to prevent the TOCTOU race that a separate Seen + Record pair would
 	// create. For [MemoryStore] this is a single mutex. When implementing the
 	// interface against your own backend, use its native atomic primitive:
-	// Redis SET NX, SQL INSERT ... ON CONFLICT DO NOTHING, etc.
+	// Redis SET NX EX, or a single SQL upsert whose DO UPDATE only fires when
+	// the existing row has expired. A bare ON CONFLICT DO NOTHING only frees
+	// the key once the expired row is purged, so the claim outlives its TTL.
 	//
 	// Verified by the contract test suite subtests
 	// CheckAndRecord/FirstCallSucceeds,

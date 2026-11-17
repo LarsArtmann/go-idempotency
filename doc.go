@@ -92,7 +92,8 @@
 // Instead, you implement the [Store] interface against whatever backend fits
 // your system. The interface is small (three methods) and the comments on
 // [Store.CheckAndRecord] name the atomic primitive each backend should use
-// (Redis SET NX, SQL INSERT ... ON CONFLICT DO NOTHING).
+// (Redis SET NX EX, or one SQL upsert whose DO UPDATE only fires for an
+// expired row).
 //
 // One first-party implementation exists outside this module: go-cqrs-lite's
 // metaengine.DedupStore engine capability (github.com/larsartmann/go-cqrs-lite),

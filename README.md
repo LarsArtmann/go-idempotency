@@ -48,7 +48,7 @@ This is an **SDK, not a batteries-included framework**. The library ships:
 
 It deliberately does **not** ship production backends. There will never be a Redis store, SQL store, or any other concrete backend in this module. Each backend has its own driver, connection-pool semantics, deployment constraints, and operational tradeoffs. Encoding those decisions here would bloat the dependency tree and force choices on you that you should make yourself.
 
-**You implement the `Store` interface** against whatever backend fits your system. The interface is small and the [API docs](https://pkg.go.dev/github.com/larsartmann/go-idempotency) name the atomic primitive each backend should use (Redis `SET NX`, SQL `INSERT ... ON CONFLICT DO NOTHING`, etc.).
+**You implement the `Store` interface** against whatever backend fits your system. The interface is small and the [API docs](https://pkg.go.dev/github.com/larsartmann/go-idempotency) name the atomic primitive each backend should use (Redis `SET NX EX`, one SQL conditional upsert, etc.).
 
 **On the go-cqrs-lite stack? You do not need to write a backend.** The [`metaengine.DedupStore` engine capability](https://github.com/larsartmann/go-cqrs-lite) (ADR-0142 there) is implemented by every go-cqrs-lite storage engine — SQL engines natively, map-shaped engines via the degraded `MapDedupStore` runtime — with cross-engine semantics pinned by its conformance suite. That repo's own `idempotency/{kvstore,sqlstore}` modules were retired in the capability's favor (ADR-0158 there). Everyone else implements `Store` as described below.
 
@@ -158,21 +158,21 @@ See [FEATURES.md](FEATURES.md) for the full, code-evidenced inventory.
 
 The `Store` interface is three methods. Each maps to a single round-trip on a typical backend. The critical requirement is that `CheckAndRecord` is **atomic** — use your backend's native check-and-set primitive.
 
-| Backend        | `CheckAndRecord` primitive                 | TTL semantics                                                                       | Gotchas                                                                                      |
-| -------------- | ------------------------------------------ | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Redis          | `SET key 1 NX EX <ttl>`                    | Server-side expiry — clock-safe                                                     | Prefix keys (`idem:`); NX returning "not set" means duplicate                                |
-| PostgreSQL     | `INSERT ... ON CONFLICT DO NOTHING`        | `expires_at` column; filter on read, purge with a scheduled `DELETE`                | Wrap the business effect in the same transaction when you can                                |
-| MySQL          | `INSERT IGNORE`                            | `expires_at` column, as above                                                       | `INSERT IGNORE` also swallows unrelated errors — prefer `ON DUPLICATE KEY` with error checks |
-| DynamoDB       | `PutItem` with `attribute_not_exists(key)` | TTL attribute is best-effort (deletion can lag hours) — always check expiry on read | Conditional writes are extra cost on duplicate retries                                       |
-| SQLite / bbolt | `INSERT OR IGNORE` in a transaction        | `expires_at` column                                                                 | Single-writer; local to one process — dead after a crash by definition                       |
+| Backend        | `CheckAndRecord` primitive                           | TTL semantics                                                                        | Gotchas                                                                                                         |
+| -------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| Redis          | `SET key 1 NX EX <ttl>`                              | Server-side expiry — clock-safe                                                      | Prefix keys (`idem:`); NX returning "not set" means duplicate                                                   |
+| PostgreSQL     | `INSERT ... ON CONFLICT DO UPDATE ... WHERE expired` | `expires_at` column; NULL means permanent; live when `expires_at IS NULL OR > now()` | A bare `ON CONFLICT DO NOTHING` only frees the key once the expired row is purged                               |
+| MySQL          | `INSERT ... ON DUPLICATE KEY UPDATE ... IF(expired)` | `expires_at` column, as above                                                        | `INSERT IGNORE` swallows unrelated errors and never reclaims an expired key; zero rows affected means duplicate |
+| DynamoDB       | `PutItem` with `attribute_not_exists(key)`           | TTL attribute is best-effort (deletion can lag hours) — always check expiry on read  | Conditional writes are extra cost on duplicate retries                                                          |
+| SQLite / bbolt | Conditional upsert in a transaction                  | `expires_at` column, as above                                                        | `INSERT OR IGNORE` never reclaims an expired key; single-writer, dead after a crash by definition               |
 
 **If you accept `Forever`, map the sentinel at the boundary and never compute `now.Add(Forever)`.** `time.Time.Add` reaches about year 2318, but `UnixNano` overflows in 2262. Use no expiry at all (Redis `SET key 1` without `EX`), a NULL/SQL-infinity expiry column, or a max sentinel stored as-is. The package docs carry the per-backend detail.
 
-| Method           | What it does                           | Typical backend primitive                                      |
-| ---------------- | -------------------------------------- | -------------------------------------------------------------- |
-| `Seen`           | Check if key exists and is not expired | `EXISTS` (Redis), `SELECT COUNT(*)` (SQL)                      |
-| `Record`         | Store key with TTL (no-op if exists)   | `SET NX` (Redis), `INSERT ... ON CONFLICT DO NOTHING` (SQL)    |
-| `CheckAndRecord` | Atomic check-and-set                   | `SET NX EX` (Redis), `INSERT ... ON CONFLICT DO NOTHING` (SQL) |
+| Method           | What it does                           | Typical backend primitive                   |
+| ---------------- | -------------------------------------- | ------------------------------------------- |
+| `Seen`           | Check if key exists and is not expired | `EXISTS` (Redis), `SELECT COUNT(*)` (SQL)   |
+| `Record`         | Store key with TTL (no-op if exists)   | `SET NX EX` (Redis), conditional SQL upsert |
+| `CheckAndRecord` | Atomic check-and-set                   | `SET NX EX` (Redis), conditional SQL upsert |
 
 **Error mapping:** when the key already exists, return `idempotency.ErrDuplicate`. When `ttl <= 0`, return `idempotency.ErrInvalidTTL`. When the TTL is exactly `idempotency.Forever`, store the backend's permanent representation (no expiry or NULL). These are sentinel errors from `go-error-family` with stable HTTP status mappings.
 

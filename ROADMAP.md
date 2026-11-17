@@ -11,7 +11,7 @@ This library provides the `Store` interface and `MemoryStore` (a **deprecated** 
 **Implementation guidance for your own backend:**
 
 - Read the `Store` interface and the atomicity contract on `CheckAndRecord` in `store.go`.
-- Use your backend's native atomic primitive: Redis `SET NX EX`, SQL `INSERT ... ON CONFLICT DO NOTHING`, etc.
+- Use your backend's native atomic primitive: Redis `SET NX EX`, one SQL upsert whose `DO UPDATE` only fires for an expired row, etc.
 - Use the `contract` package (`contract.RunTests`) to verify your implementation against the same invariants as `MemoryStore`.
 
 ## Ecosystem Integration

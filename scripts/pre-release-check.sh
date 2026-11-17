@@ -15,6 +15,8 @@
 # tag↔CHANGELOG parity, clean tree (warn-only).
 #
 # Usage: scripts/pre-release-check.sh   (exit 0 = all gates green)
+#        scripts/pre-release-check.sh --only parity   (one gate, for
+#        sabotage-proofing a specific gate without the full suite)
 
 set -euo pipefail
 
@@ -37,10 +39,42 @@ EXPECTED_GO_DIRECTIVE="go 1.27"
 step_no=0
 failures=0
 failed_gates=()
+# --only <gate> runs a single gate; used to sabotage-test one gate without
+# paying for the whole suite. Gate names are matched on the part before ':'.
+selected_gates=()
+
+while [ $# -gt 0 ]; do
+	case "$1" in
+	--only)
+		selected_gates+=("${2:?--only needs a gate name}")
+		shift 2
+		;;
+	--only=*)
+		selected_gates+=("${1#--only=}")
+		shift
+		;;
+	*)
+		echo "pre-release-check: unknown argument '$1'" >&2
+		echo "usage: $0 [--only <gate>]..." >&2
+		exit 2
+		;;
+	esac
+done
 
 gate() {
 	local name="$1"
 	shift
+	if [ "${#selected_gates[@]}" -gt 0 ]; then
+		local match=0 s
+		for s in "${selected_gates[@]}"; do
+			if [ "$s" = "${name%%:*}" ]; then
+				match=1
+			fi
+		done
+		if [ "$match" -eq 0 ]; then
+			return 0
+		fi
+	fi
 	step_no=$((step_no + 1))
 	printf '\n[%02d] %s\n' "$step_no" "$name"
 	if "$@"; then

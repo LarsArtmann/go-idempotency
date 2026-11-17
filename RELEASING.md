@@ -21,7 +21,9 @@ Worked end-to-end for v0.2.0 (2026-08-29).
    tree), `go mod verify`, erraudit (`--enforce-go-error-family`),
    stale-refs, the anchored `go 1.27` directive (ADR-005), tag↔CHANGELOG
    parity, and a warn-only clean-tree check. The parity gate is the
-   structural fix for the v0.3.1 changelog gap.
+   structural fix for the v0.3.1 changelog gap and understands both release
+   states: cut-but-untagged (the newest section has no tag yet) and tagged.
+   A staged release therefore reads as PASS, not as a failure to ignore.
 
 4. **Godoc render read-through** — `go doc .`, `go doc . Store`,
    `go doc . MemoryStore`, `go doc . NewMemoryStore`, `go doc . ErrInvalidTTL`,
@@ -45,6 +47,17 @@ Worked end-to-end for v0.2.0 (2026-08-29).
 git tag -a vX.Y.Z -m "go-idempotency vX.Y.Z: <one-line summary>"
 git push origin master vX.Y.Z
 ```
+
+    Push the branch and the tag in **one** push. `CHANGELOG.md`'s
+    `compare/vPREV...vX.Y.Z` link 404s until the tag exists, so a branch-only
+    push turns the Docs job red on the release commit (the link check runs
+    against `HEAD`, where the tag is not yet reachable). If that happens —
+    for example an auto-commit daemon pushed master first — push the tag and
+    re-run the failed job; never delete the compare link to quiet the check:
+
+    ```bash
+    gh run rerun <run-id> --failed
+    ```
 
 9. Confirm the module proxy indexed the new version (may take a minute):
 
@@ -74,7 +87,8 @@ gh release create vX.Y.Z --title "vX.Y.Z" --notes-file docs/releases/vX.Y.Z-note
 11. `gh run list` — CI **and** the Release workflow must be green on the
     tagged commit. Untested-by-default workflows earn trust only on their
     first live fire: watch this run end-to-end for the first release after
-    2026-11-03.
+    2026-11-03. The Docs job is the one expected to be red before the tag
+    (see step 8) — re-run it after the push and confirm it turns green.
 
 ## Post-release
 

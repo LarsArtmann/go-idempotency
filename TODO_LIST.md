@@ -24,8 +24,8 @@ Short-term actionable work. Open items only — completed work lives in [CHANGEL
 ## Infrastructure
 
 - [ ] **Coverage floor once Codecov is active** — fail CI under ~90% so erosion is loud. Keep the Codecov threshold step drafted as a ready-to-flip diff (plan T10). Blocked on the owner setting `CODECOV_TOKEN`. **Impact: Medium · Effort: S**
-- [ ] **Announce v0.4.x** (owner preference) — channel and timing are the owner's call; permanent claims plus the 18-invariant contract suite are the story. **Impact: Low · Effort: S**
-- [ ] **Verify the weekly scheduled CI after the GOTOOLCHAIN fix** — the strict-timing step now sets `GOTOOLCHAIN: auto` (matching the race step); the fix is untested by live fire because schedule events cannot be triggered manually. Watch the 2026-11-09 run. **Impact: Medium · Effort: S**
+- [ ] **Announce v0.4.0** (owner preference) — channel and timing are the owner's call; permanent claims plus the 18-invariant contract suite are the story. **Impact: Low · Effort: S**
+- [ ] **Confirm the next weekly scheduled CI run is fully green** — the 2026-11-16 scheduled run proved the `GOTOOLCHAIN` fix live: `Test (oldstable)` passed with `GO_IDEMPOTENCY_CONTRACT_TIMING_SCALE: 3`. That run's Docs job still failed, but only on the private-upstream issue links in `AGENTS.md`, which `44077357195` removed; no scheduled run has executed since. Watch the 2026-11-23 run. **Impact: Medium · Effort: S**
 
 ## Cleanup
 

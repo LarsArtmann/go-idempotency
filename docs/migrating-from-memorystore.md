@@ -21,13 +21,13 @@ Already on [go-cqrs-lite](https://github.com/larsartmann/go-cqrs-lite)? Its
 `metaengine.DedupStore` engine capability is a ready-made, conformance-tested
 implementation — no hand-written backend needed.
 
-| Your situation                                             | Backend to target                            | Atomic primitive                                      |
-| ---------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------- |
-| Multiple service instances, already run Redis              | Redis                                        | `SET NX EX`                                           |
-| Multiple instances, relational stack                       | PostgreSQL/MySQL                             | `INSERT ... ON CONFLICT DO NOTHING` / `INSERT IGNORE` |
-| AWS-native                                                 | DynamoDB                                     | `PutItem` with `attribute_not_exists` condition       |
-| Single process, non-critical dedup (dev/test, best-effort) | In-process map (like MemoryStore, but yours) | `sync.Mutex` critical section                         |
-| Single process, must survive restart                       | SQLite/bbolt                                 | transaction with unique key constraint                |
+| Your situation                                             | Backend to target                            | Atomic primitive                                   |
+| ---------------------------------------------------------- | -------------------------------------------- | -------------------------------------------------- |
+| Multiple service instances, already run Redis              | Redis                                        | `SET NX EX`                                        |
+| Multiple instances, relational stack                       | PostgreSQL/MySQL                             | conditional upsert (`DO UPDATE ... WHERE expired`) |
+| AWS-native                                                 | DynamoDB                                     | `PutItem` with `attribute_not_exists` condition    |
+| Single process, non-critical dedup (dev/test, best-effort) | In-process map (like MemoryStore, but yours) | `sync.Mutex` critical section                      |
+| Single process, must survive restart                       | SQLite/bbolt                                 | transaction with unique key constraint             |
 
 Pick the smallest thing that survives the failures you care about. The rule of
 thumb: **the store must outlive every process that might claim a key** —
@@ -191,8 +191,10 @@ func (s *Store) Close() error { return s.client.Close() }
 The one rule that matters: **`CheckAndRecord` must be a single atomic
 operation.** A separate `Seen` call followed by `Record` re-introduces the
 TOCTOU race where two concurrent first-attempts both win. Use your backend's
-native check-and-set (`SET NX`, `INSERT ... ON CONFLICT DO NOTHING`,
-conditional `PutItem`), not two round-trips.
+native check-and-set (`SET NX EX`, a conditional SQL upsert,
+conditional `PutItem`), not two round-trips. A bare `ON CONFLICT DO NOTHING`
+(or `INSERT IGNORE`) never reclaims an expired key, so the claim outlives its
+TTL.
 
 ### Permanent claims (`Forever`)
 

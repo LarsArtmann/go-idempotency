@@ -29,7 +29,7 @@ Each backend carries:
 
 Bundling any of these would force choices on consumers that they should make themselves, and would make the library harder to maintain (each backend needs its own test infrastructure, version tracking, and release cadence).
 
-The interface is intentionally small (three methods) so that implementing a backend is straightforward. Each method maps to a single atomic primitive on typical backends (Redis `SET NX`, SQL `INSERT ... ON CONFLICT DO NOTHING`). The `contract` package provides the same test invariants that `MemoryStore` passes, so consumers can verify their implementation with one function call.
+The interface is intentionally small (three methods) so that implementing a backend is straightforward. Each method maps to a single atomic primitive on typical backends (Redis `SET NX EX`, a conditional SQL upsert that only overwrites an expired row). The `contract` package provides the same test invariants that `MemoryStore` passes, so consumers can verify their implementation with one function call.
 
 ## Alternatives Considered
 
