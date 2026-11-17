@@ -9,6 +9,7 @@ Worked end-to-end for v0.2.0 (2026-08-29).
    - Breaking changes to the `Store` interface or error semantics require a major-version module path bump (v2, v3, ...).
    - New additive API (new methods, new packages) → minor bump (v0.x → v0.x+1 while pre-1.0).
    - Docs, tests, tooling only → patch bump.
+   - The nested `idemtest` module (ADR-008) has its OWN version train (`idemtest/v0.x.y`): bump it whenever the kit changed since the last `idemtest/v*` tag, independently of the parent bump.
 2. **Confirm the working tree is clean** (`git status`) and everything intended for the release is on `master`.
 
 ## Verification gates (all must be green)
@@ -19,15 +20,19 @@ Worked end-to-end for v0.2.0 (2026-08-29).
    gofmt, `go vet`, `go build`, `go test ./... -race -count=1`, golangci-lint
    (config verify + run), `go mod tidy` diff on a copy (never the live
    tree), `go mod verify`, erraudit (`--enforce-go-error-family`),
-   stale-refs, the anchored `go 1.27` directive (ADR-005), tag↔CHANGELOG
-   parity, and a warn-only clean-tree check. The parity gate is the
-   structural fix for the v0.3.1 changelog gap and understands both release
-   states: cut-but-untagged (the newest section has no tag yet) and tagged.
-   A staged release therefore reads as PASS, not as a failure to ignore.
+   stale-refs, the anchored `go 1.27` directive in BOTH go.mod files
+   (ADR-005), tag↔CHANGELOG parity, and a warn-only clean-tree check. The
+   vet/build/test/lint/tidy/modverify gates run inside the nested `idemtest`
+   module too (ADR-008): `./...` from the root cannot reach it. The parity
+   gate is the structural fix for the v0.3.1 changelog gap and understands
+   both release states: cut-but-untagged (the newest section has no tag yet)
+   and tagged. A staged release therefore reads as PASS, not as a failure to
+   ignore.
 
 4. **Godoc render read-through** — `go doc .`, `go doc . Store`,
    `go doc . MemoryStore`, `go doc . NewMemoryStore`, `go doc . ErrInvalidTTL`,
-   `go doc github.com/larsartmann/go-idempotency/contract`.
+   `go doc github.com/larsartmann/go-idempotency/contract`, and (nested
+   module, own pkg.go.dev page) `go doc github.com/larsartmann/go-idempotency/idemtest`.
    Deprecation notices, error semantics, and examples must render correctly.
 
 ## Finalize the changelog
@@ -41,14 +46,17 @@ Worked end-to-end for v0.2.0 (2026-08-29).
 
 ## Tag and publish
 
-8. Create the annotated tag (message = release-notes summary):
+8. Create the annotated tags (message = release-notes summary). When the
+   kit changed, cut the nested tag at the SAME commit and push everything in
+   **one** push:
 
 ```bash
 git tag -a vX.Y.Z -m "go-idempotency vX.Y.Z: <one-line summary>"
-git push origin master vX.Y.Z
+git tag -a idemtest/vA.B.C -m "go-idempotency idemtest/vA.B.C: <one-line summary>"  # only when idemtest changed
+git push origin master vX.Y.Z idemtest/vA.B.C
 ```
 
-    Push the branch and the tag in **one** push. `CHANGELOG.md`'s
+    Push the branch and every release tag in **one** push. `CHANGELOG.md`'s
     `compare/vPREV...vX.Y.Z` link 404s until the tag exists, so a branch-only
     push turns the Docs job red on the release commit (the link check runs
     against `HEAD`, where the tag is not yet reachable). If that happens —
@@ -59,26 +67,31 @@ git push origin master vX.Y.Z
     gh run rerun <run-id> --failed
     ```
 
-9. Confirm the module proxy indexed the new version (may take a minute):
+9. Confirm the module proxy indexed the new versions (may take a minute;
+   the nested module is a separate proxy entry under its own path):
 
 ```bash
 go list -m -versions github.com/larsartmann/go-idempotency
+go list -m -versions github.com/larsartmann/go-idempotency/idemtest
 ```
 
-    Then verify the proxy serves it and a clean-room consumer can resolve
-    it (no local cache hits; fresh module in a temp dir):
+    Then verify the proxy serves them and a clean-room consumer can resolve
+    each (no local cache hits; fresh module in a temp dir):
 
 ```bash
 curl -s "https://proxy.golang.org/github.com/larsartmann/go-idempotency/@v/vX.Y.Z.info"   # must return Version + Time
-tmp=$(mktemp -d) && cd "$tmp" && go mod init cleanroom && go get github.com/larsartmann/go-idempotency@vX.Y.Z
-grep go-idempotency go.mod   # must pin exactly vX.Y.Z
+curl -s "https://proxy.golang.org/github.com/larsartmann/go-idempotency/idemtest/@v/vA.B.C.info"
+tmp=$(mktemp -d) && cd "$tmp" && go mod init cleanroom && go get github.com/larsartmann/go-idempotency@vX.Y.Z github.com/larsartmann/go-idempotency/idemtest@vA.B.C
+grep go-idempotency go.mod   # must pin exactly vX.Y.Z and idemtest vA.B.C
 ```
 
 10. The GitHub Release is created automatically: the tag push triggers
     [`.github/workflows/release.yml`](.github/workflows/release.yml), which
     extracts the CHANGELOG section for the tag (failing loudly when it is
     absent — the same parity rule the pre-release gate checks) and publishes
-    the Release as **Latest**. Manual fallback if the workflow cannot run:
+    the Release as **Latest**. `idemtest/v*` tags do NOT match the `v*`
+    trigger — cut that Release manually as NON-Latest so the parent stays
+    Latest. Manual fallback if the workflow cannot run:
 
 ```bash
 gh release create vX.Y.Z --title "vX.Y.Z" --notes-file docs/releases/vX.Y.Z-notes.md --latest
