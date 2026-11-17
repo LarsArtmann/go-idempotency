@@ -138,6 +138,11 @@ type Store interface {
 // Entries recorded with [Forever] are stored as the zero time.Time and are
 // never expired, lazily deleted, or swept.
 //
+// Every expiry decision (lazy deletion, re-recording, claiming, sweeping)
+// reads the clock installed at construction: the wall clock by default, or
+// the function passed to [WithClock]. Tests pin the clock to make TTL
+// behavior deterministic instead of sleeping real time.
+//
 // MemoryStore ignores the context.Context parameter on all methods. The
 // parameter exists on the [Store] interface so that custom backend
 // implementations (Redis, SQL, etc.) can honor cancellation and timeouts.
@@ -154,6 +159,32 @@ type MemoryStore struct {
 	entries  map[string]time.Time // key → expiresAt
 	stop     chan struct{}
 	stopOnce sync.Once
+	now      func() time.Time
+}
+
+// MemoryStoreOption customizes a [MemoryStore] at construction time. Options
+// are applied by [NewMemoryStore] before the background sweeper starts, so a
+// configured clock governs expiry decisions from the first tick on.
+type MemoryStoreOption func(*MemoryStore)
+
+// WithClock overrides the clock [MemoryStore] reads for every expiry decision:
+// lazy deletion in [MemoryStore.Seen], re-recording in [MemoryStore.Record],
+// claiming in [MemoryStore.CheckAndRecord], and the sweep's expiry comparison.
+// The default is time.Now.
+//
+// The reason this exists is testing: a pinned clock turns the expiry paths —
+// which otherwise require a real sleep of ttl plus margin — into deterministic
+// clock advances, and makes hour-scale TTLs testable at all. Supply a
+// thread-safe clock when the store is used from multiple goroutines: the
+// sweep goroutine reads it on every tick.
+//
+// A nil clock is ignored and the wall-clock default stands.
+func WithClock(now func() time.Time) MemoryStoreOption {
+	return func(s *MemoryStore) {
+		if now != nil {
+			s.now = now
+		}
+	}
 }
 
 // NewMemoryStore creates an in-memory idempotency store and, when sweepInterval
@@ -163,13 +194,25 @@ type MemoryStore struct {
 // Pass sweepInterval == 0 to disable the background sweep; lazy deletion on
 // read still bounds growth.
 //
+// Options customize construction; see [WithClock] to override the clock the
+// store reads for expiry decisions.
+//
 // Deprecated: Use only for development and testing. See [MemoryStore] for the
 // rationale and docs/migrating-from-memorystore.md for the migration path.
-func NewMemoryStore(sweepInterval time.Duration) *MemoryStore {
+func NewMemoryStore(sweepInterval time.Duration, opts ...MemoryStoreOption) *MemoryStore {
 	s := &MemoryStore{ //nolint:exhaustruct_v5 // mu, stopOnce are zero-valued
 		entries: make(map[string]time.Time),
 		stop:    make(chan struct{}),
+		now:     time.Now,
 	}
+	for _, opt := range opts {
+		opt(s)
+	}
+
+	if s.now == nil {
+		s.now = time.Now
+	}
+
 	if sweepInterval > 0 {
 		go s.sweep(sweepInterval)
 	}
@@ -189,7 +232,7 @@ func (s *MemoryStore) Seen(_ context.Context, key string) (bool, error) {
 		return false, nil
 	}
 
-	if isLive(exp, time.Now()) {
+	if isLive(exp, s.now()) {
 		return true, nil
 	}
 
@@ -230,7 +273,7 @@ func (s *MemoryStore) Record(_ context.Context, key string, ttl time.Duration) e
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	now := time.Now()
+	now := s.now()
 	if exp, ok := s.entries[key]; !ok || !isLive(exp, now) {
 		s.entries[key] = expiryFor(now, ttl)
 	}
@@ -252,7 +295,7 @@ func (s *MemoryStore) CheckAndRecord(_ context.Context, key string, ttl time.Dur
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	now := time.Now()
+	now := s.now()
 	if exp, ok := s.entries[key]; ok && isLive(exp, now) {
 		return ErrDuplicate
 	}
@@ -276,7 +319,9 @@ func (s *MemoryStore) sweep(interval time.Duration) {
 		case <-s.stop:
 			return
 		case <-ticker.C:
-			now := time.Now()
+			// The ticker itself stays on the real wall clock; only the expiry
+			// comparison reads the store's clock (see [WithClock]).
+			now := s.now()
 
 			s.mu.Lock()
 			for key, exp := range s.entries {
