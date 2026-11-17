@@ -39,6 +39,14 @@ jobs:
         env:
           GOTOOLCHAIN: auto
 
+      # idemtest is a separate nested module: `./...` from the root does not
+      # reach it, so it needs its own pass (same matrix legs as the root).
+      - name: Run idemtest module tests with race detector
+        run: go test ./... -race -count=1
+        working-directory: idemtest
+        env:
+          GOTOOLCHAIN: auto
+
       - name: Strict-timing contract pass (scheduled)
         if: github.event_name == 'schedule'
         run: go test ./contract -race -count=1 -run TestRunTestsStrict_ScaledTimings
@@ -85,6 +93,10 @@ jobs:
       - name: Run go vet
         run: go vet ./...
 
+      - name: Run go vet (idemtest module)
+        run: go vet ./...
+        working-directory: idemtest
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -99,6 +111,12 @@ jobs:
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
           version: v2.14.0
+
+      - name: Run golangci-lint (idemtest module)
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.14.0
+          working-directory: idemtest
 
   format:
     name: Format
@@ -133,6 +151,12 @@ jobs:
         run: |
           go mod tidy
           git diff --exit-code go.mod go.sum
+
+      - name: Check idemtest go mod tidy produces no diff
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum
+        working-directory: idemtest
 
   fuzz:
     name: Fuzz (3m)
@@ -171,6 +195,10 @@ jobs:
 
       - name: Run govulncheck
         run: govulncheck ./...
+
+      - name: Run govulncheck (idemtest module)
+        run: govulncheck ./...
+        working-directory: idemtest
 
   docs:
     name: Docs

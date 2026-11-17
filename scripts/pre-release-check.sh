@@ -14,6 +14,10 @@
 # (--enforce-go-error-family), stale-refs, anchored go directive,
 # tag↔CHANGELOG parity, clean tree (warn-only).
 #
+# idemtest is a separate nested module (ADR-008), so the vet/build/test/
+# lint/tidy/modverify/godirective gates also run inside idemtest/: `./...`
+# from the root cannot reach a nested module's packages.
+#
 # Usage: scripts/pre-release-check.sh   (exit 0 = all gates green)
 #        scripts/pre-release-check.sh --only parity   (one gate, for
 #        sabotage-proofing a specific gate without the full suite)
@@ -117,24 +121,29 @@ gate_gofmt() {
 
 gate_vet() {
 	go vet ./...
+	(cd idemtest && go vet ./...)
 }
 
 gate_build() {
 	go build ./...
+	(cd idemtest && go build ./...)
 }
 
 gate_test() {
 	go test ./... -race -count=1
+	(cd idemtest && go test ./... -race -count=1)
 }
 
 gate_lint() {
 	golangci-lint config verify
 	golangci-lint run ./...
+	(cd idemtest && golangci-lint run ./...)
 }
 
 gate_tidy() {
 	# go mod tidy on a copy, never the live tree (RELEASING.md §3): protects
-	# uncommitted work and still catches a drifted go.mod/go.sum.
+	# uncommitted work and still catches a drifted go.mod/go.sum. Both
+	# modules get the same treatment.
 	local tmp=/tmp/pre-release-tidycheck
 	rm -rf "$tmp"
 	mkdir -p "$tmp"
@@ -143,10 +152,15 @@ gate_tidy() {
 	cp -r contract internal middleware example "$tmp"/
 	(cd "$tmp" && go mod tidy >/dev/null 2>&1)
 	diff go.mod "$tmp/go.mod" && diff go.sum "$tmp/go.sum"
+	local idemtmp="$tmp/idemtest"
+	cp -r idemtest "$idemtmp"
+	(cd "$idemtmp" && go mod tidy >/dev/null 2>&1)
+	diff idemtest/go.mod "$idemtmp/go.mod" && diff idemtest/go.sum "$idemtmp/go.sum"
 }
 
 gate_modverify() {
 	go mod verify
+	(cd idemtest && go mod verify)
 }
 
 gate_erraudit() {
@@ -158,10 +172,15 @@ gate_stalerefs() {
 }
 
 gate_godirective() {
-	local line
-	line="$(grep -E '^go [0-9]' go.mod || true)"
-	if [ "$line" != "$EXPECTED_GO_DIRECTIVE" ]; then
-		echo "  go.mod says '$line', want exactly '$EXPECTED_GO_DIRECTIVE'."
+	local failed=0 f line
+	for f in go.mod idemtest/go.mod; do
+		line="$(grep -E '^go [0-9]' "$f" || true)"
+		if [ "$line" != "$EXPECTED_GO_DIRECTIVE" ]; then
+			echo "  $f says '$line', want exactly '$EXPECTED_GO_DIRECTIVE'."
+			failed=1
+		fi
+	done
+	if [ "$failed" -ne 0 ]; then
 		echo "  The floor is deliberate (ADR-005). To change it, update this"
 		echo "  script's EXPECTED_GO_DIRECTIVE and ADR-005 in the same commit."
 		return 1
