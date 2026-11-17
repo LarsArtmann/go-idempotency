@@ -90,14 +90,18 @@ summary() {
 	echo
 	if [ "$failures" -eq 0 ]; then
 		echo "pre-release-check: ALL ${step_no} GATES GREEN"
+		return
+	fi
+	if [ "$step_no" -eq 0 ]; then
+		echo "pre-release-check: ${failures} INVOCATION ERROR(S):"
 	else
 		echo "pre-release-check: ${failures}/${step_no} GATES FAILED:"
-		local g
-		for g in "${failed_gates[@]}"; do
-			echo "  - $g"
-		done
-		echo "Fix every failed gate before tagging (see RELEASING.md)."
 	fi
+	local g
+	for g in "${failed_gates[@]}"; do
+		echo "  - $g"
+	done
+	echo "Fix every failed gate before tagging (see RELEASING.md)."
 }
 trap summary EXIT
 
@@ -228,6 +232,15 @@ gate "stalerefs: check-stale-refs.sh" gate_stalerefs
 gate "godirective: anchored ${EXPECTED_GO_DIRECTIVE}" gate_godirective
 gate "parity: tag↔CHANGELOG" gate_parity
 gate "cleantree: git status (warn-only)" gate_cleantree
+
+# A mistyped --only name would otherwise skip every gate and report success,
+# which is the worst failure a release gate can have.
+if [ "${#selected_gates[@]}" -gt 0 ] && [ "${#selected_gates[@]}" -ne "$step_no" ]; then
+	echo "pre-release-check: unknown --only gate in '${selected_gates[*]}'" >&2
+	echo "known gates: gofmt vet build test lint tidy modverify erraudit stalerefs godirective parity cleantree" >&2
+	failures=$((failures + 1))
+	failed_gates+=("--only: unknown gate name")
+fi
 
 if [ "$failures" -gt 0 ]; then
 	exit 1
