@@ -17,20 +17,20 @@ Ubiquitous vocabulary for the go-idempotency library. These terms appear in code
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Store**              | The interface (`Store` in `store.go`) for tracking idempotency keys. Three methods: `Seen`, `Record`, `CheckAndRecord`. This is the core SDK contract that consumers implement against their own backend.   |
 | **Seen**               | Reports whether a key is currently recorded and not expired. Performs lazy deletion of expired entries on read.                                                                                             |
-| **Record**             | Marks a key as seen with a given TTL. No-op if the key is already recorded and not expired (`Forever` does not upgrade a live short claim; a short TTL does not downgrade a live permanent claim).                                  |
+| **Record**             | Marks a key as seen with a given TTL. No-op if the key is already recorded and not expired (`Forever` does not upgrade a live short claim; a short TTL does not downgrade a live permanent claim).          |
 | **CheckAndRecord**     | The atomic primitive: checks whether a key is already seen, and if not, records it in a single locked operation. Returns `ErrDuplicate` if the key was already recorded. This is the preferred entry point. |
-| **TTL (Time-to-Live)** | The duration after which a recorded key expires and can be re-recorded. Specified per-key at record time. `Forever` is the one TTL that never expires.                                                       |
+| **TTL (Time-to-Live)** | The duration after which a recorded key expires and can be re-recorded. Specified per-key at record time. `Forever` is the one TTL that never expires.                                                      |
 | **Sweep**              | A background goroutine that periodically scans the map and removes expired entries. Configurable via `sweepInterval`; disabled when `sweepInterval == 0`.                                                   |
 | **Lazy deletion**      | Removal of expired entries on read (`Seen`), as opposed to background sweep. Ensures the map cannot grow unboundedly even when the sweep goroutine is disabled.                                             |
 
 ## Errors
 
-| Term              | Definition                                                                                                                                                            |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **ErrDuplicate**  | The sentinel error returned by `CheckAndRecord` when the key was already recorded and not expired. Stable error code: `"idempotency.duplicate"`.                      |
-| **ErrInvalidTTL** | The sentinel error returned by `Record` and `CheckAndRecord` when the TTL is not positive. `Forever` is positive and accepted. Stable error code: `"idempotency.invalid-ttl"`.                                                    |
-| **Conflict**      | The error family `ErrDuplicate` belongs to (via `go-error-family`). Maps to HTTP 409 and is non-retryable. Callers should return this error to the client, not retry. |
-| **Rejection**     | The error family `ErrInvalidTTL` belongs to (via `go-error-family`). Maps to HTTP 400 and is non-retryable: the caller passed bad input.                              |
+| Term              | Definition                                                                                                                                                                     |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **ErrDuplicate**  | The sentinel error returned by `CheckAndRecord` when the key was already recorded and not expired. Stable error code: `"idempotency.duplicate"`.                               |
+| **ErrInvalidTTL** | The sentinel error returned by `Record` and `CheckAndRecord` when the TTL is not positive. `Forever` is positive and accepted. Stable error code: `"idempotency.invalid-ttl"`. |
+| **Conflict**      | The error family `ErrDuplicate` belongs to (via `go-error-family`). Maps to HTTP 409 and is non-retryable. Callers should return this error to the client, not retry.          |
+| **Rejection**     | The error family `ErrInvalidTTL` belongs to (via `go-error-family`). Maps to HTTP 400 and is non-retryable: the caller passed bad input.                                       |
 
 ## Design Concepts
 
@@ -42,11 +42,11 @@ Ubiquitous vocabulary for the go-idempotency library. These terms appear in code
 
 ## Middleware & Claims
 
-| Term                    | Definition                                                                                                                                                                                                  |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Claim**               | The atomic reservation a successful `CheckAndRecord` places on a key: from that moment until the TTL expires (or forever, with `Forever`), other callers with the same key receive `ErrDuplicate`.            |
-| **Permanent claim**     | A claim recorded with `Forever` (`math.MaxInt64`). It never expires, so it is only correct where re-processing a duplicate corrupts state: event/consumer dedupe, projection replay, permanent domain invariants. Request-facing claims stay TTL-windowed. |
+| Term                    | Definition                                                                                                                                                                                                                                                                                                                       |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Claim**               | The atomic reservation a successful `CheckAndRecord` places on a key: from that moment until the TTL expires (or forever, with `Forever`), other callers with the same key receive `ErrDuplicate`.                                                                                                                               |
+| **Permanent claim**     | A claim recorded with `Forever` (`math.MaxInt64`). It never expires, so it is only correct where re-processing a duplicate corrupts state: event/consumer dedupe, projection replay, permanent domain invariants. Request-facing claims stay TTL-windowed.                                                                       |
 | **Poisoned claim**      | A claim whose side effect never completed (e.g. a crash between winning `CheckAndRecord` and finishing the work). Retries get `ErrDuplicate` until the TTL expires; the TTL bounds the damage. A poisoned permanent claim has no TTL escape, which is why `Forever` is scoped to event/consumer dedupe. See ADR-004 and ADR-006. |
-| **TTL window**          | The lifetime of a TTL-windowed claim. Sized to cover the retry horizon (client backoff, redelivery, outbox replay) — not the request timeout. A permanent claim has no window.                              |
-| **Command idempotency** | `middleware.NewCommand`: wraps a command function for at-most-once dispatch — first call claims and executes, duplicates are rejected without executing, store failures fail closed.                        |
-| **Response replay**     | Storing the original response and returning it to retriers instead of a bare `409`; the recipe lives in the root package documentation.                                                                     |
+| **TTL window**          | The lifetime of a TTL-windowed claim. Sized to cover the retry horizon (client backoff, redelivery, outbox replay) — not the request timeout. A permanent claim has no window.                                                                                                                                                   |
+| **Command idempotency** | `middleware.NewCommand`: wraps a command function for at-most-once dispatch — first call claims and executes, duplicates are rejected without executing, store failures fail closed.                                                                                                                                             |
+| **Response replay**     | Storing the original response and returning it to retriers instead of a bare `409`; the recipe lives in the root package documentation.                                                                                                                                                                                          |

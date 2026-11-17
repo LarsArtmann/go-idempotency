@@ -40,11 +40,11 @@ Not verified, and why:
 
 ## Artifacts produced
 
-| Artifact | Location | Status |
-| --- | --- | --- |
-| Fleet consumer-audit synthesis (HTML, 8 findings, 25-row corpus table) | `go-idempotency/docs/reviews/2026-11-17_consumer-audit-synthesis.html` | Written, structurally validated, not browser-rendered; auto-committed `fdbf9b1` |
-| Profileagent review-corpus errata (Markdown, 13 findings) | `profileagent/docs/feedback/new/2026-11-17_12-06_review-corpus-errata-and-verification-gaps.md` | Written, not linted or link-checked; auto-committed `a7eb469` |
-| This status report | `go-idempotency/docs/status/2026-11-17_12-26_review-corpus-audit-and-fleet-errata-status.md` | Written |
+| Artifact                                                               | Location                                                                                        | Status                                                                          |
+| ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Fleet consumer-audit synthesis (HTML, 8 findings, 25-row corpus table) | `go-idempotency/docs/reviews/2026-11-17_consumer-audit-synthesis.html`                          | Written, structurally validated, not browser-rendered; auto-committed `fdbf9b1` |
+| Profileagent review-corpus errata (Markdown, 13 findings)              | `profileagent/docs/feedback/new/2026-11-17_12-06_review-corpus-errata-and-verification-gaps.md` | Written, not linted or link-checked; auto-committed `a7eb469`                   |
+| This status report                                                     | `go-idempotency/docs/status/2026-11-17_12-26_review-corpus-audit-and-fleet-errata-status.md`    | Written                                                                         |
 
 ## a) FULLY DONE
 

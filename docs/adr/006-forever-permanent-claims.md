@@ -65,13 +65,13 @@ Implementations must not compute `now.Add(Forever)`.
 `UnixNano` overflows int64 in 2262. Backends that store epoch nanoseconds or
 compute an absolute expiry from the TTL must special-case the sentinel:
 
-| Backend | Encoding |
-| --- | --- |
-| Redis | `SET key 1` with no `EX`; `Seen` is `EXISTS`; `Record` is `SET NX`; `CheckAndRecord` is `SET NX` |
-| PostgreSQL / MySQL | `expires_at IS NULL` means forever; live means `expires_at IS NULL OR expires_at > now()` |
-| SQLite | `expires_at` NULL (or a fixed max sentinel stored directly); never render `now.Add(Forever)` into a TEXT expiry |
-| DynamoDB | Omit the TTL attribute; TTL deletion is best-effort anyway, so `Seen` must still check the expiry |
-| In-process | zero `time.Time` |
+| Backend            | Encoding                                                                                                        |
+| ------------------ | --------------------------------------------------------------------------------------------------------------- |
+| Redis              | `SET key 1` with no `EX`; `Seen` is `EXISTS`; `Record` is `SET NX`; `CheckAndRecord` is `SET NX`                |
+| PostgreSQL / MySQL | `expires_at IS NULL` means forever; live means `expires_at IS NULL OR expires_at > now()`                       |
+| SQLite             | `expires_at` NULL (or a fixed max sentinel stored directly); never render `now.Add(Forever)` into a TEXT expiry |
+| DynamoDB           | Omit the TTL attribute; TTL deletion is best-effort anyway, so `Seen` must still check the expiry               |
+| In-process         | zero `time.Time`                                                                                                |
 
 ### 4. The contract suite pins the semantics
 
