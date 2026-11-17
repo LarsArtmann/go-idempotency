@@ -14,68 +14,69 @@
 
 ## a) FULLY DONE
 
-| # | Item | Evidence |
-| - | ---- | -------- |
-| 1 | **Injectable clock API** — `now func() time.Time` field, `WithClock(func() time.Time) MemoryStoreOption`, variadic `NewMemoryStore(sweepInterval, opts...)`, nil-clock backstop, options applied before the sweeper goroutine starts | `store.go:162` (field), `store.go:182` (`WithClock`), constructor ~`store.go:210` |
-| 2 | **All four expiry sites read the injected clock** — `Seen` lazy-delete, `Record` re-record, `CheckAndRecord` claim, `sweep` expiry comparison; the sweep ticker deliberately stays wall-clock (documented at the site) | `store.go` (3× `s.now()` + sweep); verified by converted tests failing without the override |
-| 3 | **`fakeClock` test double** — thread-safe (`sync.Mutex`), `Advance`, `Calls`, `awaitCallAfter` (bounded poll, 2s deadline); used by 6 test files | `fakeclock_test.go` (68 lines) |
-| 4 | **10 expiry-path sleeps converted to deterministic clock advances** — the issue's table listed 8; the census found 10 (missed: `store_test.go:235`, three `store_forever_test.go` sites, `property_forever_test.go:34`) | `store_test.go`, `store_forever_test.go`, `store_lifecycle_test.go`, `property_test.go`, `property_forever_test.go`, `bench_test.go` |
-| 5 | **Sweep tests upgraded from "sleep and hope" to proven-tick awaits** — advance pinned clock, capture `clock.Calls()` baseline, await a real ticker tick, then assert: the sweep (not lazy deletion) demonstrably reclaimed | `store_lifecycle_test.go:20-43`, `store_forever_test.go:118+`, `bench_test.go` `AfterSweep` |
-| 6 | **Property tests draw TTLs up to 1 hour** — the issue's core complaint ("hour-scale TTLs cannot test expiry at all") directly fixed | `property_test.go` `TTLExpiry`, `property_forever_test.go` |
-| 7 | **`TestMemoryStore_CloseDuringConcurrentOps`** — Close now happens after a *guaranteed* ≥1 op (bounded poll), not after a guessed 20ms sleep | `fuzz_test.go` |
-| 8 | **Speed + flake resistance** — converted tests run 0.00–0.02s (was 40–120ms each); stable at `-count=5` under race detector | session command output |
-| 9 | **Issue claims verified against the checkout before building** (verify-external-claims) — line numbers had drifted since v0.3.2, substance confirmed; the 8-sleep table found incomplete | session read of all 8 cited sites + census |
-| 10 | **Docs updated in the same change** — CHANGELOG Unreleased entry, FEATURES row, README feature line, AGENTS.md (MemoryStore bullet + twelve-file test list + `fakeclock_test.go` entry) | `CHANGELOG.md`, `FEATURES.md`, `README.md:152`, `AGENTS.md` |
+| #  | Item                                                                                                                                                                                                                                 | Evidence                                                                                                                             |
+| -- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| 1  | **Injectable clock API** — `now func() time.Time` field, `WithClock(func() time.Time) MemoryStoreOption`, variadic `NewMemoryStore(sweepInterval, opts...)`, nil-clock backstop, options applied before the sweeper goroutine starts | `store.go:162` (field), `store.go:182` (`WithClock`), constructor ~`store.go:210`                                                    |
+| 2  | **All four expiry sites read the injected clock** — `Seen` lazy-delete, `Record` re-record, `CheckAndRecord` claim, `sweep` expiry comparison; the sweep ticker deliberately stays wall-clock (documented at the site)               | `store.go` (3× `s.now()` + sweep); verified by converted tests failing without the override                                          |
+| 3  | **`fakeClock` test double** — thread-safe (`sync.Mutex`), `Advance`, `Calls`, `awaitCallAfter` (bounded poll, 2s deadline); used by 6 test files                                                                                     | `fakeclock_test.go` (68 lines)                                                                                                       |
+| 4  | **10 expiry-path sleeps converted to deterministic clock advances** — the issue's table listed 8; the census found 10 (missed: `store_test.go:235`, three `store_forever_test.go` sites, `property_forever_test.go:34`)              | `store_test.go`, `store_forever_test.go`, `store_lifecycle_test.go`, `property_test.go`, `property_forever_test.go`, `bench_test.go` |
+| 5  | **Sweep tests upgraded from "sleep and hope" to proven-tick awaits** — advance pinned clock, capture `clock.Calls()` baseline, await a real ticker tick, then assert: the sweep (not lazy deletion) demonstrably reclaimed           | `store_lifecycle_test.go:20-43`, `store_forever_test.go:118+`, `bench_test.go` `AfterSweep`                                          |
+| 6  | **Property tests draw TTLs up to 1 hour** — the issue's core complaint ("hour-scale TTLs cannot test expiry at all") directly fixed                                                                                                  | `property_test.go` `TTLExpiry`, `property_forever_test.go`                                                                           |
+| 7  | **`TestMemoryStore_CloseDuringConcurrentOps`** — Close now happens after a _guaranteed_ ≥1 op (bounded poll), not after a guessed 20ms sleep                                                                                         | `fuzz_test.go`                                                                                                                       |
+| 8  | **Speed + flake resistance** — converted tests run 0.00–0.02s (was 40–120ms each); stable at `-count=5` under race detector                                                                                                          | session command output                                                                                                               |
+| 9  | **Issue claims verified against the checkout before building** (verify-external-claims) — line numbers had drifted since v0.3.2, substance confirmed; the 8-sleep table found incomplete                                             | session read of all 8 cited sites + census                                                                                           |
+| 10 | **Docs updated in the same change** — CHANGELOG Unreleased entry, FEATURES row, README feature line, AGENTS.md (MemoryStore bullet + twelve-file test list + `fakeclock_test.go` entry)                                              | `CHANGELOG.md`, `FEATURES.md`, `README.md:152`, `AGENTS.md`                                                                          |
 
 ## b) PARTIALLY DONE
 
-| # | Item | Done | Missing |
-| - | ---- | ---- | ------- |
-| 1 | **`WithClock(nil)` + constructor backstop** | Implemented and doc-commented ("nil clock is ignored") | **Zero dedicated tests** for nil-clock fallback, multi-option ordering, or the constructor backstop path — the only new public API with no direct test |
-| 2 | **Equality boundary semantics** | Property now advances *exactly* `ttl`, pinning "at `now == expiresAt` the claim is expired" for MemoryStore | The contract suite does not pin equality (`AllowsAfterExpiry` sleeps past); the semantic decision was made implicitly by me, not confirmed by the owner |
-| 3 | **Non-monotonic clock guidance** | Clock is injectable; tests only advance forward | `WithClock` docs carry no warning for backward-moving injected clocks; no test covers a clock that jumps back |
-| 4 | **10KKeys benchmark anomaly** | Noted `1844674407370905 bytes/key` (absurd ≈2^61 value) in the `-benchtime=3x` run | Not investigated, not flagged in my final message (should have been mentioned as an unrelated observation) |
-| 5 | **Clock seam propagation to the test stack** | `MemoryStore` injectable; `internal/teststore` and `idemtest` unchanged | The kit's `RequireAllowsAfterExpiry` still polls real time; the existing TODO "timing-scale option for the expiry drill" is now adjacent to a possible clock-aware design — not decided |
+| # | Item                                         | Done                                                                                                        | Missing                                                                                                                                                                                 |
+| - | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 | **`WithClock(nil)` + constructor backstop**  | Implemented and doc-commented ("nil clock is ignored")                                                      | **Zero dedicated tests** for nil-clock fallback, multi-option ordering, or the constructor backstop path — the only new public API with no direct test                                  |
+| 2 | **Equality boundary semantics**              | Property now advances _exactly_ `ttl`, pinning "at `now == expiresAt` the claim is expired" for MemoryStore | The contract suite does not pin equality (`AllowsAfterExpiry` sleeps past); the semantic decision was made implicitly by me, not confirmed by the owner                                 |
+| 3 | **Non-monotonic clock guidance**             | Clock is injectable; tests only advance forward                                                             | `WithClock` docs carry no warning for backward-moving injected clocks; no test covers a clock that jumps back                                                                           |
+| 4 | **10KKeys benchmark anomaly**                | Noted `1844674407370905 bytes/key` (absurd ≈2^61 value) in the `-benchtime=3x` run                          | Not investigated, not flagged in my final message (should have been mentioned as an unrelated observation)                                                                              |
+| 5 | **Clock seam propagation to the test stack** | `MemoryStore` injectable; `internal/teststore` and `idemtest` unchanged                                     | The kit's `RequireAllowsAfterExpiry` still polls real time; the existing TODO "timing-scale option for the expiry drill" is now adjacent to a possible clock-aware design — not decided |
 
 ## c) NOT STARTED
 
-| # | Item | Note |
-| - | ---- | ---- |
-| 1 | GitHub issue #14 comment + close | Nothing posted remotely; implementation evidence (commit SHAs, gate results) exists only locally. Not pushed, per harness rule |
-| 2 | Dedicated `WithClock` option-semantics unit tests | nil-clock, ordering, backstop (see b-1) |
-| 3 | Release path | Exported API added → next root tag must be ≥ v0.6.0 (minor). No decision recorded, no `pre-release-check.sh` run, no TODO_LIST row |
-| 4 | `doc.go` / `DOMAIN_LANGUAGE.md` touch | Deliberately skipped — arguably a "pinned clock" glossary row and one Quick-Start sentence are warranted; unexamined |
-| 5 | `docs/migrating-from-memorystore.md` note | Dev/test users keeping `MemoryStore` could learn about `WithClock` there |
-| 6 | TODO_LIST harvest of this report's section (f) | Report is the input; harvest is the follow-up session step |
+| # | Item                                              | Note                                                                                                                               |
+| - | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 1 | GitHub issue #14 comment + close                  | Nothing posted remotely; implementation evidence (commit SHAs, gate results) exists only locally. Not pushed, per harness rule     |
+| 2 | Dedicated `WithClock` option-semantics unit tests | nil-clock, ordering, backstop (see b-1)                                                                                            |
+| 3 | Release path                                      | Exported API added → next root tag must be ≥ v0.6.0 (minor). No decision recorded, no `pre-release-check.sh` run, no TODO_LIST row |
+| 4 | `doc.go` / `DOMAIN_LANGUAGE.md` touch             | Deliberately skipped — arguably a "pinned clock" glossary row and one Quick-Start sentence are warranted; unexamined               |
+| 5 | `docs/migrating-from-memorystore.md` note         | Dev/test users keeping `MemoryStore` could learn about `WithClock` there                                                           |
+| 6 | TODO_LIST harvest of this report's section (f)    | Report is the input; harvest is the follow-up session step                                                                         |
 
 ## d) TOTALLY FUCKED UP
 
 **Nothing in the shipped work is broken.** All gates green, working tree clean, no data lost, nothing reverted. Honest near-misses, for the record:
 
-| # | Near-miss | Severity | Resolution |
-| - | --------- | -------- | ---------- |
-| 1 | One `multiedit` failed outright (escaped-tab typo in `old_string`), one edit batch rejected for not having viewed the files via the view tool first | Process stumble, zero damage | Self-caught immediately; corrected with exact strings |
-| 2 | Observed the 10KKeys benchmark emitting a garbage `bytes/key` metric and moved on without investigating or mentioning it | Small (pre-existing, benchmark-only, not touched by this change) | Recorded here; investigation queued (f-13) |
-| 3 | The final summary claimed "10 expiry sleeps" converted while my own headline table earlier said 8 — both true (issue said 8, census found 10), but the count flip-flopped mid-report without one crisp statement up front | Cosmetic reporting | This report states the census once, with the missed sites named |
+| # | Near-miss                                                                                                                                                                                                                 | Severity                                                         | Resolution                                                      |
+| - | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------- |
+| 1 | One `multiedit` failed outright (escaped-tab typo in `old_string`), one edit batch rejected for not having viewed the files via the view tool first                                                                       | Process stumble, zero damage                                     | Self-caught immediately; corrected with exact strings           |
+| 2 | Observed the 10KKeys benchmark emitting a garbage `bytes/key` metric and moved on without investigating or mentioning it                                                                                                  | Small (pre-existing, benchmark-only, not touched by this change) | Recorded here; investigation queued (f-13)                      |
+| 3 | The final summary claimed "10 expiry sleeps" converted while my own headline table earlier said 8 — both true (issue said 8, census found 10), but the count flip-flopped mid-report without one crisp statement up front | Cosmetic reporting                                               | This report states the census once, with the missed sites named |
 
 ## e) WHAT WE SHOULD IMPROVE (brutal self-review)
 
-1. **Forgot the test for the thing I shipped.** `WithClock` is new public API; every converted test *incidentally* proves the clock is wired (they fail against the wall clock), but nil-fallback, option ordering, and the backstop have no direct test. That is exactly the kind of gap the library's own negative-test convention exists to prevent — and the convention formally binds only `contract/` invariants and `idemtest` drills, so nothing forced me. It should have been obvious anyway.
-2. **Forgot to flag an anomaly I saw.** The 10KKeys metric garbage violated my own rule ("mention unrelated issues found"). 
+1. **Forgot the test for the thing I shipped.** `WithClock` is new public API; every converted test _incidentally_ proves the clock is wired (they fail against the wall clock), but nil-fallback, option ordering, and the backstop have no direct test. That is exactly the kind of gap the library's own negative-test convention exists to prevent — and the convention formally binds only `contract/` invariants and `idemtest` drills, so nothing forced me. It should have been obvious anyway.
+2. **Forgot to flag an anomaly I saw.** The 10KKeys metric garbage violated my own rule ("mention unrelated issues found").
 3. **Made a semantics decision silently.** Equality-boundary expiry (b-2) is now enshrined in a property test without an owner decision. A reviewer could read it as intended contract; it may not be.
 4. **Missed a connection to existing backlog.** TODO_LIST already carried "timing-scale option for the expiry drill" (CI flake risk); with `WithClock` landed, a clock-aware kit design is now the better-shaped answer — I noticed this only while writing this report.
-5. **Split-brain check (passed, with a watch item):** liveness predicates exist in three in-repo places (`MemoryStore.isLive`, `internal/teststore` copy — deliberately mirrored, `art-dupl:accept`-marked, `example`). This change did not add a fourth; it added a clock seam only in `MemoryStore`, so the two test stores now *differ* in testability (MemoryStore injectable, teststore not). Not drift yet — it is a divergence by design choice worth an explicit decision (f-7).
+5. **Split-brain check (passed, with a watch item):** liveness predicates exist in three in-repo places (`MemoryStore.isLive`, `internal/teststore` copy — deliberately mirrored, `art-dupl:accept`-marked, `example`). This change did not add a fourth; it added a clock seam only in `MemoryStore`, so the two test stores now _differ_ in testability (MemoryStore injectable, teststore not). Not drift yet — it is a divergence by design choice worth an explicit decision (f-7).
 6. **Ghost systems (none):** `WithClock` is wired into tests the moment it landed; `fakeClock` is used by six files; nothing dead. No capability shipped unwired.
-7. **Scope discipline (held, mostly):** resisted a clock *interface* (kept `func() time.Time` per the issue), resisted propagating into `contract/` and `internal/teststore`, left the ticker real. The one scope growth — drawing TTL magnitudes into the two properties — is on-theme and strictly stronger coverage.
+7. **Scope discipline (held, mostly):** resisted a clock _interface_ (kept `func() time.Time` per the issue), resisted propagating into `contract/` and `internal/teststore`, left the ticker real. The one scope growth — drawing TTL magnitudes into the two properties — is on-theme and strictly stronger coverage.
 8. **Removed nothing useful:** sleeps were replaced by deterministic or bounded-proven waits; every old assertion survives, several got stronger (sweep participation now provable, TTL magnitudes now covered).
 9. **Did I lie anywhere?** Checked: "0 issues" (lint, verified), "stable at -count=5" (verified), "1.3M execs" (verified), "idemtest decoupled" (verified: no `replace` in `idemtest/go.mod`). One imprecision: the benchmark output's bytes/key figure for 10KKeys was nonsense and I called the benchmark run "healthy" based on the AfterSweep row alone — overstated; corrected here.
 10. **Process:** the auto-commit daemon committed incrementally mid-work (7-file and 2-file commits before the final 11-file one), so HEAD history fragments the change. Harmless here, but it means `git log` alone is not a clean review unit — the CHANGELOG entry is the real summary.
 
 ## f) UP TO 50 THINGS TO GET DONE NEXT
 
-*Brainstorm, not commitment — ROADMAP/TODO_LIST fuel; route through docs-health HARVEST.*
+_Brainstorm, not commitment — ROADMAP/TODO_LIST fuel; route through docs-health HARVEST._
 
 **Direct follow-ups on this session's work:**
+
 1. Unit test: `WithClock(nil)` leaves the wall clock in place (b-1)
 2. Unit test: option ordering — last `WithClock` wins when applied twice
 3. Unit test: constructor backstop — a raw option setting `now = nil` still yields a working store
@@ -131,7 +132,7 @@
 
 ## g) QUESTIONS I CANNOT FIGURE OUT MYSELF
 
-**Q1 — Equality boundary:** Is "a claim expires **at** the exact expiry instant (`now == expiresAt` → expired)" the intended contract? My property test now pins this for `MemoryStore` (advance exactly `ttl`); the contract suite only pins *strictly past* expiry. If you intend "live through the expiry instant", I must flip the property and add a contract invariant — one-line change, wrong guess = enshrined wrong semantics.
+**Q1 — Equality boundary:** Is "a claim expires **at** the exact expiry instant (`now == expiresAt` → expired)" the intended contract? My property test now pins this for `MemoryStore` (advance exactly `ttl`); the contract suite only pins _strictly past_ expiry. If you intend "live through the expiry instant", I must flip the property and add a contract invariant — one-line change, wrong guess = enshrined wrong semantics.
 
 **Q2 — Release & issue handling:** Cut **v0.6.0** now (CHANGELOG section ready, gate script available) and post the implementation evidence on #14 — or batch `WithClock` with upcoming work? I will not push, comment, or tag without your word.
 
@@ -139,4 +140,4 @@
 
 ---
 
-*Awaiting instructions.*
+_Awaiting instructions._

@@ -20,7 +20,7 @@ updates:
     groups:
       actions:
         patterns:
-          - '*'
+          - "*"
     labels:
       - dependencies
   - package-ecosystem: gomod
