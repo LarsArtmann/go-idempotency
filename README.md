@@ -148,6 +148,7 @@ Errors are classified by [go-error-family](https://github.com/larsartmann/go-err
 - **`Store` interface** — three-method contract (`Seen`, `Record`, `CheckAndRecord`) with well-defined error semantics and atomicity requirements
 - **Permanent claims** — `idempotency.Forever` records a claim that never expires, for event/consumer dedupe and permanent domain invariants; request-facing keys stay TTL-windowed (ADR-006)
 - **Contract test suite** — `contract.RunTests` verifies any `Store` implementation against the full invariant set (atomicity, TTL expiry, concurrency safety, error handling)
+- **Consumer test kit** — `idemtest` (ADR-007): a contract-certified test store, failure injection, a store spy, and sabotage-proven drills for retry storms, one-winner races, fail-closed behavior, TTL windows, and the HTTP adapter's 409/400/503 contract
 - **`MemoryStore`** _(deprecated)_ — in-memory store for development and testing, with TTL-based expiration (background sweep + lazy deletion), configurable sweep interval, and graceful shutdown; will be removed in a future major version
 - **Conflict-classified errors** — `ErrDuplicate` is HTTP 409, non-retryable; `ErrInvalidTTL` is HTTP 400
 - **Concurrency-safe** — exactly-one-winner verified with 200 goroutines, property-based tests, and fuzz tests
@@ -218,6 +219,47 @@ The suite is self-tested: this repository runs `RunTests` against its own intern
 
 Slow or heavily loaded CI runners can stretch the suite's wall-clock timings with `contract.RunTestsStrict` and `contract.Options{TimingScale: 3}` instead of debugging expiry flakes.
 
+## Testing your integration
+
+The contract suite verifies a backend. To test everything **above** it — your command wiring, your HTTP adapter — the [`idemtest`](idemtest/) kit ships the drills and doubles every consumer otherwise hand-rolls ([ADR-007](docs/adr/007-consumer-test-kit.md)). Import it from `_test.go` files only.
+
+A contract-certified store for tests (no deprecated `MemoryStore`, no hand-rolled map):
+
+```go
+store := idemtest.NewStore()
+```
+
+Prove at-most-once through your own dispatch, in one line each:
+
+```go
+exec := idemtest.NewExecutions()
+place := middleware.NewCommand(store, time.Minute, exec.Fn())
+
+idemtest.RequireExactlyOnce(t, place, "order-42:place", 5, exec)  // retry storm: 5 attempts, 1 execution
+idemtest.RequireOneWinner(t, place, "contended-key", 50, exec)   // concurrent race: exactly one winner
+idemtest.RequireFailClosed(t, place, "key", exec)                 // pair with idemtest.Fail(store, err)
+idemtest.RequireAllowsAfterExpiry(t, place, "key", 5*time.Millisecond, exec) // the TTL window frees
+```
+
+`RequireOneWinner` is the TOCTOU detector: a pipeline built on separate `Seen` + `Record` calls fails it loudly. The drills accept any `func(ctx, key) error` dispatch — a `middleware.Command` passes as-is, and so does a raw `CheckAndRecord` closure.
+
+Drive the HTTP adapter end-to-end (in-process, no sockets):
+
+```go
+exec := idemtest.NewExecutions()
+handler := middleware.HTTP(store, time.Minute, idemtest.Counting(exec, appHandler))
+
+first := idemtest.Send(t, handler, "order-42:place")
+idemtest.RequireStatus(t, first, http.StatusCreated)
+idemtest.RequireExecutions(t, exec, 1)
+
+idemtest.RequireDuplicate(t, idemtest.Send(t, handler, "order-42:place")) // 409, still 1 execution
+```
+
+`idemtest.Send(t, handler, "")` sends no header (the 400 path); `idemtest.Fail` + `RequireStoreUnavailable` drills the 503 fail-closed path; `idemtest.SendConcurrently` releases N same-key requests at once. `idemtest.NewRecorder` spies on every store call so key-derivation and TTL bugs surface as assertion failures (`idemtest.RequireClaimed`), not silences.
+
+Every drill is sabotage-proven in this repository's CI: each assertion ships with a negative test showing it fail against the violation it names.
+
 **If your backend honors context cancellation** (any network round-trip should), also run the opt-in cancellation suite: `contract.RunTestsContextAware(t, factory)` asserts that a canceled call returns the context error and does NOT consume the claim, so the retry after a timeout can still be processed. Context-blind stores (like the deprecated `MemoryStore`) must not run it: ignoring cancellation is their documented behavior.
 
 ## Status & roadmap
@@ -234,6 +276,7 @@ Versioning: **v0.x** — the error sentinels are stable, but `MemoryStore` is de
 - [Recipe: dedup + response replay](https://pkg.go.dev/github.com/larsartmann/go-idempotency#hdr-Recipe__Dedup___Response_Replay__HTTP_Idempotency_) — HTTP idempotency: atomic claim + replaying the original response to retriers
 - [Client-side vs receiver-side posture](https://pkg.go.dev/github.com/larsartmann/go-idempotency#hdr-Client_side_vs_receiver_side_posture) — when the API you call already dedupes server-side and replays the resource (Wise, Stripe), the replay recipe is the only correct client-side shape; key-only guards fit the receiving end of a request
 - [Migrating from MemoryStore](docs/migrating-from-memorystore.md) — pick a backend, implement it, validate with the contract suite, swap the type
+- [Test kit (`idemtest`)](idemtest/) — drills and doubles for testing your integration: retry storms, one-winner races, fail-closed, HTTP 409/400/503 (pkg.go.dev page follows the next release tag)
 - [Runnable example](example/main.go) — end-to-end walkthrough (`go run ./example`)
 - [Features](FEATURES.md) — honest feature inventory with code evidence
 - [Domain language](docs/DOMAIN_LANGUAGE.md) — glossary of idempotency terms

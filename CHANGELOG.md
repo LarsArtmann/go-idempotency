@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Nothing yet.
+- **Consumer test kit (`idemtest`)** — a domain-driven test kit for apps and libraries that use go-idempotency, in the spirit of go-sse's `ssetest` (ADR-007): a contract-certified in-memory test store (`NewStore`), failure injection (`Fail`) for fail-closed drills, a store spy (`NewRecorder` + `RequireClaimed`) that catches key/TTL wiring bugs, an execution counter (`Executions`, `Counting`, `RequireExecutions`), dispatch drills over any `func(ctx, key) error` (`RequireExactlyOnce` retry storm, `RequireOneWinner` TOCTOU detector, `RequireFailClosed`, `RequireAllowsAfterExpiry` bounded-poll TTL drill), and in-process HTTP drills (`Send`, `SendConcurrently`, `RequireDuplicate`/`RequireMissingKeyRejected`/`RequireStoreUnavailable`). Every drill assertion ships a sabotage proof (`idemtest/negative_test.go`), the blessed store is continuously certified by `contract.RunTests` in CI, and the package imports only the standard library, the root package, and `middleware` — the module stays single per ADR-005.
+- **ADR-007** — records the kit's decision set: a package of the single module, test stores are infrastructure (the httptest precedent) not backends, drills take plain dispatch functions so raw `CheckAndRecord` integrations need no `middleware` import, and the sabotage-proof convention extends from the contract suite to the kit.
 
 ## [0.4.0] - 2026-11-17
 

@@ -9,7 +9,7 @@ ask for.
 
 ## Context
 
-go-sse ships [`ssetest`](https://github.com/LarsArtmann/go-sse/tree/main/ssetest)
+go-sse ships [`ssetest`](https://github.com/LarsArtmann/go-sse/tree/master/ssetest)
 — a test kit whose one-liners spin up real infrastructure, drive a consumer's
 actual wiring, and hand back typed, assertable results. It exists because
 every consumer otherwise hand-rolls the same scaffolding.
@@ -76,8 +76,8 @@ go-idempotency consumers are in exactly that position today:
 
 - Consumers get ssetest-style one-liners for the two integration surfaces
   (command dispatch, HTTP adapter) and a store for tests without writing one;
-  the audit's "copyable reference implementation" ask is answered by an
-  importable, CI-certified one instead.
+  the consumer audit's ask for a copyable store is answered by an importable,
+  CI-certified double instead.
 - The kit's drills accept plain `func(context.Context, string) error` rather
   than `middleware.Command`, so raw `CheckAndRecord` call sites (the
   go-cqrs-lite bridge shape) drill through the same helpers without
@@ -86,7 +86,9 @@ go-idempotency consumers are in exactly that position today:
   no sockets, no ports — because idempotency responses are single-shot
   (unlike SSE, which needs a live streaming server).
 - The kit does not re-export the contract suite; backend implementers keep
-  importing `contract` directly, and the kit's README points there.
+  importing `contract` directly, and the kit's package documentation points
+  there (the two compose: contract for the backend, drills for everything
+  above it).
 - Surface discipline: `idemtest` gains no store implementation of its own
   (delegation to `internal/teststore` keeps one implementation), and no
   timing-injection clock — the polls are bounded waits with tiny

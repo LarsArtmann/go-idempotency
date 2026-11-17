@@ -108,6 +108,14 @@
 // helpers wait for a consumer that needs them. For custom integrations
 // (transport hooks, manual checks), use the [Store] interface directly.
 //
+// To test the integration above the store, the test kit subpackage
+// (github.com/larsartmann/go-idempotency/idemtest, ADR-007) provides a
+// contract-certified in-memory double (idemtest.NewStore), failure injection,
+// a store spy, and one-liner drills for the scenarios that matter: a retry
+// storm that must execute exactly once, a concurrent race with one winner, a
+// failing store that must fail closed, and HTTP requests asserting the
+// adapter's 409/400/503 contract. Import it from _test.go files only.
+//
 // # Implementing a Custom Backend
 //
 // The interface is three methods. Each maps to a single round-trip on a
