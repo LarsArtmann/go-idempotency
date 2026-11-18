@@ -153,7 +153,9 @@ func TestSendConcurrently_RequestOptions(t *testing.T) {
 		}
 
 		mu.Lock()
+
 		bodies = append(bodies, string(body))
+
 		mu.Unlock()
 
 		w.WriteHeader(http.StatusCreated)

@@ -40,15 +40,16 @@ func (c *PinnedClock) Now() time.Time {
 	return c.now
 }
 
-// Advance moves the clock forward by d. Backward moves are deliberately not
-// supported: the [WithClock] contract treats the clock as forward-moving only.
-func (c *PinnedClock) Advance(d time.Duration) {
-	if d < 0 {
+// Advance moves the clock forward by delta. Backward moves are deliberately
+// not supported: the [WithClock] contract treats the clock as forward-moving
+// only.
+func (c *PinnedClock) Advance(delta time.Duration) {
+	if delta < 0 {
 		return
 	}
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.now = c.now.Add(d)
+	c.now = c.now.Add(delta)
 }

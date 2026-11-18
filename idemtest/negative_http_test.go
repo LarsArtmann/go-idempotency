@@ -31,29 +31,44 @@ func TestNegative_RequireStatusDetectsMismatch(t *testing.T) {
 func TestNegative_RequireDuplicateDetectsProcessedRetry(t *testing.T) {
 	t.Parallel()
 
-	expectDrillFailure(t, "a duplicate retry that was processed", "duplicate retry was not rejected", func(tb testing.TB) {
-		tb.Helper()
+	expectDrillFailure(
+		t,
+		"a duplicate retry that was processed",
+		"duplicate retry was not rejected",
+		func(tb testing.TB) {
+			tb.Helper()
 
-		idemtest.RequireDuplicate(tb, recorderWithStatus(http.StatusCreated))
-	})
+			idemtest.RequireDuplicate(tb, recorderWithStatus(http.StatusCreated))
+		},
+	)
 }
 
 func TestNegative_RequireMissingKeyRejectedDetectsSilentProcessing(t *testing.T) {
 	t.Parallel()
 
-	expectDrillFailure(t, "a missing key that was processed", "missing key was not rejected", func(tb testing.TB) {
-		tb.Helper()
+	expectDrillFailure(
+		t,
+		"a missing key that was processed",
+		"missing key was not rejected",
+		func(tb testing.TB) {
+			tb.Helper()
 
-		idemtest.RequireMissingKeyRejected(tb, recorderWithStatus(http.StatusOK))
-	})
+			idemtest.RequireMissingKeyRejected(tb, recorderWithStatus(http.StatusOK))
+		},
+	)
 }
 
 func TestNegative_RequireStoreUnavailableDetectsWrongFailureStatus(t *testing.T) {
 	t.Parallel()
 
-	expectDrillFailure(t, "a store failure surfaced as the wrong status", "store failure was not surfaced", func(tb testing.TB) {
-		tb.Helper()
+	expectDrillFailure(
+		t,
+		"a store failure surfaced as the wrong status",
+		"store failure was not surfaced",
+		func(tb testing.TB) {
+			tb.Helper()
 
-		idemtest.RequireStoreUnavailable(tb, recorderWithStatus(http.StatusInternalServerError))
-	})
+			idemtest.RequireStoreUnavailable(tb, recorderWithStatus(http.StatusInternalServerError))
+		},
+	)
 }
