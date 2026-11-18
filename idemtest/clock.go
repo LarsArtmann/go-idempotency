@@ -26,7 +26,9 @@ type PinnedClock struct {
 
 // NewPinnedClock returns a [PinnedClock] standing at now.
 func NewPinnedClock(now time.Time) *PinnedClock {
-	return &PinnedClock{now: now}
+	return &PinnedClock{ //nolint:exhaustruct_v5 // mu is zero-valued on purpose
+		now: now,
+	}
 }
 
 // Now reports the clock's current instant. Safe for concurrent use: the sweep

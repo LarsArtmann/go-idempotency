@@ -246,7 +246,14 @@ idemtest.RequireFailClosed(t, middleware.NewCommand(failing, time.Minute, failEx
 
 ttlExec := idemtest.NewExecutions()
 ttl := middleware.NewCommand(store, time.Minute, ttlExec.Fn())
-idemtest.RequireAllowsAfterExpiry(t, ttl, "key", 5*time.Millisecond, ttlExec) // the TTL window frees
+idemtest.RequireAllowsAfterExpiry(t, ttl, "key", 5*time.Millisecond, ttlExec) // in-window retry rejected, window frees
+
+// Deterministic form: no wall-clock wait at all — the pipeline's store reads
+// a pinned clock and the drill walks the window on it.
+//
+//   clock := idemtest.NewPinnedClock(time.Unix(0, 0))
+//   pinned := middleware.NewCommand(store, time.Minute, exec.Fn()) // store wired with idempotency.WithClock(clock.Now)
+//   idemtest.RequireAllowsAfterExpiryPinned(t, pinned, "key", time.Minute, exec, clock)
 ```
 
 `RequireOneWinner` is the TOCTOU detector: a pipeline built on separate `Seen` + `Record` calls fails it loudly. The drills accept any `func(ctx, key) error` dispatch — a `middleware.Command` passes as-is, and so does a raw `CheckAndRecord` closure.
@@ -264,7 +271,7 @@ idemtest.RequireExecutions(t, exec, 1)
 idemtest.RequireDuplicate(t, idemtest.Send(t, handler, "order-42:place")) // 409, still 1 execution
 ```
 
-`idemtest.Send(t, handler, "")` sends no header (the 400 path); `idemtest.Fail` + `RequireStoreUnavailable` drills the 503 fail-closed path; `idemtest.SendConcurrently` releases N same-key requests at once. `idemtest.NewRecorder` spies on every store call so key-derivation and TTL bugs surface as assertion failures (`idemtest.RequireClaimed`), not silences.
+`idemtest.Send(t, handler, "")` sends no header (the 400 path); `idemtest.Fail` + `RequireStoreUnavailable` drills the 503 fail-closed path; `idemtest.SendConcurrently` releases N same-key requests at once and accepts the same request options as `Send` (`WithBody`/`WithMethod`/`WithHeader`). `idemtest.NewRecorder` spies on every store call so key-derivation and TTL bugs surface as assertion failures (`idemtest.RequireClaimed`), not silences. Give every drill an `Executions` counter of its own — each drill asserts its counter from zero.
 
 Every drill is sabotage-proven in this repository's CI: each assertion ships with a negative test showing it fail against the violation it names.
 

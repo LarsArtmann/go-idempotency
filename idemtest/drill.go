@@ -250,7 +250,14 @@ func appendFailure(mu *sync.Mutex, failures *[]error, err error) {
 // any size test at the same speed. The same clock must drive the dispatch's
 // store; a dispatch wired to a different clock is a wiring bug the drill
 // surfaces as a stuck claim.
-func RequireAllowsAfterExpiryPinned(tb testing.TB, dispatch Dispatch, key string, ttl time.Duration, exec *Executions, clock Clock) {
+func RequireAllowsAfterExpiryPinned(
+	tb testing.TB,
+	dispatch Dispatch,
+	key string,
+	ttl time.Duration,
+	exec *Executions,
+	clock Clock,
+) {
 	tb.Helper()
 
 	if ttl <= 0 {

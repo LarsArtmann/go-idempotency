@@ -9,11 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Nothing yet.
+- **Pinned-clock expiry drill (`idemtest`)** — `RequireAllowsAfterExpiryPinned` walks the TTL window on a `PinnedClock` the pipeline's store reads (wire it with `idempotency.WithClock(clock.Now)`): in-window retry rejected, clock advanced, retry re-processes — no polling and no wall-clock wait, so TTLs of any size test at the same speed and a loaded runner cannot flake the drill. The kit ships the thread-safe `PinnedClock` double (`idemtest.Clock` interface) alongside. Released as `idemtest/v0.1.1`.
 
 ### Changed
 
-- Nothing yet.
+- **`RequireAllowsAfterExpiry` asserts the whole window** — the drill now rejects a retry inside the TTL window before polling for reclaim, so a pipeline whose claim never holds (a too-short claim, or none at all) fails the drill instead of passing it. Sabotage proofs cover the new in-window assert and every pinned-drill path; the kit's sabotage harness asserts the failure message names the violated contract, not just that a failure happened.
+- **`SendConcurrently` accepts request options** — the concurrent burst takes the same `WithMethod`/`WithBody`/`WithHeader` options as `Send`, so a handler that derives the key from the payload can model the retried request faithfully.
+- **The kit's drill counter semantics are documented** — every drill asserts its `Executions` counter from zero, so each drill gets a counter of its own (`idemtest/doc.go` now says so explicitly).
+- **CI covers the nested module's coverage** — the coverage/summary/artifact steps and the Codecov upload run `idemtest/` too; the enforced erraudit policy already reaches it (the root walk is module-blind: 8/8 kit files scanned, 0 violations).
 
 ### Fixed
 

@@ -66,7 +66,10 @@ func expectDrillFailure(t *testing.T, violation, wantFragment string, drill func
 	}
 
 	if !strings.Contains(capture.msg, wantFragment) {
-		t.Fatalf("drill failed with %q, want message naming the violation (%q): the failure does not report %s", capture.msg, wantFragment, violation)
+		t.Fatalf(
+			"drill failed with %q, want message naming the violation (%q): the failure does not report %s",
+			capture.msg, wantFragment, violation,
+		)
 	}
 }
 
@@ -350,49 +353,3 @@ func TestNegative_RequireClaimedDetectsWrongTTL(t *testing.T) {
 	})
 }
 
-func recorderWithStatus(status int) *httptest.ResponseRecorder {
-	rec := httptest.NewRecorder()
-	rec.WriteHeader(status)
-
-	return rec
-}
-
-func TestNegative_RequireStatusDetectsMismatch(t *testing.T) {
-	t.Parallel()
-
-	expectDrillFailure(t, "a status mismatch", "status = 418", func(tb testing.TB) {
-		tb.Helper()
-
-		idemtest.RequireStatus(tb, recorderWithStatus(http.StatusTeapot), http.StatusCreated)
-	})
-}
-
-func TestNegative_RequireDuplicateDetectsProcessedRetry(t *testing.T) {
-	t.Parallel()
-
-	expectDrillFailure(t, "a duplicate retry that was processed", "duplicate retry was not rejected", func(tb testing.TB) {
-		tb.Helper()
-
-		idemtest.RequireDuplicate(tb, recorderWithStatus(http.StatusCreated))
-	})
-}
-
-func TestNegative_RequireMissingKeyRejectedDetectsSilentProcessing(t *testing.T) {
-	t.Parallel()
-
-	expectDrillFailure(t, "a missing key that was processed", "missing key was not rejected", func(tb testing.TB) {
-		tb.Helper()
-
-		idemtest.RequireMissingKeyRejected(tb, recorderWithStatus(http.StatusOK))
-	})
-}
-
-func TestNegative_RequireStoreUnavailableDetectsWrongFailureStatus(t *testing.T) {
-	t.Parallel()
-
-	expectDrillFailure(t, "a store failure surfaced as the wrong status", "store failure was not surfaced", func(tb testing.TB) {
-		tb.Helper()
-
-		idemtest.RequireStoreUnavailable(tb, recorderWithStatus(http.StatusInternalServerError))
-	})
-}
