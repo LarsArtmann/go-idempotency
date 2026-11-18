@@ -6,6 +6,10 @@
 //
 // EventIdempotency and QueryIdempotency (named in earlier docs) are planned,
 // not implemented — they wait for a consumer that needs them.
+//
+// When wiring this package over the deprecated [idempotency.MemoryStore] in
+// tests, pin the store's clock with [idempotency.WithClock] so TTL and
+// fail-closed drills exercise expiry deterministically instead of sleeping.
 package middleware
 
 import (

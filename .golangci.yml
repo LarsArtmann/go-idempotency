@@ -242,7 +242,7 @@ linters:
           - contextcheck
           - exhaustive
           - forbidigo
-      - path: store\.go
+      - path: (store|clock)\.go
         linters:
           - forbidigo
       - path: _test\.go

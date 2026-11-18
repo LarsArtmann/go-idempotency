@@ -40,6 +40,12 @@
 //	    return err // store failure — do not process
 //	}
 //
+// In tests, pin the deprecated store's clock with [WithClock] so expiry
+// becomes a deterministic state transition — advance the clock instead of
+// sleeping past the TTL. A testing/synctest bubble (Go 1.25+) achieves the
+// same without any option: inside a bubble, Sleep and the sweep ticker run
+// on the bubble's fake clock.
+//
 // # Permanent Claims (Forever)
 //
 // Pass [Forever] to [Store.Record] or [Store.CheckAndRecord] when the

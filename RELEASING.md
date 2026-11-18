@@ -15,8 +15,10 @@ Worked end-to-end for v0.2.0 (2026-08-29).
 ## Verification gates (all must be green)
 
 3. **Run the one-command release gate** — `./scripts/pre-release-check.sh`
-   (exit 0 = all gates green). The script pins writable cache paths itself,
-   so the `/mnt/buildcache` login-shell gotcha cannot bite. It encodes:
+   (exit 0 = all gates green). The script clears any leaked
+   `GOCACHE`/`GOMODCACHE`/`GOLANGCI_LINT_CACHE` values so the Go default
+   caches always apply (owner directive 2026-11-17; never pin custom cache
+   paths). It encodes:
    gofmt, `go vet`, `go build`, `go test ./... -race -count=1`, golangci-lint
    (config verify + run), `go mod tidy` diff on a copy (never the live
    tree), `go mod verify`, erraudit (`--enforce-go-error-family`),

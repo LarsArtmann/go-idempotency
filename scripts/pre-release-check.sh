@@ -26,12 +26,12 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-# The login shell may export cache paths pointing at a nonexistent
-# /mnt/buildcache. A release gate must be environment-proof, so pin writable
-# caches unconditionally (the same prefix AGENTS.md documents).
-export GOCACHE=/tmp/go-build-cache-idem
-export GOMODCACHE=/tmp/go-mod-cache-idem
-export GOLANGCI_LINT_CACHE=/tmp/golangci-lint-cache-idem
+# Cache policy (owner directive 2026-11-17): use the Go DEFAULT caches —
+# never pin custom GOCACHE/GOMODCACHE/GOLANGCI_LINT_CACHE overrides. The
+# old /mnt/buildcache login-shell export and the /tmp workarounds against it
+# are both retired; unset any hostile values the caller may have leaked in so
+# the gate always exercises the default resolution.
+unset GOCACHE GOMODCACHE GOLANGCI_LINT_CACHE
 
 # The toolchain floor is a deliberate decision recorded in ADR-005. Changing
 # it silently (auto-commit, dependency sweep) is the go-etag 969d077

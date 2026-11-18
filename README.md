@@ -270,6 +270,8 @@ Every drill is sabotage-proven in this repository's CI: each assertion ships wit
 
 **If your backend honors context cancellation** (any network round-trip should), also run the opt-in cancellation suite: `contract.RunTestsContextAware(t, factory)` asserts that a canceled call returns the context error and does NOT consume the claim, so the retry after a timeout can still be processed. Context-blind stores (like the deprecated `MemoryStore`) must not run it: ignoring cancellation is their documented behavior.
 
+If you still run the deprecated `MemoryStore` in dev/test, make expiry deterministic: pin its clock (`idempotency.WithClock`) and advance it, or run the test inside a `testing/synctest` bubble (Go 1.25+), which virtualizes `Sleep` and the sweep ticker natively.
+
 ## Status & roadmap
 
 `MemoryStore` (single-process, in-memory) is **deprecated**. It remains functional and concurrency-tested but is intended for development and testing only. For production, implement the `Store` interface against your persistence backend and validate with `contract.RunTests` — the [migration guide](docs/migrating-from-memorystore.md) walks the full path with a worked example. `MemoryStore` will be removed in a future major version.

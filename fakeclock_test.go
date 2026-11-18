@@ -2,9 +2,11 @@ package idempotency_test
 
 // fakeClock is a thread-safe, manually advanced clock for pinning
 // MemoryStore's expiry decisions via idempotency.WithClock. Advance replaces
-// the real sleeps the expiry-path tests used to pay for; Calls counts how
-// many times the store has read the clock, which lets the sweep tests wait
-// for a proven background tick instead of sleeping past one.
+// the real sleeps the expiry-path tests used to pay for. The sweep tests use
+// testing/synctest bubbles (native virtual time, ticker included) instead of
+// this helper; the awaitCallAfter/advanceAndAwaitTick machinery remains for
+// the sweep benchmark, where synctest.Test's concrete *testing.T parameter
+// does not reach.
 
 import (
 	"sync"

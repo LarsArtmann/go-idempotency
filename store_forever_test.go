@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/larsartmann/go-idempotency"
@@ -115,37 +116,35 @@ func TestMemoryStore_CheckAndRecord_ForeverReclaimsExpiredClaim(t *testing.T) {
 func TestMemoryStore_Sweep_PreservesForeverEntries(t *testing.T) {
 	t.Parallel()
 
-	clock := newFakeClock(time.Unix(0, 0))
+	synctest.Test(t, func(t *testing.T) {
+		store := idempotency.NewMemoryStore(10 * time.Millisecond)
+		t.Cleanup(store.Close)
 
-	store := idempotency.NewMemoryStore(10*time.Millisecond, idempotency.WithClock(clock.Now))
-	defer store.Close()
+		ctx := context.Background()
 
-	ctx := context.Background()
+		if err := store.Record(ctx, "forever-sweep", idempotency.Forever); err != nil {
+			t.Fatalf("Record(Forever): %v", err)
+		}
 
-	if err := store.Record(ctx, "forever-sweep", idempotency.Forever); err != nil {
-		t.Fatalf("Record(Forever): %v", err)
-	}
+		if err := store.Record(ctx, "short-sweep", 5*time.Millisecond); err != nil {
+			t.Fatalf("Record(short): %v", err)
+		}
 
-	if err := store.Record(ctx, "short-sweep", 5*time.Millisecond); err != nil {
-		t.Fatalf("Record(short): %v", err)
-	}
+		// Virtual time: the sweeper runs several intervals past the short
+		// claim's expiry, must reclaim it, and must never touch the Forever
+		// entry.
+		time.Sleep(60 * time.Millisecond)
 
-	// Expire the short claim on the pinned clock, then wait for one
-	// wall-clock sweep tick past the advance: the tick must reclaim the
-	// short claim but never touch the Forever entry.
-	if !clock.advanceAndAwaitTick(10 * time.Millisecond) {
-		t.Fatal("sweeper did not tick after the clock was advanced")
-	}
+		seen, err := store.Seen(ctx, "forever-sweep")
+		if err != nil || !seen {
+			t.Fatalf("sweep removed a Forever claim: want seen=true, got %v, %v", seen, err)
+		}
 
-	seen, err := store.Seen(ctx, "forever-sweep")
-	if err != nil || !seen {
-		t.Fatalf("sweep removed a Forever claim: want seen=true, got %v, %v", seen, err)
-	}
-
-	seen, err = store.Seen(ctx, "short-sweep")
-	if err != nil || seen {
-		t.Fatalf("sweep did not remove an expired claim: want seen=false, got %v, %v", seen, err)
-	}
+		seen, err = store.Seen(ctx, "short-sweep")
+		if err != nil || seen {
+			t.Fatalf("sweep did not remove an expired claim: want seen=false, got %v, %v", seen, err)
+		}
+	})
 }
 
 func TestForever_ValueIsRepresentableInProcessButNotAsUnixNano(t *testing.T) {

@@ -218,7 +218,16 @@ func BenchmarkCheckAndRecord_SweepDisabled(b *testing.B) {
 func benchmarkCheckAndRecord(b *testing.B, sweepInterval time.Duration) {
 	b.Helper()
 
-	store := idempotency.NewMemoryStore(sweepInterval)
+	// The benchmark cycles a bounded 1024-key working set. On wall time one
+	// full cycle costs far less than the TTL, so the second pass would hit
+	// live claims and fail; the store clock is pinned and advanced a full TTL
+	// between passes instead, making every re-claim legitimate while the key
+	// space stays bounded.
+	const keySpace = 1024
+
+	clock := newFakeClock(time.Unix(0, 0))
+	store := idempotency.NewMemoryStore(sweepInterval, idempotency.WithClock(clock.Now))
+
 	defer store.Close()
 
 	ctx := context.Background()
@@ -226,7 +235,11 @@ func benchmarkCheckAndRecord(b *testing.B, sweepInterval time.Duration) {
 	b.ResetTimer()
 
 	for i := range b.N {
-		key := "bench-key-" + strconv.Itoa(i%1024)
+		if i%keySpace == 0 {
+			clock.Advance(2 * time.Minute)
+		}
+
+		key := "bench-key-" + strconv.Itoa(i%keySpace)
 
 		if err := store.CheckAndRecord(ctx, key, time.Minute); err != nil {
 			b.Fatalf("CheckAndRecord: %v", err)

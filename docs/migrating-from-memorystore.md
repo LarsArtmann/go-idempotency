@@ -41,6 +41,13 @@ implementation for production. Both are complete.
 
 ### Test double: in-process map
 
+> **Still keeping `MemoryStore` in dev/test?** Two seams make its expiry
+> deterministic without sleeps: pin the clock with `idempotency.WithClock`
+> and advance it, or wrap the test in a `testing/synctest` bubble (Go 1.25+),
+> which virtualizes `Sleep` and the sweep ticker natively. And for the test
+> double itself, prefer the contract-certified `idemtest.NewStore` (see the
+> kit's README) over a hand-rolled map.
+
 ```go
 // teststore.go
 package teststore

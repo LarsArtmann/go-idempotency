@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Injectable `MemoryStore` clock (`WithClock`)** — `NewMemoryStore` accepts variadic options and `idempotency.WithClock(func() time.Time)` overrides the clock behind every expiry decision: lazy deletion in `Seen`, re-recording in `Record`, claiming in `CheckAndRecord`, and the sweep's expiry comparison. The default stays `time.Now`, so existing call sites compile unchanged; options apply before the sweeper goroutine starts. The suite's ten expiry-path sleeps become deterministic clock advances — including hour-scale TTLs, which a real sleep made untestable — and the sweep tests wait for a proven wall-clock tick instead of a fixed sleep.
+- Nothing yet.
 
 ### Changed
 
@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Nothing yet.
+
+## [0.6.0] - 2026-11-17
+
+### Added
+
+- **Injectable `MemoryStore` clock (`WithClock`)** — `NewMemoryStore` accepts variadic options and `idempotency.WithClock(func() time.Time)` overrides the clock behind every expiry decision: lazy deletion in `Seen`, re-recording in `Record`, claiming in `CheckAndRecord`, and the sweep's expiry comparison. The default stays `time.Now`, so existing call sites compile unchanged; options apply before the sweeper goroutine starts. The suite's ten expiry-path sleeps become deterministic clock advances — including hour-scale TTLs, which a real sleep made untestable — and the sweep tests wait for a proven wall-clock tick instead of a fixed sleep.
 
 ## [0.5.0] - 2026-11-17
 
@@ -219,7 +225,8 @@ Tagged `v0.1.0`: initial release — idempotency store with TTL-based dedup.
 - **Sweep soak test** — 1000-key concurrent load test verifying sweep reclaims all expired entries
 - **Package documentation** (`doc.go`) with quick-start example and design rationale
 
-[Unreleased]: https://github.com/larsartmann/go-idempotency/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/larsartmann/go-idempotency/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/larsartmann/go-idempotency/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/larsartmann/go-idempotency/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/larsartmann/go-idempotency/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/larsartmann/go-idempotency/compare/v0.3.1...v0.3.2
