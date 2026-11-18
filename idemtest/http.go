@@ -65,12 +65,16 @@ func Send(tb testing.TB, handler http.Handler, key string, opts ...RequestOption
 // SendConcurrently drives goroutines requests with the same idempotency key,
 // released simultaneously — the shape of retries racing the first delivery —
 // and returns each recorded response in completion order (unordered: count
-// statuses, do not index them).
+// statuses, do not index them). Every request carries the same shape (see
+// [WithMethod], [WithBody], and [WithHeader]): pass [WithBody] when the
+// handler derives the key from the payload, so the burst models the retried
+// request faithfully.
 func SendConcurrently(
 	tb testing.TB,
 	handler http.Handler,
 	key string,
 	goroutines int,
+	opts ...RequestOption,
 ) []*httptest.ResponseRecorder {
 	tb.Helper()
 
@@ -87,7 +91,7 @@ func SendConcurrently(
 	)
 
 	started := make(chan struct{})
-	cfg := applyRequestOptions(nil)
+	cfg := applyRequestOptions(opts)
 
 	wg.Add(goroutines)
 

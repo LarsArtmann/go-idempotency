@@ -167,11 +167,16 @@ func RequireFailClosed(tb testing.TB, dispatch Dispatch, key string, exec *Execu
 }
 
 // RequireAllowsAfterExpiry asserts the TTL window from the caller's side: the
-// first dispatch executes; once ttl has elapsed, a later attempt executes
-// again — exactly two executions in total. The drill polls for the reclaim
-// with a bounded deadline ([drillPollGrace] past the TTL) instead of sleeping
-// a fixed margin, so slow schedulers widen the wait instead of flaking. Pass a
-// small TTL (single-digit milliseconds) to keep the drill fast.
+// first dispatch executes; a retry inside the window is rejected as a
+// duplicate; once ttl has elapsed, a later attempt executes again — exactly
+// two executions in total. The in-window rejection is the assertion that
+// makes the drill honest: a pipeline that frees the claim instantly (a
+// too-short claim, or no claim at all) would pass a reclaim-only drill and
+// fails here. The reclaim is polled with a bounded deadline ([drillPollGrace]
+// past the TTL) instead of sleeping a fixed margin, so slow schedulers widen
+// the wait instead of flaking. Pass a small TTL (single-digit milliseconds)
+// to keep the drill fast; for a variant with no wall-clock wait at all, see
+// [RequireAllowsAfterExpiryPinned].
 func RequireAllowsAfterExpiry(tb testing.TB, dispatch Dispatch, key string, ttl time.Duration, exec *Executions) {
 	tb.Helper()
 
@@ -185,6 +190,14 @@ func RequireAllowsAfterExpiry(tb testing.TB, dispatch Dispatch, key string, ttl 
 
 	if err := dispatch(ctx, key); err != nil {
 		tb.Fatalf("first dispatch: %v", err)
+
+		return
+	}
+
+	RequireExecutions(tb, exec, 1)
+
+	if err := dispatch(ctx, key); !errors.Is(err, idempotency.ErrDuplicate) {
+		tb.Fatalf("retry inside the %v window: err = %v, want ErrDuplicate — the claim did not hold", ttl, err)
 
 		return
 	}
@@ -225,4 +238,58 @@ func appendFailure(mu *sync.Mutex, failures *[]error, err error) {
 	defer mu.Unlock()
 
 	*failures = append(*failures, err)
+}
+
+// RequireAllowsAfterExpiryPinned is the deterministic form of
+// [RequireAllowsAfterExpiry]: the pipeline's store reads the pinned clock
+// (wire it at construction with idempotency.WithClock(clock.Now)) and the
+// drill walks the window on that clock — first dispatch executes, an
+// in-window retry is rejected as a duplicate, clock.Advance(ttl) expires the
+// claim, and the retry executes again. There is no polling and no
+// wall-clock wait, so the drill cannot flake on a loaded runner and TTLs of
+// any size test at the same speed. The same clock must drive the dispatch's
+// store; a dispatch wired to a different clock is a wiring bug the drill
+// surfaces as a stuck claim.
+func RequireAllowsAfterExpiryPinned(tb testing.TB, dispatch Dispatch, key string, ttl time.Duration, exec *Executions, clock Clock) {
+	tb.Helper()
+
+	if ttl <= 0 {
+		tb.Fatalf("ttl = %v, want a positive duration", ttl)
+
+		return
+	}
+
+	if clock == nil {
+		tb.Fatalf("clock is nil: pass the pinned clock the pipeline's store reads")
+
+		return
+	}
+
+	ctx := context.Background()
+
+	if err := dispatch(ctx, key); err != nil {
+		tb.Fatalf("first dispatch: %v", err)
+
+		return
+	}
+
+	RequireExecutions(tb, exec, 1)
+
+	if err := dispatch(ctx, key); !errors.Is(err, idempotency.ErrDuplicate) {
+		tb.Fatalf("retry inside the %v window: err = %v, want ErrDuplicate — the claim did not hold", ttl, err)
+
+		return
+	}
+
+	RequireExecutions(tb, exec, 1)
+
+	clock.Advance(ttl)
+
+	if err := dispatch(ctx, key); err != nil {
+		tb.Fatalf("retry after the clock advanced past the %v ttl: %v — the claim outlives its window", ttl, err)
+
+		return
+	}
+
+	RequireExecutions(tb, exec, 2)
 }
