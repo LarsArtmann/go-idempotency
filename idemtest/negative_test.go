@@ -10,10 +10,13 @@ import (
 
 	"github.com/larsartmann/go-idempotency"
 	"github.com/larsartmann/go-idempotency/idemtest"
-	"github.com/larsartmann/go-idempotency/middleware"
 )
 
-// fatalSentinel marks the panic raised by captureTB.Fatalf, so the harness can
+// errSabotageStoreDown is the sabotage sentinel for the fail-open proof: a
+// package-level static error, because err113 rightly rejects dynamic errors
+// at the call site.
+var errSabotageStoreDown = errors.New("redis down")
+
 // distinguish "the drill failed the fake TB" from a real panic.
 type fatalSentinel struct{ msg string }
 
@@ -207,10 +210,7 @@ func TestNegative_RequireOneWinnerRejectsZeroGoroutines(t *testing.T) {
 func TestNegative_RequireFailClosedDetectsFailOpen(t *testing.T) {
 	t.Parallel()
 
-	store := idemtest.Fail(
-		idemtest.NewStore(),
-		errors.New("redis down"),
-	) //nolint:err113 // sabotage sentinel
+	store := idemtest.Fail(idemtest.NewStore(), errSabotageStoreDown)
 	exec := idemtest.NewExecutions()
 
 	expectDrillFailure(
@@ -243,8 +243,6 @@ func TestNegative_RequireFailClosedDetectsSentinelMisreport(t *testing.T) {
 			idemtest.RequireFailClosed(tb, misreporting, "key", exec)
 		},
 	)
-}
-
 }
 
 func TestNegative_RequireAllowsAfterExpiryRejectsNonPositiveTTL(t *testing.T) {
