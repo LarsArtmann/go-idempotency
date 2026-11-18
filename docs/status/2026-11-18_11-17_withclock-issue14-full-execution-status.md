@@ -1,0 +1,99 @@
+# WithClock Issue-14 Full Execution Session — Status Report
+
+**Session:** 2026-11-17 ~21:00 → 2026-11-18 11:17 CET (resumed from an earlier same-topic session; this report covers the continuation run)
+**Repo:** go-idempotency @ `4692227` + auto-commit daemon commits
+**Trigger:** "GET SHIT DONE — THE WHOLE TODO LIST" + "comment and if applicable close the github issue" (issue #14)
+
+---
+
+## a) FULLY DONE
+
+1. **Issue #14 (`WithClock`) shipped, verified, released, commented, closed.** v0.6.0 tagged at `73a89d8`, pushed master+tag in ONE push per RELEASING.md's lychee rule; Release workflow green; GitHub Release published as Latest (not prerelease, per this repo's recorded deviation from the go-release skill); clean-room `go get` + `go run` consumer compile+execute verified; pkg.go.dev fetch pinged; issue #14 commented with evidence and closed as COMPLETED (comment passed the github-voice check-draft: 0 FAIL 0 WARN).
+2. **Phase E kit release (`idemtest/v0.1.1`).** Root require bumped v0.4.0 → v0.6.0 via `go get` (never manual edits); the chicken-egg (kit code needs the published root tag) resolved by sequencing E after D. New: `PinnedClock`/`Clock` double (`idemtest/clock.go`), `RequireAllowsAfterExpiryPinned` (zero wall-clock wait), strengthened `RequireAllowsAfterExpiry` (in-window duplicate assert before the reclaim poll — a claim that never holds now FAILS the drill), `SendConcurrently` accepts `RequestOption`s, sabotage harness asserts failure-message fragments (all 18+ proofs carry `wantFragment`), per-drill counter semantics documented in `doc.go`. Clean-room proxy resolution verified. Manual GitHub Release cut with `--latest=false` (parent stays Latest).
+3. **store.go 352>350 cap fixed** — `MemoryStoreOption`/`WithClock` extracted to new production `clock.go` (320/35 lines). Required a `.golangci.yml` forbidigo path exclusion extension `(store|clock)\.go`.
+4. **TWO latent benchmark failures root-caused and fixed.** The regenerated baseline exposed `BenchmarkCheckAndRecord_{SweepEnabled,SweepDisabled}` failing at default benchtime — broken since `81dc739` (1024-key cycle with 1-minute TTL re-hits live claims in ~0.5ms). Fixed with the pinned clock (advance a full TTL between passes); fresh baseline `reports/bench/2026-11-17_withclock-v0.6.0-baseline.txt` (60 lines = 10×6, PASS, honest numbers ~67ns/op).
+5. **T9 spec-citation pass** — 18/18 README invariant rows ↔ 18 suite subtests, exact-name match in both directions, no extra leaves, no missing rows.
+6. **TODO_LIST harvest (docs-health HARVEST mode, skill loaded).** Both 2026-11-17 status reports' §f sections adjudicated against code: done rows removed (T5/T7/T8/T9/migrating-doc pointer), decisions recorded in the footer comment, new durable rows added with source citations (art-dupl pass, two upstream-verification bugs, docs-gates battery, buildflow rebuild, fuzz clock target — that last one then EXECUTED same session, see below).
+7. **Fuzz target for non-monotonic clocks (`FuzzClockJumps`)** — new `fuzz_clock_test.go`: drives arbitrary backward/forward jumps through `CheckAndRecord` and pins the exact window invariant (duplicate iff now < expiry). 4.1M execs in 20s fuzz run, PASS; wired into CI as a fifth 3-minute fuzz target; CHANGELOG [Unreleased] bullet added.
+8. **T12 ROADMAP demand-gated annotations** — EventIdempotency/QueryIdempotency/gRPC and key-generation rows annotated with the 2026-10-19 fleet audit (0/10 middleware imports), YAGNI gates re-confirmed; TODO_LIST middleware row carries the same evidence.
+9. **Pre-idemtest status-report sweep** — 29 reports grep-swept for the "no idemtest package" claim class: **zero findings** (the claim doesn't exist in the corpus; nothing to annotate — the row closes as verified-empty).
+10. **Middleware docs deterministic-testing line** — package doc now says: pin the store's clock with `WithClock` for TTL/fail-closed drills. Godoc render verified.
+11. **CI: nested-module coverage + Codecov** — `idemtest-coverage.out` profile, summary, artifact, and Codecov upload added to the test job.
+12. **erraudit nested-module decision** — resolved by measurement: the root `erraudit .` walk is module-blind (21 files = 13 root + 8 idemtest, 0 violations); NO separate gate needed. Recorded as a decision.
+13. **All three CI runs green** — release commit CI (Lint's gci failure from the trashed probe file gone), Release workflow, and the kit-push CI (15m56s incl. the four fuzz targets) all success as of 11:17.
+14. **All local gates green repeatedly** — `pre-release-check.sh` 12/12 (twice: pre-v0.6.0, pre-idemtest/v0.1.1), `-race` both modules, gofmt, vet, golangci-lint 0 issues both modules, erraudit 0, stale-refs clean, golines/dprint clean.
+
+## b) PARTIALLY DONE
+
+1. **AGENTS.md freshness pass (Phase G)** — IN FLIGHT at interruption. Ground truth gathered (14 root test files, 16 kit files), stale claims located (line 18 fuzz "all four" → five; CI coverage legs; release.yml fired-list missing v0.6.0; idemtest bullet missing PinnedClock/pinned drill/require v0.6.0; kit negative-test list split across three files; "Twelve test files" → fourteen). The planned one-liners NOT yet written: art-dupl marker-coverage policy, `foreverCheckAndRecord` no-helper rationale, `claimedForever` wrapped-signature convention, erraudit module-blind note, `internal/teststore` stays-wall-clock decision, example/-does-not-demo-idemtest decision. AGENTS.md is at 117 lines — the age gate (>14 days) also needs the genuine refresh to land.
+2. **Withclock status report annotation** — the completion section appending (`docs/status/2026-11-17_22-17_…`) not yet written; this report doubles as the completion record until then.
+3. **TODO_LIST final state** — rows for the fuzz target, annotate-sweep, and T12 are executed but the file still lists them as open; needs the closing edit (remove executed rows, extend the footer comment with the idemtest/v0.1.1 + fuzz + sweep outcomes).
+
+## c) NOT STARTED
+
+1. **art-dupl full-sensitivity pass + idemtest clone adjudication** (High row) — not run this session.
+2. **art-dupl HTML-template accept-comment leak upstream verification** (Medium) — not started; needs a minimal repro and verify-before-filing gates.
+3. **golines writer-vs-checker `//nolint` gap repro** (Medium) — PARTIALLY OBSERVED live this session (golines wrapped a line and displaced its `//nolint:err113`, making nolintlint fire — a fresh data point for that row), but no repro filed/documented.
+4. **docs-gates battery run** (annotate / freshness --audit-all / cadence red gates) — not started.
+5. **buildflow binary rebuild** (doctor: built `3eae2b6`, HEAD `d85812b`) — not started.
+6. **Coverage floor once Codecov is active** — still blocked on the owner's `CODECOV_TOKEN`.
+7. **Announce v0.6.0** — owner call (story now includes WithClock + pinned drills).
+8. **Weekly scheduled CI watch (2026-11-23)** — future-dated.
+9. **Visual browser render check** — human-gated.
+10. **Propagate `Forever` to go-cqrs-lite** — deferred to its own cross-repo session (recorded decision, `repo:`-tagged row).
+
+## d) TOTALLY FUCKED UP
+
+Nothing destructive, but four self-inflicted wobbles worth naming:
+
+1. **LSP ghost chasing cost round-trips.** The typecheck "redeclared" and wsl_v5 warnings on clock.go/store.go were mid-edit ghosts; `go build`/`golangci-lint` were source of truth each time. (Known AGENTS.md pattern; I still verified via CLI every time — correctly — but the diagnostics noise slowed the edit loop.)
+2. **A sed-based file split went wrong twice** (negative_test.go → negative_pinned_test.go): leftover stray `}` (fixed line 301, then 246 after the line shifted), one wrong `sed -i '247d'` deletion, an unused `middleware` import, and a displaced `//nolint:err113` that golines then re-broke. Lesson recorded: for file splits use `lsp_replace_symbol`/`write` with whole-symbol moves, never sed ranges.
+3. **One garbage assertion shipped briefly** in `clock_test.go` (`!errors.Is(err, errClockedBoom) && err == nil` — nonsense logic) — caught in self-review before any commit-bearing state, removed immediately.
+4. **The clean-room verify script ran `go mod tidy` before writing main.go**, pruning the require and failing the build — reordered, verified. Cheap, but sloppy sequencing in a verification step.
+
+## e) WHAT WE SHOULD IMPROVE
+
+1. **Split-test-file hygiene:** write new files with `write` + move whole symbols; sed ranges on a file the auto-commit daemon also touches is asking for line-shift races.
+2. **Pre-release gate ordering:** run `go mod tidy` on BOTH modules BEFORE the gate, not after it flags drift (the gate's copy-diff caught the stale v0.4.0 go.sum entries — correct behavior, wasteful round-trip).
+3. **Benchmark health is not CI-gated:** the sweep-benchmark breakage shipped in `81dc739` and survived every test run because CI never runs `-bench .`. A short `-benchtime 10x -bench .` smoke step in CI (or BuildFlow) would have caught it in minutes.
+4. **Erraudit file-count assertion:** the module-blind walk finding (21=13+8) is a property worth pinning as a one-line check in `pre-release-check.sh` so a future erraudit version that starts respecting module boundaries fails loudly instead of silently narrowing coverage.
+5. **Voice-check drafts land in the repo** (`docs/drafts/issue-14-close-comment.md`) but the docs-gates corpus now has a draft file to keep fresh — either annotate it as shipped or remove it after the issue closed.
+6. **The withclock report's §f items 1–5, 7 (unit tests, boundary pin, teststore seam decision)** are all DONE but only recorded in this report — AGENTS.md/TODO_LIST must carry them so the freshness gate sees the evidence.
+
+## f) UP TO 50 THINGS TO GET DONE NEXT (ranked; session-scoped)
+
+| #  | Task                                                                                                                                                                          | Impact | Effort | Category      |
+| -- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ------ | ------------- |
+| 1  | Finish AGENTS.md freshness pass: 14 test files, five fuzz targets, CI coverage legs, release.yml fired-list + v0.6.0, idemtest bullet (PinnedClock, pinned drill, require v0.6.0), kit negative-file split, go-directive note              | High   | S      | Documentation |
+| 2  | Write the four AGENTS.md one-liners: art-dupl marker-coverage policy, `foreverCheckAndRecord` rationale, `claimedForever` convention, erraudit module-blind walk (21=13+8)     | High   | S      | Documentation |
+| 3  | Record the two decided-NOs in AGENTS.md idemtest/teststore bullets: example/ demo (self-require), kit-doubles-in-middleware-tests (same cascade); teststore stays wall-clock   | High   | S      | Documentation |
+| 4  | TODO_LIST closing edit: remove executed rows (fuzz target, annotate sweep, T12, kit follow-ups), extend footer with idemtest/v0.1.1 + issue-#14-closed outcomes               | High   | S      | Documentation |
+| 5  | Append the completion section to `docs/status/2026-11-17_22-17_withclock-issue14-session-status.md` (ANNOTATE, non-destructive markers via `annotate.go` run with `go run`)    | High   | S      | Documentation |
+| 6  | Run `nix run github:Artmann-Technologies/docs-gates -- run .` and resolve the annotate/audit-all/cadence verdicts                                                              | High   | M      | Documentation |
+| 7  | Final `./scripts/pre-release-check.sh` + `gh run list` confirmation that the kit-push CI stayed green, then report done                                                        | High   | S      | Verification  |
+| 8  | Run `art-dupl -t 1 --suggest-generics`, adjudicate the 11th group + post-idemtest clones (`drill.go`/`http.go` mu.Lock generics, tb.Helper prologues), diff vs 2026-11-17 set   | High   | S      | Quality       |
+| 9  | Add the erraudit file-count pin (21=13+8) as a cheap pre-release-check.sh assertion                                                                                           | Medium | S      | Quality       |
+| 10 | Add a CI `-benchtime 10x -bench .` smoke step so benchmark breakage can never ship silently again                                                                             | Medium | S      | Quality       |
+| 11 | Verify the art-dupl HTML-template accept-comment leak with a minimal repro; file upstream if real (verify-before-filing gates)                                                | Medium | M      | Bug           |
+| 12 | Repro the golines writer-vs-checker `//nolint` displacement (fresh data point: this session's err113 nolint was displaced by golines wrapping and nolintlint fired); file or document | Medium | M      | Bug           |
+| 13 | Rebuild the buildflow binary (built `3eae2b6`, HEAD `d85812b`)                                                                                                                 | Medium | S      | Quality       |
+| 14 | Watch the 2026-11-23 scheduled run: strict-timing pass, lychee clean, five fuzz targets, release-concurrency group not deadlocking                                            | Medium | S      | Infra         |
+| 15 | After CODECOV_TOKEN lands: flip the coverage-floor threshold diff (plan T10) and add the ~90% floor                                                                            | Medium | S      | Infra         |
+| 16 | Announce v0.6.0 + idemtest/v0.1.1 (owner call; story: WithClock + deterministic expiry + pinned drills)                                                                       | Low    | S      | Owner         |
+| 17 | Remove or annotate `docs/drafts/issue-14-close-comment.md` now that the issue is closed                                                                                       | Low    | S      | Cleanup       |
+| 18 | pkg.go.dev fetch re-ping for v0.6.0 + idemtest/v0.1.1 (first ping 404'd pre-indexing; confirm docs rendered)                                                                   | Low    | S      | Release       |
+| 19 | Human visual render check of the 2026-11-03 review HTML                                                                                                                        | Low    | S      | Owner         |
+| 20 | `go doc github.com/larsartmann/go-idempotency@v0.6.0` spot-check on pkg.go.dev for the clock.go split rendering                                                               | Low    | S      | Release       |
+| 21–50 | Longer-horizon rows already live in TODO_LIST.md and are NOT re-listed here (Extend middleware YAGNI-gated, Delete ADR-004-gated, Forever→go-cqrs-lite cross-repo session, dprint-on-Markdown stance, key-gen utilities gate, lock-strategy work now that baselines exist, MemoryStore v1.0 staircase execution when preconditions trigger). Padding past the honest backlog would be fabrication. | — | — | — |
+
+## g) QUESTIONS I CANNOT ANSWER MYSELF
+
+1. **AGENTS.md one-liner scope:** the four one-liners (marker policy, foreverCheckAndRecord rationale, claimedForever convention, erraudit walk) are dedup-session recommendations — want them all, or trimmed to the two that prevent real regressions (marker policy + erraudit walk) and dropped as noise?
+2. **Benchmark smoke gate:** shall I add the `-benchtime 10x -bench .` CI smoke step now (one ci.yml edit, ~+30s job time), or do you want benchmark health to stay a local/pre-release-only concern?
+3. **Issue #14 banner checkbox:** the AI-drafted provenance banner on #14 has `- [ ] MANUALLY REVIEWED by @Lars Artmann` unticked — now that the implementation shipped and you ordered the close: tick it yourself, or should closing-as-completed stand as the review signal?
+
+---
+
+**Evidence anchors:** tag `v0.6.0` @ `73a89d8`, tag `idemtest/v0.1.1` @ `4692227`; Release run `44253064808` success; kit CI `44255068658` success; latest CI `44267693078` success (15m56s); issue #14 CLOSED/COMPLETED with comment `6971522492`; baseline `reports/bench/2026-11-17_withclock-v0.6.0-baseline.txt`; gates 12/12 × 2; `FuzzClockJumps` 4.1M execs PASS.
+
+_Awaiting instructions._

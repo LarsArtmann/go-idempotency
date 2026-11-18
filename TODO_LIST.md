@@ -6,7 +6,7 @@ Short-term actionable work. Open items only — completed work lives in [CHANGEL
 
 ## Features
 
-- [ ] **Extend middleware package** — `CommandIdempotency` (command wrapper) and the `net/http` `Idempotency-Key` adapter shipped in v0.3.0 per [ADR-002](docs/adr/002-middleware-module-boundary.md). Remaining: `EventIdempotency`/`QueryIdempotency` — implement only when a consumer needs them (YAGNI). **Impact: Low · Effort: M (when triggered)**
+- [ ] **Extend middleware package** — `CommandIdempotency` (command wrapper) and the `net/http` `Idempotency-Key` adapter shipped in v0.3.0 per [ADR-002](docs/adr/002-middleware-module-boundary.md). Remaining: `EventIdempotency`/`QueryIdempotency` — implement only when a consumer needs them (YAGNI; re-confirmed 2026-11-17 against the 2026-10-19 fleet audit: 0/10 consumers import `middleware/`). **Impact: Low · Effort: M (when triggered)**
 - [ ] **Revisit `Delete(ctx, key)` on `Store`** — manual claim invalidation for operational recovery of poisoned claims. **Deferred per [ADR-004](docs/adr/004-store-interface-evolution.md)**: the owner confirmed the deferral 2026-09-05; revisit on a demonstrated poisoned-claim need that TTL tuning cannot absorb. **Impact: Medium · Effort: S (when triggered)**
 - [ ] **Propagate `Forever` to go-cqrs-lite** (`repo: go-cqrs-lite`) — `metaengine.DedupStore`/`claimkit` and `MapDedupStore` must map the sentinel (store MaxInt64/NULL, never `now.Add`), and `adttest.AssertDedupStore` must pin the mapped semantics; consume `github.com/larsartmann/go-idempotency@v0.6.0`. **Deferred 2026-11-17 to its own cross-repo session** — it touches another repo's store engines and its own release train; doing it inline here would half-land a cross-repo change. **Impact: High · Effort: M**
 

@@ -16,8 +16,8 @@ This library provides the `Store` interface and `MemoryStore` (a **deprecated** 
 
 ## Ecosystem Integration
 
-- **Middleware/dispatch layer** — **Shipped 2026-08-29** for the command path: `middleware.NewCommand` (transport-agnostic at-most-once dispatch) and the `net/http` adapter honoring `Idempotency-Key` (stdlib-only per [ADR-002](docs/adr/002-middleware-module-boundary.md)). Remaining, demand-gated: `EventIdempotency`/`QueryIdempotency` (only when a consumer needs them) and a gRPC adapter (only as its own module, per ADR-002's split trigger — write the ADR supplement first).
-- **Key generation utilities** — helpers for producing stable idempotency keys (UUID v7, content-hash-based, request-derived). Currently every consumer must roll their own key strategy.
+- **Middleware/dispatch layer** — **Shipped 2026-08-29** for the command path: `middleware.NewCommand` (transport-agnostic at-most-once dispatch) and the `net/http` adapter honoring `Idempotency-Key` (stdlib-only per [ADR-002](docs/adr/002-middleware-module-boundary.md)). Remaining, demand-gated (YAGNI gate re-confirmed 2026-11-17 against the 2026-10-19 fleet audit: 0/10 consumers import `middleware/`, so demand for the extension surface is still zero): `EventIdempotency`/`QueryIdempotency` (only when a consumer needs them) and a gRPC adapter (only as its own module, per ADR-002's split trigger — write the ADR supplement first).
+- **Key generation utilities** — helpers for producing stable idempotency keys (UUID v7, content-hash-based, request-derived). Currently every consumer must roll their own key strategy. Demand-gated (annotated 2026-11-17, plan T12): no consumer request on record and the 2026-10-19 fleet audit surfaced no key-derivation pain, so this waits for a demonstrated need like the rest of the demand-gated surface.
 
 ## Observability
 
