@@ -19,6 +19,7 @@ func TestMemoryStore_WithClock_NilIsIgnored(t *testing.T) {
 	t.Parallel()
 
 	clock := newFakeClock(time.Unix(0, 0))
+
 	store := idempotency.NewMemoryStore(0,
 		idempotency.WithClock(clock.Now),
 		idempotency.WithClock(nil),
@@ -49,6 +50,7 @@ func TestMemoryStore_WithClock_LastOptionWins(t *testing.T) {
 
 	first := newFakeClock(time.Unix(0, 0))
 	second := newFakeClock(time.Unix(0, 0))
+
 	store := idempotency.NewMemoryStore(0,
 		idempotency.WithClock(first.Now),
 		idempotency.WithClock(second.Now),

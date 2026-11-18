@@ -154,7 +154,7 @@ func BenchmarkMemoryUsage_10KKeys(b *testing.B) {
 
 		store.Close()
 
-		bytesPerKey := float64(after.HeapInuse-before.HeapInuse) / float64(keyCount)
+		bytesPerKey := float64(int64(after.HeapInuse)-int64(before.HeapInuse)) / float64(keyCount)
 		b.ReportMetric(bytesPerKey, "bytes/key")
 	}
 }
@@ -185,9 +185,7 @@ func BenchmarkMemoryUsage_AfterSweep(b *testing.B) {
 
 		// Expire every key on the pinned clock, then wait for one wall-clock
 		// sweep tick past the advance so the measurement reflects swept state.
-		clock.Advance(5 * time.Millisecond)
-
-		if !clock.awaitCallAfter(clock.Calls()) {
+		if !clock.advanceAndAwaitTick(5 * time.Millisecond) {
 			b.Fatal("sweeper did not tick after the clock was advanced")
 		}
 
@@ -203,7 +201,7 @@ func BenchmarkMemoryUsage_AfterSweep(b *testing.B) {
 		store.Close()
 
 		if peak.HeapInuse > 0 {
-			reclaimed := float64(peak.HeapInuse-after.HeapInuse) / float64(peak.HeapInuse) * 100
+			reclaimed := float64(int64(peak.HeapInuse)-int64(after.HeapInuse)) / float64(peak.HeapInuse) * 100
 			b.ReportMetric(reclaimed, "%-reclaimed")
 		}
 	}

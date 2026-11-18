@@ -133,10 +133,7 @@ func TestMemoryStore_Sweep_PreservesForeverEntries(t *testing.T) {
 	// Expire the short claim on the pinned clock, then wait for one
 	// wall-clock sweep tick past the advance: the tick must reclaim the
 	// short claim but never touch the Forever entry.
-	clock.Advance(10 * time.Millisecond)
-
-	baseline := clock.Calls()
-	if !clock.awaitCallAfter(baseline) {
+	if !clock.advanceAndAwaitTick(10 * time.Millisecond) {
 		t.Fatal("sweeper did not tick after the clock was advanced")
 	}
 
