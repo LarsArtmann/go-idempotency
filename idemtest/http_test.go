@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -136,4 +137,46 @@ func TestSendConcurrently_ExactlyOneProcesses(t *testing.T) {
 	}
 
 	idemtest.RequireExecutions(t, exec, 1)
+}
+
+func TestSendConcurrently_RequestOptions(t *testing.T) {
+	t.Parallel()
+
+	var mu sync.Mutex
+
+	bodies := make([]string, 0, 8)
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, readErr := io.ReadAll(r.Body)
+		if readErr != nil {
+			t.Errorf("read body: %v", readErr)
+		}
+
+		mu.Lock()
+		bodies = append(bodies, string(body))
+		mu.Unlock()
+
+		w.WriteHeader(http.StatusCreated)
+	})
+
+	const requests = 8
+
+	recs := idemtest.SendConcurrently(t, handler, "contended-key", requests, idemtest.WithBody(`{"order":42}`))
+
+	for _, rec := range recs {
+		idemtest.RequireStatus(t, rec, http.StatusCreated)
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	if len(bodies) != requests {
+		t.Fatalf("bodies = %d, want %d", len(bodies), requests)
+	}
+
+	for _, body := range bodies {
+		if body != `{"order":42}` {
+			t.Fatalf("request body = %q, want the WithBody payload on every concurrent request", body)
+		}
+	}
 }

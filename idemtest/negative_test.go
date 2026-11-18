@@ -298,7 +298,6 @@ func TestNegative_RequireAllowsAfterExpiryPinnedRejectsNonPositiveTTL(t *testing
 		idemtest.RequireAllowsAfterExpiryPinned(tb, sabotageBypass(exec), "key", 0, exec, clock)
 	})
 }
-}
 
 func TestNegative_RequireAllowsAfterExpiryRejectsNonPositiveTTL(t *testing.T) {
 	t.Parallel()

@@ -51,10 +51,24 @@
 //
 // # The TTL window
 //
-// [RequireAllowsAfterExpiry] asserts the caller-visible half of a TTL: after
-// the window passes, a retry legitimately re-processes. The drill polls with
-// a bounded deadline instead of sleeping a fixed margin — pass a small TTL
-// (single-digit milliseconds) to keep it fast.
+// [RequireAllowsAfterExpiry] asserts both halves of a TTL: a retry inside
+// the window is rejected as a duplicate, and once the window passes a retry
+// legitimately re-processes. The reclaim is polled with a bounded deadline —
+// pass a small TTL (single-digit milliseconds) to keep it fast. For an
+// expiry drill with no wall-clock wait at all, wire the pipeline's store to
+// a [PinnedClock] (pass clock.Now to idempotency.WithClock at construction)
+// and drive [RequireAllowsAfterExpiryPinned]: the drill walks the window on
+// the pinned clock, so TTLs of any size test at the same speed and a loaded
+// CI runner cannot flake the drill.
+//
+// # One counter per drill
+//
+// Give every drill an [Executions] counter of its own. Each drill asserts
+// its counter from zero — RequireExactlyOnce requires exactly 1, the expiry
+// drill exactly 2 — so a counter shared across drills makes the later
+// assertions see the earlier drills' executions and fail. In the quick start
+// above, the single exec is correct because there is exactly one drill; the
+// moment a test drives a second drill, create a second counter.
 //
 // # Driving the HTTP adapter
 //

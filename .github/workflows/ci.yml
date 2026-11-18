@@ -62,9 +62,21 @@ jobs:
         if: matrix.go-version == 'go.mod'
         run: go test ./... -coverprofile=coverage.out -covermode=atomic
 
+      # The nested module gets its own profile: separate go.mod, separate
+      # Codecov path, so the kit's coverage is visible per-module.
+      - name: Run idemtest module tests with coverage
+        if: matrix.go-version == 'go.mod'
+        run: go test ./... -coverprofile=idemtest-coverage.out -covermode=atomic
+        working-directory: idemtest
+
       - name: Print coverage summary
         if: matrix.go-version == 'go.mod'
         run: go tool cover -func=coverage.out
+
+      - name: Print idemtest coverage summary
+        if: matrix.go-version == 'go.mod'
+        run: go tool cover -func=idemtest-coverage.out
+        working-directory: idemtest
 
       - name: Upload coverage artifact
         if: matrix.go-version == 'go.mod'
@@ -73,11 +85,18 @@ jobs:
           name: coverage
           path: coverage.out
 
+      - name: Upload idemtest coverage artifact
+        if: matrix.go-version == 'go.mod'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-idemtest
+          path: idemtest/idemtest-coverage.out
+
       - name: Upload coverage to Codecov
         if: env.CODECOV_TOKEN != '' && matrix.go-version == 'go.mod'
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
-          files: coverage.out
+          files: coverage.out,idemtest/idemtest-coverage.out
           fail_ci_if_error: false
 
   vet:
