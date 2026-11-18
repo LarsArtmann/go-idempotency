@@ -196,6 +196,9 @@ jobs:
       - name: Fuzz ConcurrentMixed
         run: go test -fuzz=FuzzConcurrentMixed -fuzztime=3m -run '^$' .
 
+      - name: Fuzz ClockJumps
+        run: go test -fuzz=FuzzClockJumps -fuzztime=3m -run '^$' .
+
       - name: Fuzz Dispatch
         run: go test -fuzz=FuzzDispatch -fuzztime=3m -run '^$' ./middleware
 

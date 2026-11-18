@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`FuzzClockJumps` joins the fuzz battery** — a fifth fuzz target drives a store whose clock jumps anywhere (backward, forward, by millennia) and pins the WithClock contract: duplicate exactly when the clock stands before the live claim's expiry, reclaim exactly when it stands at or past it. CI runs it for 3 minutes alongside the other four targets.
 - **`RequireAllowsAfterExpiry` asserts the whole window** — the drill now rejects a retry inside the TTL window before polling for reclaim, so a pipeline whose claim never holds (a too-short claim, or none at all) fails the drill instead of passing it. Sabotage proofs cover the new in-window assert and every pinned-drill path; the kit's sabotage harness asserts the failure message names the violated contract, not just that a failure happened.
 - **`SendConcurrently` accepts request options** — the concurrent burst takes the same `WithMethod`/`WithBody`/`WithHeader` options as `Send`, so a handler that derives the key from the payload can model the retried request faithfully.
 - **The kit's drill counter semantics are documented** — every drill asserts its `Executions` counter from zero, so each drill gets a counter of its own (`idemtest/doc.go` now says so explicitly).
