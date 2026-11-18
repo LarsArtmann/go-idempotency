@@ -29,10 +29,7 @@ func TestMemoryStore_Sweep_RemovesExpiredEntries(t *testing.T) {
 	// sweep tick past the advance: the tick's expiry comparison reads the
 	// pinned clock and reclaims the entry without any intervening read, so
 	// the final Seen proves the sweep (not lazy deletion) removed it.
-	clock.Advance(20 * time.Millisecond)
-
-	baseline := clock.Calls()
-	if !clock.awaitCallAfter(baseline) {
+	if !clock.advanceAndAwaitTick(20 * time.Millisecond) {
 		t.Fatal("sweeper did not tick after the clock was advanced")
 	}
 
@@ -112,10 +109,7 @@ func TestMemoryStore_Sweep_ReclaimsAllKeysUnderLoad(t *testing.T) {
 
 	// Expire every claim on the pinned clock, then wait for one wall-clock
 	// sweep tick past the advance: the tick reclaims the whole batch.
-	clock.Advance(10 * time.Millisecond)
-
-	baseline := clock.Calls()
-	if !clock.awaitCallAfter(baseline) {
+	if !clock.advanceAndAwaitTick(10 * time.Millisecond) {
 		t.Fatal("sweeper did not tick after the clock was advanced")
 	}
 

@@ -48,6 +48,16 @@ func (c *fakeClock) Calls() int {
 	return c.calls
 }
 
+// advanceAndAwaitTick advances the clock past d and waits for one real
+// wall-clock sweep tick to read it afterward (bounded, two-second deadline).
+// Sweep tests use this to prove the background goroutine observed the
+// advanced clock before asserting reclamation.
+func (c *fakeClock) advanceAndAwaitTick(d time.Duration) bool {
+	c.Advance(d)
+
+	return c.awaitCallAfter(c.Calls())
+}
+
 // awaitCallAfter polls until the store reads the clock again beyond baseline
 // — for the sweep tests: the background ticker fired after the clock was
 // advanced — or the two-second timeout elapses. The wait uses real time
