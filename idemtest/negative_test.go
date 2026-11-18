@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -40,8 +41,10 @@ func (c *captureTB) Fatalf(format string, args ...any) {
 }
 
 // expectDrillFailure runs drill against a captureTB and fails t unless the
-// drill reported a failure — the proof that the assertion detects violation.
-func expectDrillFailure(t *testing.T, violation string, drill func(tb testing.TB)) {
+// drill reported a failure whose message names the violated contract via
+// wantFragment — the proof that the assertion detects this violation and
+// reports it as the violation it is, not as some unrelated crash.
+func expectDrillFailure(t *testing.T, violation, wantFragment string, drill func(tb testing.TB)) {
 	t.Helper()
 
 	capture := &captureTB{}
@@ -60,6 +63,10 @@ func expectDrillFailure(t *testing.T, violation string, drill func(tb testing.TB
 
 	if !capture.failed {
 		t.Fatalf("drill passed despite %s: the assertion does not detect this violation", violation)
+	}
+
+	if !strings.Contains(capture.msg, wantFragment) {
+		t.Fatalf("drill failed with %q, want message naming the violation (%q): the failure does not report %s", capture.msg, wantFragment, violation)
 	}
 }
 
@@ -112,7 +119,7 @@ func TestNegative_RequireExactlyOnceDetectsStoreBypass(t *testing.T) {
 
 	exec := idemtest.NewExecutions()
 
-	expectDrillFailure(t, "a dispatch that bypasses the store", func(tb testing.TB) {
+	expectDrillFailure(t, "a dispatch that bypasses the store", "the side effect ran more than once", func(tb testing.TB) {
 		tb.Helper()
 
 		idemtest.RequireExactlyOnce(tb, sabotageBypass(exec), "order-42:place", 5, exec)
@@ -135,7 +142,7 @@ func TestNegative_RequireExactlyOnceDetectsUnexpectedError(t *testing.T) {
 		return exec.Fn()(ctx)
 	}
 
-	expectDrillFailure(t, "a dispatch that errors mid-storm", func(tb testing.TB) {
+	expectDrillFailure(t, "a dispatch that errors mid-storm", "unexpected error", func(tb testing.TB) {
 		tb.Helper()
 
 		idemtest.RequireExactlyOnce(tb, failingMidway, "key", 3, exec)
@@ -147,7 +154,7 @@ func TestNegative_RequireExactlyOnceRejectsZeroAttempts(t *testing.T) {
 
 	exec := idemtest.NewExecutions()
 
-	expectDrillFailure(t, "a zero-attempt storm", func(tb testing.TB) {
+	expectDrillFailure(t, "a zero-attempt storm", "want at least 1", func(tb testing.TB) {
 		tb.Helper()
 
 		idemtest.RequireExactlyOnce(tb, sabotageBypass(exec), "key", 0, exec)
@@ -160,7 +167,7 @@ func TestNegative_RequireOneWinnerDetectsTOCTOU(t *testing.T) {
 	store := idemtest.NewStore()
 	exec := idemtest.NewExecutions()
 
-	expectDrillFailure(t, "a Seen + Record split (TOCTOU race)", func(tb testing.TB) {
+	expectDrillFailure(t, "a Seen + Record split (TOCTOU race)", "more than one dispatch executed", func(tb testing.TB) {
 		tb.Helper()
 
 		idemtest.RequireOneWinner(tb, sabotageTOCTOU(store, exec), "contended-key", 100, exec)
@@ -172,7 +179,7 @@ func TestNegative_RequireOneWinnerRejectsZeroGoroutines(t *testing.T) {
 
 	exec := idemtest.NewExecutions()
 
-	expectDrillFailure(t, "a zero-goroutine race", func(tb testing.TB) {
+	expectDrillFailure(t, "a zero-goroutine race", "want at least 1", func(tb testing.TB) {
 		tb.Helper()
 
 		idemtest.RequireOneWinner(tb, sabotageBypass(exec), "key", 0, exec)
@@ -185,7 +192,7 @@ func TestNegative_RequireFailClosedDetectsFailOpen(t *testing.T) {
 	store := idemtest.Fail(idemtest.NewStore(), errors.New("redis down")) //nolint:err113 // sabotage sentinel
 	exec := idemtest.NewExecutions()
 
-	expectDrillFailure(t, "a pipeline that executes on unknown store state", func(tb testing.TB) {
+	expectDrillFailure(t, "a pipeline that executes on unknown store state", "executed on unknown duplicate state", func(tb testing.TB) {
 		tb.Helper()
 
 		idemtest.RequireFailClosed(tb, sabotageFailOpen(store, exec), "key", exec)
@@ -200,7 +207,7 @@ func TestNegative_RequireFailClosedDetectsSentinelMisreport(t *testing.T) {
 		return idempotency.ErrDuplicate
 	}
 
-	expectDrillFailure(t, "a store failure misreported as ErrDuplicate", func(tb testing.TB) {
+	expectDrillFailure(t, "a store failure misreported as ErrDuplicate", "misreported an unknown state", func(tb testing.TB) {
 		tb.Helper()
 
 		idemtest.RequireFailClosed(tb, misreporting, "key", exec)
@@ -213,11 +220,84 @@ func TestNegative_RequireAllowsAfterExpiryDetectsStuckClaim(t *testing.T) {
 	exec := idemtest.NewExecutions()
 	forever := middleware.NewCommand(idemtest.NewStore(), idempotency.Forever, exec.Fn())
 
-	expectDrillFailure(t, "a permanent claim passed off as TTL-windowed", func(tb testing.TB) {
+	expectDrillFailure(t, "a permanent claim passed off as TTL-windowed", "still claimed", func(tb testing.TB) {
 		tb.Helper()
 
 		idemtest.RequireAllowsAfterExpiry(tb, forever, "key", drillTTL, exec)
 	})
+}
+
+// sabotageInstantReclaim is the TooShortClaim violation class: the pipeline
+// executes on every dispatch — the claim never holds, so every retry
+// re-processes. The reclaim-only form of the expiry drill passes this
+// pipeline; the in-window rejection assert exists to fail it.
+func sabotageInstantReclaim(exec *idemtest.Executions) idemtest.Dispatch {
+	return sabotageBypass(exec)
+}
+
+func TestNegative_RequireAllowsAfterExpiryDetectsInstantReclaim(t *testing.T) {
+	t.Parallel()
+
+	exec := idemtest.NewExecutions()
+
+	expectDrillFailure(t, "a pipeline whose claim never holds", "the claim did not hold", func(tb testing.TB) {
+		tb.Helper()
+
+		idemtest.RequireAllowsAfterExpiry(tb, sabotageInstantReclaim(exec), "key", drillTTL, exec)
+	})
+}
+
+func TestNegative_RequireAllowsAfterExpiryPinned(t *testing.T) {
+	t.Parallel()
+
+	clock := idemtest.NewPinnedClock(time.Unix(0, 0))
+	exec := idemtest.NewExecutions()
+	forever := middleware.NewCommand(idemtest.NewStore(), idempotency.Forever, exec.Fn())
+
+	expectDrillFailure(t, "a claim that outlives the advanced clock", "the claim outlives its window", func(tb testing.TB) {
+		tb.Helper()
+
+		idemtest.RequireAllowsAfterExpiryPinned(tb, forever, "key", drillTTL, exec, clock)
+	})
+}
+
+func TestNegative_RequireAllowsAfterExpiryPinnedDetectsInstantReclaim(t *testing.T) {
+	t.Parallel()
+
+	clock := idemtest.NewPinnedClock(time.Unix(0, 0))
+	exec := idemtest.NewExecutions()
+
+	expectDrillFailure(t, "a pipeline whose claim never holds", "the claim did not hold", func(tb testing.TB) {
+		tb.Helper()
+
+		idemtest.RequireAllowsAfterExpiryPinned(tb, sabotageInstantReclaim(exec), "key", drillTTL, exec, clock)
+	})
+}
+
+func TestNegative_RequireAllowsAfterExpiryPinnedRejectsNilClock(t *testing.T) {
+	t.Parallel()
+
+	exec := idemtest.NewExecutions()
+
+	expectDrillFailure(t, "a nil clock", "clock is nil", func(tb testing.TB) {
+		tb.Helper()
+
+		idemtest.RequireAllowsAfterExpiryPinned(tb, sabotageBypass(exec), "key", drillTTL, exec, nil)
+	})
+}
+
+func TestNegative_RequireAllowsAfterExpiryPinnedRejectsNonPositiveTTL(t *testing.T) {
+	t.Parallel()
+
+	clock := idemtest.NewPinnedClock(time.Unix(0, 0))
+	exec := idemtest.NewExecutions()
+
+	expectDrillFailure(t, "a non-positive ttl", "want a positive duration", func(tb testing.TB) {
+		tb.Helper()
+
+		idemtest.RequireAllowsAfterExpiryPinned(tb, sabotageBypass(exec), "key", 0, exec, clock)
+	})
+}
 }
 
 func TestNegative_RequireAllowsAfterExpiryRejectsNonPositiveTTL(t *testing.T) {
@@ -225,7 +305,7 @@ func TestNegative_RequireAllowsAfterExpiryRejectsNonPositiveTTL(t *testing.T) {
 
 	exec := idemtest.NewExecutions()
 
-	expectDrillFailure(t, "a non-positive ttl", func(tb testing.TB) {
+	expectDrillFailure(t, "a non-positive ttl", "want a positive duration", func(tb testing.TB) {
 		tb.Helper()
 
 		idemtest.RequireAllowsAfterExpiry(tb, sabotageBypass(exec), "key", 0, exec)
@@ -238,7 +318,7 @@ func TestNegative_RequireExecutionsDetectsWrongCount(t *testing.T) {
 	exec := idemtest.NewExecutions()
 	_ = exec.Fn()(context.Background())
 
-	expectDrillFailure(t, "an execution-count mismatch", func(tb testing.TB) {
+	expectDrillFailure(t, "an execution-count mismatch", "want 2", func(tb testing.TB) {
 		tb.Helper()
 
 		idemtest.RequireExecutions(tb, exec, 2)
@@ -251,7 +331,7 @@ func TestNegative_RequireClaimedDetectsWrongKey(t *testing.T) {
 	recorder := idemtest.NewRecorder(idemtest.NewStore())
 	_ = recorder.CheckAndRecord(context.Background(), "per-request-uuid-7", time.Minute)
 
-	expectDrillFailure(t, "a claim recorded under the wrong key", func(tb testing.TB) {
+	expectDrillFailure(t, "a claim recorded under the wrong key", `no CheckAndRecord(key="order-42:place"`, func(tb testing.TB) {
 		tb.Helper()
 
 		idemtest.RequireClaimed(tb, recorder, "order-42:place", time.Minute)
@@ -264,7 +344,7 @@ func TestNegative_RequireClaimedDetectsWrongTTL(t *testing.T) {
 	recorder := idemtest.NewRecorder(idemtest.NewStore())
 	_ = recorder.CheckAndRecord(context.Background(), "order-42:place", time.Second)
 
-	expectDrillFailure(t, "a claim recorded with the wrong TTL", func(tb testing.TB) {
+	expectDrillFailure(t, "a claim recorded with the wrong TTL", "ttl=1h0m0s", func(tb testing.TB) {
 		tb.Helper()
 
 		idemtest.RequireClaimed(tb, recorder, "order-42:place", time.Hour)
@@ -281,7 +361,7 @@ func recorderWithStatus(status int) *httptest.ResponseRecorder {
 func TestNegative_RequireStatusDetectsMismatch(t *testing.T) {
 	t.Parallel()
 
-	expectDrillFailure(t, "a status mismatch", func(tb testing.TB) {
+	expectDrillFailure(t, "a status mismatch", "status = 418", func(tb testing.TB) {
 		tb.Helper()
 
 		idemtest.RequireStatus(tb, recorderWithStatus(http.StatusTeapot), http.StatusCreated)
@@ -291,7 +371,7 @@ func TestNegative_RequireStatusDetectsMismatch(t *testing.T) {
 func TestNegative_RequireDuplicateDetectsProcessedRetry(t *testing.T) {
 	t.Parallel()
 
-	expectDrillFailure(t, "a duplicate retry that was processed", func(tb testing.TB) {
+	expectDrillFailure(t, "a duplicate retry that was processed", "duplicate retry was not rejected", func(tb testing.TB) {
 		tb.Helper()
 
 		idemtest.RequireDuplicate(tb, recorderWithStatus(http.StatusCreated))
@@ -301,7 +381,7 @@ func TestNegative_RequireDuplicateDetectsProcessedRetry(t *testing.T) {
 func TestNegative_RequireMissingKeyRejectedDetectsSilentProcessing(t *testing.T) {
 	t.Parallel()
 
-	expectDrillFailure(t, "a missing key that was processed", func(tb testing.TB) {
+	expectDrillFailure(t, "a missing key that was processed", "missing key was not rejected", func(tb testing.TB) {
 		tb.Helper()
 
 		idemtest.RequireMissingKeyRejected(tb, recorderWithStatus(http.StatusOK))
@@ -311,7 +391,7 @@ func TestNegative_RequireMissingKeyRejectedDetectsSilentProcessing(t *testing.T)
 func TestNegative_RequireStoreUnavailableDetectsWrongFailureStatus(t *testing.T) {
 	t.Parallel()
 
-	expectDrillFailure(t, "a store failure surfaced as the wrong status", func(tb testing.TB) {
+	expectDrillFailure(t, "a store failure surfaced as the wrong status", "store failure was not surfaced", func(tb testing.TB) {
 		tb.Helper()
 
 		idemtest.RequireStoreUnavailable(tb, recorderWithStatus(http.StatusInternalServerError))
