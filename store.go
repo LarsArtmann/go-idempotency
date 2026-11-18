@@ -178,6 +178,13 @@ type MemoryStoreOption func(*MemoryStore)
 // thread-safe clock when the store is used from multiple goroutines: the
 // sweep goroutine reads it on every tick.
 //
+// Treat the injected clock as forward-moving only. A clock that jumps
+// backward extends live claims past their intended window; a jump forward can
+// expire claims early. Atomicity is never affected — the exactly-one-winner
+// guarantee lives in the map operations, not in the clock — but window
+// sizing distorts in both directions. The sweep ticker always runs on the
+// real wall clock regardless of what this clock does.
+//
 // A nil clock is ignored and the wall-clock default stands.
 func WithClock(now func() time.Time) MemoryStoreOption {
 	return func(s *MemoryStore) {
@@ -243,6 +250,12 @@ func (s *MemoryStore) Seen(_ context.Context, key string) (bool, error) {
 
 // isLive reports whether exp represents a claim that has not expired. A zero
 // time is the in-process representation of a [Forever] claim.
+//
+// A claim is live strictly before its expiry: at the exact expiry instant
+// (now == exp) it is already expired. The property test
+// TestProperty_TTLExpiry pins this boundary for [MemoryStore]; backends with
+// independent clocks should treat the edge as an implementation detail and
+// pin their own semantics.
 func isLive(exp, now time.Time) bool {
 	return exp.IsZero() || now.Before(exp)
 }

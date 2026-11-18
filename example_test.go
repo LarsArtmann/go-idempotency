@@ -68,6 +68,42 @@ func ExampleMemoryStore() {
 	// seen: false
 }
 
+// ExampleWithClock pins the store's clock so expiry becomes a deterministic
+// state transition: advance the clock instead of sleeping past the TTL.
+func ExampleWithClock() {
+	now := time.Unix(0, 0)
+
+	store := idempotency.NewMemoryStore(0,
+		idempotency.WithClock(func() time.Time { return now }),
+	)
+	defer store.Close()
+
+	ctx := context.Background()
+
+	if err := store.CheckAndRecord(ctx, "pinned", time.Hour); err != nil {
+		fmt.Println("unexpected error on first call:", err)
+
+		return
+	}
+
+	fmt.Println("first call: processing")
+
+	// Advance the clock past the TTL — no sleep, no flake.
+	now = now.Add(2 * time.Hour)
+
+	if err := store.CheckAndRecord(ctx, "pinned", time.Hour); err != nil {
+		fmt.Println("unexpected error after expiry:", err)
+
+		return
+	}
+
+	fmt.Println("after expiry: reclaimed")
+
+	// Output:
+	// first call: processing
+	// after expiry: reclaimed
+}
+
 // ExampleForever shows a permanent claim: the duplicate window is the lifetime
 // of the store, which is the correct shape for event/consumer dedupe. Request
 // idempotency keys should stay TTL-windowed (ADR-006).
