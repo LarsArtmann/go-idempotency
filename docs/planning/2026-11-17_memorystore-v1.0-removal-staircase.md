@@ -8,15 +8,15 @@ checklist, not an investigation.
 ## Fleet audit — who still uses it (2026-11-17)
 
 `rg -l 'MemoryStore|NewMemoryStore' ~/projects --glob '*.go'` (excluding this
-repo). Hits are *references*, not necessarily production dependencies — each
+repo). Hits are _references_, not necessarily production dependencies — each
 row must be re-verified per project before removal:
 
-| Project        | Files referencing MemoryStore        | First impression                              |
-| -------------- | ------------------------------------ | --------------------------------------------- |
-| go-compliance  | `reporter.go`, `reporter_test.go`    | Production import — migrate first             |
-| Standup-Killer | `domain/cqrs/*` (4 files, has `idempotency_sqlite.go`) | Mid-migration: SQLite backend exists, MemoryStore remnants remain |
-| branching-flow | `pkg/ifacecomplete/analyzer_test.go` | Test-only reference                           |
-| go-datastar    | `store.go`, `store_test.go`, `docspec_test.go` | Own `MemoryStore` type? Verify it is not go-idempotency's before counting |
+| Project        | Files referencing MemoryStore                          | First impression                                                          |
+| -------------- | ------------------------------------------------------ | ------------------------------------------------------------------------- |
+| go-compliance  | `reporter.go`, `reporter_test.go`                      | Production import — migrate first                                         |
+| Standup-Killer | `domain/cqrs/*` (4 files, has `idempotency_sqlite.go`) | Mid-migration: SQLite backend exists, MemoryStore remnants remain         |
+| branching-flow | `pkg/ifacecomplete/analyzer_test.go`                   | Test-only reference                                                       |
+| go-datastar    | `store.go`, `store_test.go`, `docspec_test.go`         | Own `MemoryStore` type? Verify it is not go-idempotency's before counting |
 
 ## Preconditions (all must hold before the v1.0 tag)
 
@@ -50,7 +50,7 @@ row must be re-verified per project before removal:
    `internal/teststore`; delete `ExampleMemoryStore` in the same change;
    update `doc.go` Quick Start to lead with a custom-backend example.
 4. **v1.0.0 tag** — module path stays `github.com/larsartmann/go-idempotency`
-   (no v2 path bump is triggered by *deleting* a deprecated type that every
+   (no v2 path bump is triggered by _deleting_ a deprecated type that every
    consumer already migrated; the major version signals the breaking
    deletion itself). Delete `MemoryStore`, `NewMemoryStore`,
    `MemoryStoreOption`, `WithClock`, `isLive`'s MemoryStore-specific notes,
